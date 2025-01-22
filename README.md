@@ -13,4 +13,7 @@ nvm current
 
 # Verify node package manager version (npm)
 npm -v 
+
+npm install -g pnpm@latest-10
+
 ```
