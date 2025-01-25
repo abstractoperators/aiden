@@ -9,7 +9,7 @@ services:
       - eve-agent:/app/db.sqlite
     ports:
       # - "3000:3000"
-      - "80:3069"
+      - "8000:80"
 
 volumes:
   eve-agent:
