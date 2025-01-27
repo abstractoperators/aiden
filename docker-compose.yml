@@ -1,28 +1,29 @@
 services:
   eve-agent:
-    image: eve-agent:latest
     build: 
       context: ./
       dockerfile: ./Dockerfile.eve
     container_name: eve-agent
     volumes:
       - eve-agent:/app/db.sqlite
-    ports:
-      # - "3000:3000"
-      - "8000:80"
     platform: linux/amd64
+    networks:
+      - eve-agent-network
 
   nginx:
-    image: nginx:stable-bookworm
-    container_name: nginx
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.nginx
     ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro # read only
-      - ./conf.d:/etc/nginx/conf.d:ro
-    depends_on:
-      - eve-agent
+      - "80:80"  
+    container_name: nginx   
+    networks:
+      - eve-agent-network
 
 
 volumes:
   eve-agent:
+
+networks:
+  eve-agent-network:
+    driver: bridge
