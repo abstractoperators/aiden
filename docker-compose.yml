@@ -12,5 +12,17 @@ services:
       - "8000:80"
     platform: linux/amd64
 
+  nginx:
+    image: nginx:stable-bookworm
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro # read only
+      - ./conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - eve-agent
+
+
 volumes:
   eve-agent:
