@@ -7,23 +7,10 @@ services:
     volumes:
       - eve-agent:/app/db.sqlite
     platform: linux/amd64
-    networks:
-      - eve-agent-network
-
-  nginx:
-    build:
-      context: ./
-      dockerfile: ./Dockerfile.nginx
     ports:
-      - "80:80"  
-    container_name: nginx   
-    networks:
-      - eve-agent-network
+      - "8000:80"
+
 
 
 volumes:
   eve-agent:
-
-networks:
-  eve-agent-network:
-    driver: bridge
