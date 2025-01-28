@@ -1,38 +1,47 @@
-run-name: Deploy to Staging
+# run-name: Deploy to Staging
 name: Deploy to Staging
 
 on:
+    push:
     # Action must be defined on default branch before it can be triggered by workflow_dispatch, however, pull_request works.
-    pull_request:
+    # pull_request:
     # workflow_dispatch:
 
 jobs:
-    build-and-push-eve:
+    test:
+        runs-on: ubuntu-18.04
         steps:
-            - name: foo
-              run: echo "foo"
+            - name: Show environment v2
+              run: env | grep ^GITHUB
+            - name: Show ref v2
+              run: echo "===============> Version from $GITHUB_REF"
+# jobs:
+#     build-and-push-eve:
+#         steps:
+#             - name: foo
+#               run: echo "foo"
 
-            - name: Checkout code
-              uses: actions/checkout@v4.2.2
+#             - name: Checkout code
+#               uses: actions/checkout@v4.2.2
 
-            - name: Configure aws credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
-                  aws-region: us-east-1
+#             - name: Configure aws credentials
+#               uses: aws-actions/configure-aws-credentials@v4
+#               with:
+#                   role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+#                   aws-region: us-east-1
 
-            - name: temp ls
-              run: |
-                  ls -la
+#             - name: temp ls
+#               run: |
+#                   ls -la
 
-            - name: Login to Amazon ECR
-              uses: aws-actions/amazon-ecr@v2
+#             - name: Login to Amazon ECR
+#               uses: aws-actions/amazon-ecr@v2
 
-            - name: Build eve, tag it, and push it to ECR
-              run: |
-                  make build-eve
-                  make aws-ecr-push-eve
-# Required for https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
-permissions:
-    id-token: write
-    contents: read
+#             - name: Build eve, tag it, and push it to ECR
+#               run: |
+#                   make build-eve
+#                   make aws-ecr-push-eve
+# # Required for https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
+# permissions:
+#     id-token: write
+#     contents: read
