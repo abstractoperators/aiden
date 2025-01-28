@@ -11,3 +11,5 @@ aws-ecr-login:
 aws-ecr-push-eve: aws-ecr-login 
 	docker tag eve-agent:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/eve:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/eve:latest
+
+
