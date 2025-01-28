@@ -1,0 +1,30 @@
+run-name: Deploy to Staging
+name: Deploy to Staging
+
+on:
+    # Note that this workflow scheme must be defined on main for security. But you can specify which branch to run it on.
+    workflow_dispatch:
+    push:
+        branches:
+            - michael/gha
+
+jobs:
+    build-and-push-eve:
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4.2.2
+
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+                  aws-region: us-east-1
+
+            - name: temp ls
+              run: |
+                  ls -la
+
+# Required for https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
+permissions:
+    id-token: write
+    contents: read
