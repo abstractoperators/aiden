@@ -9,6 +9,9 @@ on:
 jobs:
     build-and-push-eve:
         steps:
+            - name: foo
+              run: echo "foo"
+
             - name: Checkout code
               uses: actions/checkout@v4.2.2
 
