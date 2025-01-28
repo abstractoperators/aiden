@@ -24,6 +24,10 @@ jobs:
 
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
+          
+            - name: Touch an env file
+              run: |
+                  touch .env
 
             - name: Build eve, tag it, and push it to ECR
               run: |
