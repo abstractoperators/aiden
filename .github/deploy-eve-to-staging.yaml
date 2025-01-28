@@ -3,10 +3,9 @@ name: Deploy to Staging
 
 on:
     # Note that this workflow scheme must be defined on main for security. But you can specify which branch to run it on.
+    # Won't show up until
+    pull_request:
     workflow_dispatch:
-    push:
-        branches:
-            - michael/gha
 
 jobs:
     build-and-push-eve:
