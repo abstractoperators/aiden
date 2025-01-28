@@ -9,7 +9,7 @@ services:
     platform: linux/amd64
     ports:
       - "8000:80"
-
+    image: eve-agent:latest
 
 
 volumes:
