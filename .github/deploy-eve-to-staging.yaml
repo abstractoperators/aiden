@@ -3,7 +3,7 @@ name: Deploy to Staging
 
 on:
     # Action must be defined on default branch before it can be triggered by workflow_dispatch, however, pull_request works.
-    push:
+    pull_request:
     # workflow_dispatch:
 
 jobs:
