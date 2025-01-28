@@ -25,6 +25,13 @@ jobs:
               run: |
                   ls -la
 
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr@v2
+
+            - name: Build eve, tag it, and push it to ECR
+              run: |
+                  make build-eve
+                  make aws-ecr-push-eve
 # Required for https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
 permissions:
     id-token: write
