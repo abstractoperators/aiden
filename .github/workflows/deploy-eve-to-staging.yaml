@@ -2,7 +2,6 @@ run-name: Deploy to Staging
 name: Deploy to Staging
 
 on:
-    push:
     workflow_dispatch:
 
 jobs:
