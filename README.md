@@ -17,3 +17,17 @@ npm -v
 npm install -g pnpm@latest-10
 
 ```
+
+# install
+
+```bash
+git submodule update --init --recursive --depth 1 
+
+# To update commit on eliza
+cd eliza
+git pull origin main
+git checkout # git checkout $(git describe --tags --abbrev=0) for latest release
+cd ..
+git add eliza
+git commit
+```
