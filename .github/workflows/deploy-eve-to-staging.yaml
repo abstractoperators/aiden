@@ -35,6 +35,21 @@ jobs:
               run: |
                   make build-eve
                   make aws-ecr-push-eve
+    
+    # Note: This forces a redeployment of the service with the updated latest image in ecr
+    force-redeployment:
+        needs: build-and-push-eve
+        runs-on: ubuntu-latest
+        steps:
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS 
+                  aws-region: us-east-1
+            
+            - name: Force redeployment
+              run: |
+                  aws ecs update-service --cluster AidenStaging --service eve-staging --force-new-deployment 
 
 # Required for https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
 permissions:
