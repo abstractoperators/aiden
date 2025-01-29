@@ -19,10 +19,6 @@ jobs:
                   role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
                   aws-region: us-east-1
 
-            - name: temp ls
-              run: |
-                  ls -la
-
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
           
@@ -40,7 +36,7 @@ jobs:
                   make build-eve
                   make aws-ecr-push-eve
     
-    # Note: This forces a redeployment of the service with the updated latest image in ecr
+    # Note: This forces a redeployment of the service with the updated latest image in ecr.
     force-redeployment:
         needs: build-and-push-eve
         runs-on: ubuntu-latest
