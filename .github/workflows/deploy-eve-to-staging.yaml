@@ -1,0 +1,57 @@
+run-name: Deploy to Staging
+name: Deploy to Staging
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build-and-push-eve:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4.2.2
+              with:
+                submodules: 'true'
+
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+                  aws-region: us-east-1
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+          
+            - name: Touch an env file
+              run: |
+                  touch .env.eve
+                  # Add only insensitive vars here.
+                  echo "CACHE_STORE=database" >> .env.eve
+                  echo "SERVER_PORT=3000" >> .env.eve
+                  echo "SLACK_SERVER_PORT=3069" >> .env.eve
+
+
+            - name: Build eve, tag it, and push it to ECR
+              run: |
+                  make build-eve
+                  make aws-ecr-push-eve
+    
+    # Note: This forces a redeployment of the service with the updated latest image in ecr.
+    force-redeployment:
+        needs: build-and-push-eve
+        runs-on: ubuntu-latest
+        steps:
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS 
+                  aws-region: us-east-1
+            
+            - name: Force redeployment
+              run: |
+                  aws ecs update-service --cluster AidenStaging --service eve-staging --force-new-deployment 
+
+# Required for https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
+permissions:
+    id-token: write
+    contents: read

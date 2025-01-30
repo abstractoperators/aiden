@@ -1,0 +1,16 @@
+services:
+  eve-agent:
+    build: 
+      context: ./
+      dockerfile: ./Dockerfile.eve
+    container_name: eve-agent
+    volumes:
+      - eve-agent:/app/db.sqlite
+    platform: linux/amd64
+    ports:
+      - "8000:80"
+    image: eve-agent:latest
+
+
+volumes:
+  eve-agent:

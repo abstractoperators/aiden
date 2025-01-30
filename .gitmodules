@@ -1,0 +1,4 @@
+[submodule "eliza"]
+	path = eliza
+	url = git@github.com:elizaOS/eliza.git
+	update = checkout
