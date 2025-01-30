@@ -15,14 +15,6 @@ aws-ecr-push-eve: aws-ecr-login
 	docker tag eve-agent:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/eve:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/eve:latest
 
-
-# run-eve-nodocker:
-# 	cd eliza && \
-# 	pnpm i && \
-# 	pnpm run build && \
-# 	echo ${SLACK_BOT_TOKEN} && \
-# 	pnpm run start --characters="/home/madeng/AbstractOperator/aiden/eve.character.json"
-	
 run-eve-nodocker:
 	cd eliza && \
 	pnpm i && \
