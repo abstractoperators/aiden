@@ -1,6 +1,4 @@
 
-include .env.eve
-export
 
 build-eve:
 	docker compose -f docker-compose.yml build
@@ -16,8 +14,9 @@ aws-ecr-push-eve: aws-ecr-login
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/eve:latest
 
 run-eve-nodocker:
+	cp .env.eve eliza/.env && \
 	cd eliza && \
-	pnpm i && \
+	# pnpm i && \
 	pnpm run build && \
 	pnpm run start --characters="/home/madeng/AbstractOperator/aiden/eve.character.json"
 
