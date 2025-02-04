@@ -16,8 +16,8 @@ aws-ecr-push-eve: aws-ecr-login
 run-eve-nodocker:
 	cp .env.eve eliza/.env && \
 	cd eliza && \
-	# pnpm i && \
+	pnpm i && \
 	pnpm run build && \
-	pnpm run start --characters="/home/madeng/AbstractOperator/aiden/eve.character.json"
+	pnpm run cleanstart:debug --characters="/home/madeng/AbstractOperator/aiden/eve.character.json"
 
 	
