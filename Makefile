@@ -18,6 +18,6 @@ run-eve-nodocker:
 	cd eliza && \
 	pnpm i && \
 	pnpm run build && \
-	pnpm run cleanstart:debug --characters="/home/madeng/AbstractOperator/aiden/eve.character.json"
+	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
 	
