@@ -1,2 +1,7 @@
 .env*
 !.env.eve.example
+
+
+
+# IDE
+.vscode
