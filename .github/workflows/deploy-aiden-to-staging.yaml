@@ -1,0 +1,12 @@
+run-name: Deploy Aiden to Staging
+name: Deploy Aiden to Staging
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build-and-push-aiden:
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo "Hello world"
+
