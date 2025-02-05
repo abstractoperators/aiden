@@ -1,11 +1,11 @@
-run-name: Deploy to Staging
-name: Deploy to Staging
+run-name: Deploy Mairtin to Staging
+name: Deploy Mairtin to Staging
 
 on:
     workflow_dispatch:
 
 jobs:
-    build-and-push-eve:
+    build-and-push-mairtin:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
     
     # Note: This forces a redeployment of the service with the updated latest image in ecr.
     force-redeployment:
-        needs: build-and-push-eve
+        needs: build-and-push-mairtin
         runs-on: ubuntu-latest
         steps:
             - name: Configure aws credentials
