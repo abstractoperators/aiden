@@ -1,10 +1,10 @@
 
 
 build-eve:
-	docker compose -f docker-compose.yml build
+	docker compose -f docker-compose.yml build -d eve-agent
 
 run-eve: build-eve
-	docker compose -f docker-compose.yml up
+	docker compose -f docker-compose.yml up -d eve-agent
 
 aws-ecr-login:
 	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 008971649127.dkr.ecr.us-east-1.amazonaws.com
@@ -20,4 +20,5 @@ run-eve-nodocker:
 	pnpm run build && \
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
-	
+run-api:
+	docker compose -f docker/docker-compose.yml up -d api	

@@ -1,7 +1,7 @@
 services:
   eve-agent:
     build: 
-      context: ./
+      context: ../
       dockerfile: ./Dockerfile.eve
     container_name: eve-agent
     volumes:
@@ -11,6 +11,13 @@ services:
       - "8000:80"
       - "5173:5173"
     image: eve-agent:latest
+  api:
+    build:
+      context: .././apps/api
+      dockerfile: ./Dockerfile.api
+    container_name: api
+    platform: linux/amd64
+    image: api:latest
 
 
 volumes:
