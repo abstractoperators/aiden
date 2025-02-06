@@ -1,3 +1,4 @@
+
 build-eve:
 	docker compose -f docker-compose.yml build eve-agent
 
@@ -18,8 +19,11 @@ run-eve-nodocker:
 	pnpm run build && \
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
+down-api:
+	docker compose -f docker-compose.yml down api
+
 build-api:
 	docker compose -f docker-compose.yml build api
 
-run-api:
+run-api: down-api build-api
 	docker compose -f docker-compose.yml up -d api	
