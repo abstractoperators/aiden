@@ -1,8 +1,8 @@
 services:
   eve-agent:
     build: 
-      context: ../
-      dockerfile: ./Dockerfile.eve
+      context: .
+      dockerfile: Dockerfile.eve
     container_name: eve-agent
     volumes:
       - eve-agent:/app/db.sqlite
@@ -13,11 +13,13 @@ services:
     image: eve-agent:latest
   api:
     build:
-      context: .././apps/api
+      context: apps/api
       dockerfile: ./Dockerfile.api
     container_name: api
     platform: linux/amd64
     image: api:latest
+    ports:
+      - "80:80"
 
 
 volumes:

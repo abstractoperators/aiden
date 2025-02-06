@@ -1,9 +1,7 @@
-
-
 build-eve:
-	docker compose -f docker-compose.yml build -d eve-agent
+	docker compose -f docker-compose.yml build eve-agent
 
-run-eve: build-eve
+run-eve: 
 	docker compose -f docker-compose.yml up -d eve-agent
 
 aws-ecr-login:
@@ -20,5 +18,8 @@ run-eve-nodocker:
 	pnpm run build && \
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
+build-api:
+	docker compose -f docker-compose.yml build api
+
 run-api:
-	docker compose -f docker/docker-compose.yml up -d api	
+	docker compose -f docker-compose.yml up -d api	

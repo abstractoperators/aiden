@@ -8,5 +8,22 @@ jobs:
     build-and-push-aiden:
         runs-on: ubuntu-latest
         steps:
-            - run: echo "Hello world"
+            - name: Checkout code
+              uses: actions/checkout@v4.2.2
+              with:
+                submodules: 'true'
+            
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+                  aws-region: us-east-1
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Touch an env file
+              run: |
+                touch .env
+                echo "POSTGRES_DB_HOST=staging-aiden.c3auqaqcunqy.us-east-1.rds.amazonaws.com" >> .env
 

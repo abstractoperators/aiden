@@ -4,17 +4,21 @@ import psycopg2
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 
-load_dotenv("../../.env.eve")
+load_dotenv()
 app = FastAPI()
 
 
+@app.get("/")
 async def root():
     return {"message": "Hello World"}
 
 
-@app.get("/agents/{agent_id}")
-async def get_agent(agent_id: int):
-    return {"agent_id": agent_id}
+# @app.get("/api/agents/{agent_id}") # prepended /api
+# api router level
+
+# @app.get("/agents/{agent_id}")
+# async def get_agent(agent_id: int):
+#     return {"agent_id": agent_id}
 
 
 @app.get("/agents/{agent_id}/chat")
@@ -52,3 +56,12 @@ if test_db_connection():
     print("DB Connection Successful")
 else:
     print("DB Connection Failed")
+
+################################
+
+# verify wallet
+# get agents (for leaderboard)
+# agent crud
+#
+# make transactions?
+# smart contracts?
