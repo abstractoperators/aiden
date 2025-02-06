@@ -26,4 +26,8 @@ jobs:
               run: |
                 touch .env
                 echo "POSTGRES_DB_HOST=staging-aiden.c3auqaqcunqy.us-east-1.rds.amazonaws.com" >> .env
+            
+            - name: Build api, tag it, and push it to ECR
+              run: |
+                make build-api
 
