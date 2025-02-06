@@ -8,8 +8,7 @@ services:
       - eve-agent:/app/db.sqlite
     platform: linux/amd64
     ports:
-      - "8000:80"
-      - "5173:5173"
+      - "3000:80"
     image: eve-agent:latest
 
 
