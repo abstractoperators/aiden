@@ -29,6 +29,7 @@ jobs:
                   echo "CACHE_STORE=database" >> .env.eve
                   echo "SERVER_PORT=3000" >> .env.eve
                   echo "SLACK_SERVER_PORT=3069" >> .env.eve
+                  echo "EVM_PROVIDER_URL=https://eth.llamarpc.com" >> .env.eve
 
 
             - name: Build eve, tag it, and push it to ECR

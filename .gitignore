@@ -8,3 +8,8 @@ __pycache__
 *$py.class__pycache__/
 
 .vscode
+
+
+
+# IDE
+.vscode
