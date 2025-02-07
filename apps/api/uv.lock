@@ -31,6 +31,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "psycopg2" },
+    { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "uvicorn" },
 ]
@@ -46,13 +47,14 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = "==0.115.8" },
     { name = "psycopg2", specifier = "==2.9.10" },
+    { name = "pydantic", specifier = "==2.10.6" },
     { name = "python-dotenv", specifier = "==1.0.1" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 
 [package.metadata.dependency-groups]
 dev = [
-    { name = "mypy", specifier = ">=1.15.0" },
+    { name = "mypy", specifier = "==1.15.0" },
     { name = "pre-commit", specifier = "==4.1.0" },
     { name = "ruff", specifier = "==0.9.5" },
 ]
