@@ -1,8 +1,11 @@
 
+down-eve:
+	docker compose -f docker-compose.yml down eve-agent
+
 build-eve:
 	docker compose -f docker-compose.yml build eve-agent
 
-run-eve: 
+run-eve: down-eve build-eve
 	docker compose -f docker-compose.yml up -d eve-agent
 
 aws-ecr-login:
