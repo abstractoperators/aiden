@@ -33,10 +33,20 @@ async def ping():
 @router.get("/agents")
 async def get_agents():
     conn: Tconnection = pool.getconn()
-    with conn.cursor as cursor:
+    with conn.cursor() as cursor:
         agents = get_unique_accounts(cursor)
     pool.putconn(conn)
     return agents
+
+
+@router.get("/agents/{agent_id}")
+async def get_agent(agent_id: str):
+    conn: Tconnection = pool.getconn()
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT * FROM accounts WHERE id = %s", (agent_id,))
+        agent = cursor.fetchone()
+    pool.putconn(conn)
+    return agent
 
 
 app.include_router(router, prefix="/api")

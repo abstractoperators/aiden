@@ -14,10 +14,9 @@ pool = psycopg2.pool.SimpleConnectionPool(
     port="5432",
     database="postgres",
 )
-print(f"DB Host: {db_host}")
 
 
 def get_unique_accounts(cursor: Tcursor):
-    cursor.execute("SELECT name from accounts")
+    cursor.execute("SELECT id, name from accounts")
     accounts = cursor.fetchall()
     return accounts
