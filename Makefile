@@ -21,6 +21,13 @@ run-eve-nodocker:
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
 	
+down-frontend:
+	docker compose -f docker-compose.yml down frontend
+build-frontend:
+	docker compose -f docker-compose.yml build frontend
+run-frontend: down-frontend build-frontend
+	docker compose -f docker-compose.yml up -d frontend
+
 run-frontend-nodocker:
 	cd apps/frontend && \
 	pnpm i && \
