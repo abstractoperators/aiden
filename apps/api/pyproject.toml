@@ -6,13 +6,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.115.8",
-    "psycopg2>=2.9.10",
-    "python-dotenv>=1.0.1",
-    "uvicorn>=0.34.0",
+    "psycopg2==2.9.10",
+    "python-dotenv==1.0.1",
+    "uvicorn==0.34.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.1.0",
-    "ruff>=0.9.5",
+    "pre-commit==4.1.0",
+    "ruff==0.9.5",
 ]
