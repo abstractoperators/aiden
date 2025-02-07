@@ -27,7 +27,25 @@ jobs:
                 touch .env
                 echo "POSTGRES_DB_HOST=staging-aiden.c3auqaqcunqy.us-east-1.rds.amazonaws.com" >> .env
             
-            - name: Build api, tag it, and push it to ECR
+            - name: Build and tag api
               run: |
                 make build-api
+            
+            - name: Push api to ECR
+              run: |
+                make aws-ecr-push-api
+      
+    force-redeployment:
+      needs: build-and-push-aiden
+      runs-on: ubuntu-latest
+      steps:
+        - name: Configure aws credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+              role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS 
+              aws-region: us-east-1
+
+        - name: Force redeployment
+          run: |
+            aws ecs update-service --cluster AidenStaging --service aiden-api-staging --force-new-deployment
 
