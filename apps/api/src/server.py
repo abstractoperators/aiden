@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 
 from . import logger
 from .tests import test_db_connection
@@ -20,18 +20,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+router = APIRouter()
 
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
-@app.get("/agents/{agent_id}")
-async def get_agent(agent_id: int):
-    return {"agent_id": "mock_id"}
-
-
-@app.get('/ping')
+@router.get("/ping")
 async def ping():
     return "pong"
+
+
+app.include_router(router, prefix="/api")
