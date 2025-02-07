@@ -52,7 +52,8 @@ jobs:
               run: |
                   aws ecs update-service --cluster AidenStaging --service eve-staging --force-new-deployment 
 
-# Required for https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
+# Required for GitHub's OIDC provider 
+# https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
 permissions:
     id-token: write
     contents: read
