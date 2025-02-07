@@ -31,6 +31,10 @@ build-api:
 run-api: down-api build-api
 	docker compose -f docker-compose.yml up -d api	
 
+run-api-nodocker:
+	cd apps/api && \
+	uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8001
+
 aws-ecr-push-api: aws-ecr-login
 	docker tag api:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/api:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/api:latest
