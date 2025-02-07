@@ -1,0 +1,49 @@
+run-name: Deploy frontend to staging
+name: Deploy frontend to staging
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build-and-push-frontend:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4.2.2
+              with:
+                  submodules: "true"
+
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+                  aws-region: us-east-1
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Build and tag frontend
+              run: |
+                  make build-frontend
+
+            - name: Push frontend to ECR
+              run: |
+                  make aws-ecr-push-frontend
+
+    force-redeployment:
+        needs: build-and-push-frontend
+        runs-on: ubuntu-latest
+        steps:
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS
+                  aws-region: us-east-1
+
+            - name: Force redeployment
+              run: |
+                  aws ecs update-service --cluster AidenStaging --service aiden-frontend-staging --force-new-deployment
+
+permissions:
+    id-token: write
+    contents: read
