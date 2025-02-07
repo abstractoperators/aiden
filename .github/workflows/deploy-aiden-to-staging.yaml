@@ -21,11 +21,6 @@ jobs:
 
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
-
-            - name: Touch an env file
-              run: |
-                touch .env
-                echo "POSTGRES_DB_HOST=staging-aiden.c3auqaqcunqy.us-east-1.rds.amazonaws.com" >> .env
             
             - name: Build and tag api
               run: |
