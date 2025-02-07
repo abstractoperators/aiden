@@ -20,4 +20,5 @@ run-eve-nodocker:
 	pnpm run build && \
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
-	
+run-eliza-client:
+	cd eliza && pnpm start:client

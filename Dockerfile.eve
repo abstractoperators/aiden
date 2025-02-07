@@ -26,6 +26,9 @@ COPY eliza/scripts ./scripts
 COPY eliza/characters ./characters
 COPY eve.character.json ./characters/eve.character.json
 
+ARG API_URL
+ENV VITE_API_URL=${API_URL}
+
 # Install dependencies and build the project
 RUN pnpm install \
     && pnpm build-docker \
@@ -50,8 +53,7 @@ COPY --from=builder /app/.npmrc ./
 COPY --from=builder /app/turbo.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/agent ./agent
-COPY --from=builder /app/client ./client
-COPY --from=builder /app/lerna.json ./
+COPY --from=builder /app/client/dist ./client
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/characters ./characters

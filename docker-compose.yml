@@ -3,12 +3,14 @@ services:
     build: 
       context: ./
       dockerfile: ./Dockerfile.eve
+      args:
+        - API_URL=http://eve.abop.bot
     container_name: eve-agent
     volumes:
       - eve-agent:/app/db.sqlite
     platform: linux/amd64
     ports:
-      - "3000:80"
+      - "8000:80"
     image: eve-agent:latest
 
 
