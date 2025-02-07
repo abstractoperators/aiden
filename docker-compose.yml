@@ -1,5 +1,6 @@
 services:
   eve-agent:
+    env_file: ".env.eve"
     build: 
       context: .
       dockerfile: Dockerfile.eve
@@ -12,6 +13,7 @@ services:
       - "5173:5173"
     image: eve-agent:latest
   api:
+    env_file: "apps/api/.env.api"
     build:
       context: apps/api
       dockerfile: ./Dockerfile.api
