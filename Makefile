@@ -21,3 +21,7 @@ run-eve-nodocker:
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
 	
+run-frontend-nodocker:
+	cd apps/frontend && \
+	pnpm i && \
+	pnpm dev
