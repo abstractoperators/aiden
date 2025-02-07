@@ -1,23 +1,9 @@
-import os
-
-import psycopg2
-
 from . import logger
+from .db import pool
 
 
 def test_db_connection() -> bool:
-    password = os.getenv("POSTGRES_DB_PASSWORD")
-    host = os.getenv("POSTGRES_DB_HOST")
-
-    conn = psycopg2.connect(
-        database="postgres",
-        user="postgres",
-        password=password,
-        host=host,
-        port=5432,
-        connect_timeout=3,
-    )
-
+    conn = pool.getconn()
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT 1")
