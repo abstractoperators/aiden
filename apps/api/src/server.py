@@ -1,9 +1,7 @@
-import os
 from contextlib import asynccontextmanager
 
-import psycopg2
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 
 from . import logger
 from .tests import test_db_connection
