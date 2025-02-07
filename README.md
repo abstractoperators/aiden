@@ -38,5 +38,5 @@ git commit
 
 Locally, all secrets may be placed in their appropriate `.env` files. Reference and maintain the appropriate `.env.example`.
 
-It is important to maintain example `.env` files for each environment. They are the source of insensitive secrets for github actions. However, only insensitive secrets may be placed in these example files.
+It is important to maintain example `.env` files for each environment. They are the source of insensitive secrets for image builds. However, only insensitive secrets may be placed in these example files.
 Sensitive variables are stored in AWS Secrets Manager. Add sensitive variables, and update the appropriate task definition to load the secret into the container at runtime.
