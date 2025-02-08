@@ -1,6 +1,13 @@
 .env*
-!.env.eve.example
+!.env*.example
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+__pycache__
+*.py[cod]
+*$py.class__pycache__/
+
+.vscode
 
 
 # IDE

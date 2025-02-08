@@ -1,8 +1,9 @@
 services:
   eve-agent:
+    env_file: ".env.eve"
     build: 
-      context: ./
-      dockerfile: ./Dockerfile.eve
+      context: .
+      dockerfile: Dockerfile.eve
     container_name: eve-agent
     volumes:
       - eve-agent:/app/db.sqlite
@@ -11,6 +12,16 @@ services:
       - "8000:80"
       - "5173:5173"
     image: eve-agent:latest
+  api:
+    env_file: "apps/api/.env.api"
+    build:
+      context: apps/api
+      dockerfile: ./Dockerfile.api
+    container_name: api
+    platform: linux/amd64
+    image: api:latest
+    ports:
+      - "80:80"
 
 
 volumes:
