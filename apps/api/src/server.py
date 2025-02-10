@@ -7,7 +7,7 @@ from psycopg2.extensions import connection as Tconnection
 from . import logger
 from .db import get_unique_accounts, pool
 from .tests import test_db_connection
-from .wallet import validate_bearer_token
+from .utils import validate_bearer_token
 
 
 @asynccontextmanager
@@ -61,8 +61,10 @@ async def get_agent(agent_id: str):
 @router.get("/test-wallet")
 async def test_wallet(request: Request):
     token = request.headers.get("Authorization")
-    print(validate_bearer_token(token))
-    return {"message": "Wallet is working"}
+    if validate_bearer_token(token):
+        return {"message": "Authorized"}
+
+    return {"message": "Not authorized"}
 
 
 app.include_router(router, prefix="/api")
