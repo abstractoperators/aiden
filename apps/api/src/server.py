@@ -60,7 +60,6 @@ async def get_agent(agent_id: str):
 
 @router.get("/test-wallet")
 async def test_wallet(request: Request):
-    return "foo"
     token = request.headers.get("Authorization")
     print(validate_bearer_token(token))
     return {"message": "Wallet is working"}
