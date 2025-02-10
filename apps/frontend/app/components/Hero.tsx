@@ -1,16 +1,15 @@
-import { Button } from "@/components/ui/button"
+import NewsletterSignup from "./ui/newsletterSignup"
 
 export default function Hero() {
   return (
     <section className="container flex flex-col items-center justify-center space-y-4 py-24 text-center">
       <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
-        Streamline Your Workflow
+        Web3 &#129309; AI Agents
       </h1>
       <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
-        Boost productivity and simplify your business processes with our intuitive SaaS platform.
+        Why have one when you can have both???
       </p>
-      <Button size="lg">Start Your Free Trial</Button>
+      <NewsletterSignup size="lg">Join Our Newsletter</NewsletterSignup>
     </section>
   )
 }
-

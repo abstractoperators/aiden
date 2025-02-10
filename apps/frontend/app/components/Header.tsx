@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import NewsletterSignup from "@/components/ui/newsletterSignup";
 
 export default function Header() {
   return (
@@ -7,21 +7,20 @@ export default function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block">StreamLine</span>
+            <span className="hidden font-bold sm:inline-block">AIDEN</span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="#features">Features</Link>
-            <Link href="#testimonials">Testimonials</Link>
-            <Link href="#pricing">Pricing</Link>
+            <Link href="#about">About Us</Link>
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
-            <Button className="hidden md:inline-flex">Get Started</Button>
+            <NewsletterSignup className="hidden md:inline-flex">
+              Join Our Newsletter
+            </NewsletterSignup>
           </div>
         </div>
       </div>
     </header>
   )
 }
-
