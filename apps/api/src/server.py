@@ -7,7 +7,10 @@ from psycopg2.extensions import connection as Tconnection
 from . import logger
 from .db import get_unique_accounts, pool
 from .tests import test_db_connection
-from .utils import validate_bearer_token
+from .utils import decode_bearer_token, validate_bearer_token, verify_decoded_token
+
+#  TODO: DB
+wallets = {}  # {address: idk}
 
 
 @asynccontextmanager
@@ -65,6 +68,17 @@ async def test_wallet(request: Request):
         return {"message": "Authorized"}
 
     return {"message": "Not authorized"}
+
+
+@router.post("/wallet")
+async def register_wallet(request: Request):
+    token = request.headers.get("Authorization")
+    decoded = decode_bearer_token(token)
+    if verify_decoded_token(decoded):
+        wallet_address = decoded["verified_credentials"]["wallet_address"]
+        wallets[wallet_address] = "foobarbaz"
+    else:
+        return {"message": "Not authorized"}
 
 
 app.include_router(router, prefix="/api")
