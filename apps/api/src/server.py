@@ -1,14 +1,13 @@
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from psycopg2.extensions import connection as Tconnection
 
 from . import logger
 from .db import get_unique_accounts, pool
 from .tests import test_db_connection
-
-load_dotenv()
+from .wallet import validate_bearer_token
 
 
 @asynccontextmanager
@@ -22,6 +21,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# https://fastapi.tiangolo.com/tutorial/cors/#use-corsmiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
+
 router = APIRouter()
 
 
@@ -47,6 +56,14 @@ async def get_agent(agent_id: str):
         agent = cursor.fetchone()
     pool.putconn(conn)
     return agent
+
+
+@router.get("/test-wallet")
+async def test_wallet(request: Request):
+    return "foo"
+    token = request.headers.get("Authorization")
+    print(validate_bearer_token(token))
+    return {"message": "Wallet is working"}
 
 
 app.include_router(router, prefix="/api")
