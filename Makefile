@@ -22,6 +22,19 @@ run-eve-nodocker:
 	pnpm run build && \
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
+down-frontend:
+	docker compose -f docker-compose.yml down frontend
+build-frontend:
+	docker compose -f docker-compose.yml build frontend
+run-frontend: down-frontend build-frontend
+	docker compose -f docker-compose.yml up -d frontend
+run-frontend-nodocker:
+	cd apps/frontend && \
+	pnpm i && \
+	pnpm dev
+aws-ecr-push-frontend: aws-ecr-login
+	docker tag frontend:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:latest
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:latest
 down-api:
 	docker compose -f docker-compose.yml down api
 
