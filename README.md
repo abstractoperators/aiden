@@ -32,12 +32,11 @@ git add eliza
 git commit
 ```
 
-## Secrets
+## Devs
 
-Eve needs secrets to run.
-Locally, all secrets may be placed in `.env.eve`. Reference (and update) `.env.eve.example` to find required secrets.
+### Secrets
 
-When deployed, only insensitive secrets may be placed in `.env.eve`. 
-Add insensitive variables in the deployment pipeline `.github/workflows/deploy-eve-to-staging.yaml`
-Sensitive variables are stored in AWS Secrets Manager. Update eve's task definition to load these secrets from AWS Secrets Manager.
+Locally, all secrets may be placed in their appropriate `.env` files. Reference and maintain the appropriate `.env.example`.
 
+It is important to maintain example `.env` files for each environment. They are the source of insensitive secrets for image builds. However, only insensitive secrets may be placed in these example files.
+Sensitive variables are stored in AWS Secrets Manager. Add sensitive variables, and update the appropriate task definition to load the secret into the container at runtime.
