@@ -7,10 +7,7 @@ from psycopg2.extensions import connection as Tconnection
 from . import logger
 from .db import get_unique_accounts, pool
 from .tests import test_db_connection
-from .utils import decode_bearer_token, validate_bearer_token, verify_decoded_token
-
-#  TODO: DB
-wallets = {}  # {address: idk}
+from .utils import decode_bearer_token, validate_bearer_token
 
 
 @asynccontextmanager
@@ -29,7 +26,7 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        # "http://localhost:3000",
+        "http://localhost:3000",
         "http://www.aiden.space",
         "https://www.aiden.space",
     ],
@@ -65,22 +62,22 @@ async def get_agent(agent_id: str):
     return agent
 
 
-@router.get("/test-wallet")
+@router.get("/test-auth")
 async def test_wallet(request: Request):
     token = request.headers.get("Authorization")
     if validate_bearer_token(token):
         return {"message": "Authorized"}
-
     return {"message": "Not authorized"}
 
 
-@router.post("/wallet")
-async def register_wallet(request: Request):
+@router.post("/wallet/{wallet_address}")
+async def register_wallet(wallet_address: str, request: Request):
     token = request.headers.get("Authorization")
     decoded = decode_bearer_token(token)
-    if verify_decoded_token(decoded):
-        wallet_address = decoded["verified_credentials"]["wallet_address"]
-        wallets[wallet_address] = "foobarbaz"
+    addresses = [vc["address"] for vc in decoded["verified_credentials"]]
+    print(addresses)
+    if wallet_address in addresses:
+        return {"message": f"Authorized to register wallet as {wallet_address}"}
     else:
         return {"message": "Not authorized"}
 
