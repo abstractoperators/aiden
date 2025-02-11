@@ -1,6 +1,8 @@
 services:
   eve-agent:
-    env_file: ".env.eve"
+    env_file: 
+      - path: ".env.eve"
+        required: false
     build: 
       context: .
       dockerfile: Dockerfile.eve
@@ -24,7 +26,9 @@ services:
     image: frontend:latest
       
   api:
-    env_file: "apps/api/.env.api"
+    env_file:
+      - path: "apps/api/.env.api"
+        required: false  
     build:
       context: apps/api
       dockerfile: ./Dockerfile.api
