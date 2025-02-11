@@ -1,7 +1,6 @@
 services:
   eve-agent:
     env_file: ".env.eve"
-    env_file: ".env.eve"
     build: 
       context: .
       dockerfile: Dockerfile.eve
