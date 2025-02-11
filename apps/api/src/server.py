@@ -28,7 +28,11 @@ app = FastAPI(lifespan=lifespan)
 # https://fastapi.tiangolo.com/tutorial/cors/#use-corsmiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        # "http://localhost:3000",
+        "http://www.aiden.space",
+        "https://www.aiden.space",
+    ],
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
