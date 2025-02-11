@@ -1,6 +1,7 @@
 services:
   eve-agent:
     env_file: ".env.eve"
+    env_file: ".env.eve"
     build: 
       context: .
       dockerfile: Dockerfile.eve
@@ -12,6 +13,17 @@ services:
       - "8000:80"
       - "5173:5173"
     image: eve-agent:latest
+  
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: ./Dockerfile.frontend
+    container_name: frontend
+    platform: linux/amd64
+    ports:
+      - "8001:80"
+    image: frontend:latest
+      
   api:
     env_file: "apps/api/.env.api"
     build:
