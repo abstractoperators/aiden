@@ -33,7 +33,7 @@ async def ping():
 
 
 @router.get("/agents")
-async def get_agents():
+async def get_agents() -> list:
     conn: Tconnection = pool.getconn()
     with conn.cursor() as cursor:
         agents = get_unique_accounts(cursor)
@@ -42,7 +42,7 @@ async def get_agents():
 
 
 @router.get("/agents/{agent_id}")
-async def get_agent(agent_id: str):
+async def get_agent(agent_id: str) -> list:
     conn: Tconnection = pool.getconn()
     with conn.cursor() as cursor:
         cursor.execute("SELECT * FROM accounts WHERE id = %s", (agent_id,))
@@ -93,6 +93,21 @@ async def chat(agent_id: str, chat_request: ChatRequest) -> list[dict]:
         print(e)
 
     return resp.json()
+
+
+async def build_and_push_agent_runtime(character_json: dict):
+    """
+    Uses github actions to build and push an agent runtime.
+    """
+    # TODO https://pygithub.readthedocs.io/en/stable/introduction.html
+    pass
+
+
+async def upload_secrets_for_agent_runtime(foo):
+    """
+    Uploads secrets to AWS secrets manager for the agent runtime
+    """
+    pass
 
 
 app.include_router(router, prefix="/api")
