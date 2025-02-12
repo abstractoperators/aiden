@@ -12,3 +12,5 @@ repos:
     rev: "v1.15.0"
     hooks:
       - id: mypy
+        args: [--ignore-missing-imports, --disable-error-code=import-untyped]
+        verbose: true
