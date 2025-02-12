@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link"
-import NewsletterSignup from "@/components/ui/newsletterSignup";
+import { DynamicWidget, useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import UserMenu from "./userMenu";
 
 export default function Header() {
+  const { user } = useDynamicContext();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
@@ -10,15 +15,12 @@ export default function Header() {
             <span className="hidden font-bold sm:inline-block">AIDEN</span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="#about">About Us</Link>
+            <Link href="/#about">About Us</Link>
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <NewsletterSignup className="hidden md:inline-flex">
-              Join Our Newsletter
-            </NewsletterSignup>
-          </div>
+          <DynamicWidget />
+          { user && <UserMenu user={user} /> }
         </div>
       </div>
     </header>
