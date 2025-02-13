@@ -2,3 +2,6 @@
 	path = eliza
 	url = git@github.com:abstractoperators/eliza.git
 	update = checkout
+[submodule "apps/api/src/token/lib/forge-std"]
+	path = apps/api/src/token/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
