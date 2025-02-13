@@ -21,43 +21,47 @@ jobs:
 
             - name: Register new target group
               run: |
-                  aws elbv2 create-target-group \
+
+                  TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
                   --name "aiden-runtime-${{ inputs.service-no }}" \
                   --protocol HTTP \
                   --port 80 \
-                  --vpc-id TODO \
+                  --vpc-id vpc-028f84ceaa7ceffdf \
                   --target-type ip \
                   --health-check-path "/ping" \
                   --health-check-interval-seconds 30
+                  --query "TargetGroups[0].TargetGroupArn" \
+                  --output text)
+
+                  echo "TARGET_GROUP_ARN=$TARGET_GROUP_ARN" >> $GITHUB_ENV
 
             - name: Register new rules
               run: |
-                  # lul
                   PRIORITY=$((100 + ${{ inputs.service-no }})) 
 
                   # HTTP listener
                   aws elbv2 create-rule \
-                    --listener-arn TODO \
+                    --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11 \
                     --conditions "[{
                         \"field\": \"host-header\",
                         \"values\": [\"aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
                         }]" \
                     --actions "[{
                         \"type\": \"forward\",
-                        \"targetGroupArn\": TODO
+                        \"targetGroupArn\": ${{ env.TARGET_GROUP_ARN }}
                         }]" \
                     --priority $PRIORITY
 
                   # HTTPS listener
                   aws elbv2 create-rule \
-                    --listener-arn TODO \
+                    --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654 \
                     --conditions "[{
                       \"field\": \"host-header
                       \"values\": [\"aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
                       }]" \
                     --actions "[{
                         \"type\": \"forward\",
-                        \"targetGroupArn\": TODO
+                        \"targetGroupArn\": ${{ env.TARGET_GROUP_ARN }}
                         }]" \
                     --priority $PRIORITY
 
