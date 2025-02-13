@@ -1,4 +1,4 @@
-
+########## EVE ##########
 down-eve:
 	docker compose -f docker-compose.yml down eve-agent
 
@@ -22,6 +22,7 @@ run-eve-nodocker:
 	pnpm run build && \
 	pnpm run cleanstart:debug --characters="$(shell pwd)/eve.character.json"
 
+########### FRONTEND #########
 down-frontend:
 	docker compose -f docker-compose.yml down frontend
 build-frontend:
@@ -35,6 +36,10 @@ run-frontend-nodocker:
 aws-ecr-push-frontend: aws-ecr-login
 	docker tag frontend:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:latest
+
+
+
+############ API #############
 down-api:
 	docker compose -f docker-compose.yml down api
 
@@ -51,3 +56,17 @@ run-api-nodocker:
 aws-ecr-push-api: aws-ecr-login
 	docker tag api:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/api:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/api:latest
+
+######### RUNTIME #########
+down-runtime:
+	docker compose -f docker-compose.yml down agent-runtime
+
+build-runtime:
+	docker compose -f docker-compose.yml build agent-runtime
+
+run-runtime: down-runtime build-runtime
+	docker compose -f docker-compose.yml up -d agent-runtime
+
+run-runtime-nodocker:
+	cd apps/runtime && \
+	uv run uvicorn src.server:app --reload --host localhost --port 8002
