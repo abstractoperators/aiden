@@ -52,18 +52,18 @@ async def get_agent(agent_id: str) -> list:
 
 
 # TODO: Db
-# agent_runtime_restapis = {
+# agentid_to_runtime_host = {
 #     "3fb0b89b-047f-034c-8026-40bb1ee01035": "https://eve.aiden.space",
 # }
+# runtime_host_to_agentid = {
+#     "https://eve.aiden.space": "3fb0b89b-047f-034c-8026-40bb1ee01035",
+# }
 agentid_to_runtime_host = {
-    "3fb0b89b-047f-034c-8026-40bb1ee01035": "https://eve.aiden.space",
+    "3fb0b89b-047f-034c-8026-40bb1ee01035": "http://localhost:8000",
 }
 runtime_host_to_agentid = {
-    "https://eve.aiden.space": "3fb0b89b-047f-034c-8026-40bb1ee01035",
+    "http://localhost:8000": "3fb0b89b-047f-034c-8026-40bb1ee01035",
 }
-# agent_runtime_restapis = {
-#     "3fb0b89b-047f-034c-8026-40bb1ee01035": "http://localhost:8000",
-# }
 
 
 @router.get("/agents/{agent_id}/hosturl")
@@ -122,7 +122,7 @@ async def chat(agent_id: str, chat_request: ChatRequest) -> list[dict]:
 
 @router.post("/runtime/new")
 def new_runtime(character: Character):
-    # TODO: Start a new runtime
+    # TODO: Start a new aws service - probably via github actions to minimize permissions on this thing.
     pass
 
 
