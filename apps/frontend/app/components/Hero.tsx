@@ -1,4 +1,4 @@
-import NewsletterSignup from "./ui/newsletterSignup"
+import NewsletterSignup from "./newsletterSignup"
 
 export default function Hero() {
   return (
@@ -9,7 +9,7 @@ export default function Hero() {
       <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
         Why have one when you can have both???
       </p>
-      <NewsletterSignup size="lg">Join Our Newsletter</NewsletterSignup>
+      <NewsletterSignup size="lg">Sign Up</NewsletterSignup>
     </section>
   )
 }
