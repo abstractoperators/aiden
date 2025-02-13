@@ -5,6 +5,7 @@ import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
+import { ThemeProvider } from "@/components/themeProvider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -27,8 +28,15 @@ export default function RootLayout({
             walletConnectors: [EthereumWalletConnectors],
           }}
         >
-          {children}
-          <Toaster />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+          </ThemeProvider>
         </DynamicContextProvider>
       </body>
     </html>

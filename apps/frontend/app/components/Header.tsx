@@ -3,9 +3,10 @@
 import Link from "next/link"
 import { DynamicWidget, useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import UserMenu from "./userMenu";
+import { DarkModeToggle } from "./darkModeToggle";
 
 export default function Header() {
-  const { user } = useDynamicContext();
+  const { handleLogOut, primaryWallet, user } = useDynamicContext();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -20,7 +21,16 @@ export default function Header() {
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <DynamicWidget />
-          { user && <UserMenu user={user} /> }
+          {
+            user &&
+            primaryWallet &&
+            <UserMenu
+              logout={handleLogOut}
+              user={user}
+              wallet={primaryWallet}
+            />
+          }
+          <DarkModeToggle />
         </div>
       </div>
     </header>
