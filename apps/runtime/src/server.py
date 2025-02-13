@@ -1,12 +1,22 @@
 import os
 import signal
 import subprocess
+import time
+from contextlib import asynccontextmanager
 
 import fastapi
+import requests
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-app = fastapi.FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: fastapi.FastAPI):
+    yield
+    stop_character()
+
+
+app = fastapi.FastAPI(lifespan=lifespan)
 router = fastapi.APIRouter()
 app.add_middleware(
     CORSMiddleware,
@@ -22,7 +32,8 @@ agent_runtime_subprocess = None
 
 class Character(BaseModel):
     character_json: str = Field(
-        "{}", description="Escaped character json for an eliza agent"
+        "{}",
+        description="Escaped character json for an eliza agent",
     )
     envs: str = Field(
         "",
@@ -45,9 +56,34 @@ def start_character(character: Character):
         ],
         cwd="../../eliza",
         preexec_fn=os.setsid,  # start the process in a new session (from chatgpt)
+        stderr=subprocess.PIPE,
     )
+    # Assume that the server will always run on port 3000
+    # Wait until the server is up, and we can query localhost:3000/agents, or errors out
+    agent_id = None
+    for attempt in range(6):
+        time.sleep(10)
+        try:
+            response = requests.get("http://localhost:3000/agents", timeout=3)
+            if response.status_code == 200:
+                agents = response.json().get("agents")
+                agent_id = agents[0].get("id") if agents else None
+                break
+        except requests.RequestException:
+            pass
 
-    return {"status": "started"}
+    if agent_id:
+        return {"status": "started", "agent_id": agent_id}
+    return {
+        "status": "error",
+        "message": (
+            "Failed to start the agent runtime"
+            + "\n"
+            + str(agent_runtime_subprocess.stderr.read())
+            if agent_runtime_subprocess.stderr
+            else ""
+        ),
+    }
 
 
 @router.post("/character/stop")
@@ -62,6 +98,7 @@ def stop_character():
 
 
 def write_character(character: Character):
+    # TODO check if json and envs are valid
     with open("../../eliza/characters/character.json", "w") as f:
         f.write(character.character_json)
 

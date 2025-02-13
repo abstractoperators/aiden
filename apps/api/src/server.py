@@ -70,7 +70,8 @@ async def get_agent_restapis(agent_id: str) -> str | None:
 
 class Character(BaseModel):
     character_json: str = Field(
-        "{}", description="Escaped character json for an eliza agent"
+        "{}",
+        description="Escaped character json for an eliza agent",
     )
     envs: str = Field(
         "",
@@ -84,7 +85,11 @@ async def update_agent_runtime(agent_id: str, character: Character):
     update_endpoint = f"{agent_restapi_url}/api/character/start"
     stop_endpoint = f"{agent_restapi_url}/api/character/stop"
     requests.post(stop_endpoint)
-    requests.post(update_endpoint, json=character.model_dump())
+    resp = requests.post(update_endpoint, json=character.model_dump())
+    new_agent_id = resp.json().get("agent_id")
+
+    agent_runtime_restapis[new_agent_id] = agent_restapi_url
+    agent_runtime_restapis.pop(agent_id)
 
 
 class ChatRequest(BaseModel):
