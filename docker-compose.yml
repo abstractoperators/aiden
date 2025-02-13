@@ -34,6 +34,17 @@ services:
     ports:
       - "80:80"
 
+  agent-runtime:
+    build: 
+      # Needs to be in root folder to access the eliza directory
+      context: .
+      dockerfile: ./apps/runtime/Dockerfile.runtime
+    container_name: agent-runtime
+    platform: linux/amd64
+    image: agent-runtime:latest
+    ports:
+      - "8002:80"
+
 
 volumes:
   eve-agent:
