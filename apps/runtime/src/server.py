@@ -41,6 +41,19 @@ class Character(BaseModel):
     )
 
 
+@router.get("/character/is-running")
+def is_character_running():
+    global agent_runtime_subprocess
+    if (
+        agent_runtime_subprocess
+        and agent_runtime_subprocess.poll() is None
+        and requests.get("http://localhost:3000/", timeout=3).status_code == 200
+    ):
+        return {"status": "running"}
+    else:
+        return {"status": "not running"}
+
+
 @router.post("/character/start")
 def start_character(character: Character):
     global agent_runtime_subprocess
@@ -62,15 +75,11 @@ def start_character(character: Character):
     # Wait until the server is up, and we can query localhost:3000/agents, or errors out
     agent_id = None
     for attempt in range(6):
+        if is_character_running().get("status") == "running":
+            agents = requests.get("http://localhost:3000/agents").json().get("agents")
+            agent_id = agents[0].get("id") if agents else None
+            break
         time.sleep(10)
-        try:
-            response = requests.get("http://localhost:3000/agents", timeout=3)
-            if response.status_code == 200:
-                agents = response.json().get("agents")
-                agent_id = agents[0].get("id") if agents else None
-                break
-        except requests.RequestException:
-            pass
 
     if agent_id:
         return {"status": "started", "agent_id": agent_id}
