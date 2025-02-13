@@ -38,7 +38,6 @@ aws-ecr-push-frontend: aws-ecr-login
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:latest
 
 
-
 ############ API #############
 down-api:
 	docker compose -f docker-compose.yml down api
@@ -70,3 +69,7 @@ run-runtime: down-runtime build-runtime
 run-runtime-nodocker:
 	cd apps/runtime && \
 	uv run uvicorn src.server:app --reload --host localhost --port 8002
+
+aws-ecr-push-runtime: aws-ecr-login
+	docker tag agent-runtime:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest

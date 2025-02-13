@@ -1,20 +1,13 @@
 run-name: Build and push parameterized runtime to staging
 name: Build and push parameterized runtime to staging
+# Note: Only updates container on ECR. Starting a service is the responsibility of api server
+# Update task definition manually
 
 on:
     workflow_dispatch:
-        inputs:
-            character_json:
-                description: 'The contents of a json file containing the character data'
-                required: true
-                type: string
-            insensitive_env_vars_env:
-                description: 'The insensitive environment variables to set for the runtime'
-                required: true
-                type: string
 
 jobs:
-    build-and-push-mairtin:
+    build-and-push-runtime:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
@@ -22,12 +15,6 @@ jobs:
               with:
                 submodules: 'true'
             
-            - name: Write character json to a file
-              run: echo "${{ inputs.character_json }}" > character.json
-            
-            - name: Write insensitive env vars to a file
-              run: echo "${{ inputs.insensitive_env_vars_env }}" > .env
-
             - name: Configure aws credentials
               uses: aws-actions/configure-aws-credentials@v4
               with:
@@ -36,14 +23,11 @@ jobs:
 
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
-
-            - name: Create registry if DNE
-              run: |
                 
             - name: Build eve, tag it, and push it to ECR
               run: |
-                  make build-eve
-                  make aws-ecr-push-eve
+                  make build-runtime
+                  make aws-ecr-push-runtime
 
 # Required for GitHub's OIDC provider 
 # https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
