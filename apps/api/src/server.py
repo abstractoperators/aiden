@@ -4,7 +4,7 @@ import requests
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI
 from psycopg2.extensions import connection as Tconnection
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from . import logger
 from .db import get_unique_accounts, pool
@@ -63,9 +63,28 @@ agent_runtime_restapis = {
 @router.get("/agents/{agent_id}/restapis")
 async def get_agent_restapis(agent_id: str) -> str | None:
     """
-    Returns the url of the restapi of the agent
+    Returns the url of the restapi of an agent runtime
     """
     return agent_runtime_restapis.get(agent_id, None)
+
+
+class Character(BaseModel):
+    character_json: str = Field(
+        "{}", description="Escaped character json for an eliza agent"
+    )
+    envs: str = Field(
+        "",
+        description="A string representing an env file containing environment variables for the eliza agent",
+    )
+
+
+@router.post("/agents/{agent_id}/update")
+async def update_agent_runtime(agent_id: str, character: Character):
+    agent_restapi_url = await get_agent_restapis(agent_id)
+    update_endpoint = f"{agent_restapi_url}/api/character/start"
+    stop_endpoint = f"{agent_restapi_url}/api/character/stop"
+    requests.post(stop_endpoint)
+    requests.post(update_endpoint, json=character.model_dump())
 
 
 class ChatRequest(BaseModel):
