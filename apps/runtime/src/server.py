@@ -95,6 +95,17 @@ def start_character(character: Character):
     }
 
 
+@router.post("/character/read")
+def read_character():
+    with open("../../eliza/characters/character.json", "r") as f:
+        character_json = f.read()
+
+    with open("../../eliza/.env", "r") as f:
+        envs = f.read()
+
+    return {"character_json": character_json, "envs": envs}
+
+
 @router.post("/character/stop")
 def stop_character():
     global agent_runtime_subprocess
