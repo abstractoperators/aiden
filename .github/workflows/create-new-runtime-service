@@ -8,6 +8,7 @@ on:
                 description: "Service number"
                 required: true
                 default: "1"
+    pull_request:
 
 jobs:
     new-service:
@@ -65,7 +66,6 @@ jobs:
                         }]" \
                     --priority $PRIORITY
 
-            - name:
             - name: Create new service
               run: |
                   aws ecs create-service \
@@ -74,7 +74,7 @@ jobs:
                   --task-definition arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging \
                   --desired-count 1 \
                   --load-balancers "[{
-                    \"targetGroupArn\": TODO,
+                    \"targetGroupArn\": ${{ env.TARGET_GROUP_ARN }},
                     \"containerName\": \"runtime\",
                     \"containerPort\": 80\",
                     }]" \
