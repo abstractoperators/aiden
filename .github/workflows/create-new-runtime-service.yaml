@@ -68,7 +68,7 @@ jobs:
             - name: Configure aws credentials for ECS
               uses: aws-actions/configure-aws-credentials@v4
               with:
-                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS
                   aws-region: us-east-1
 
             - name: Create new service
