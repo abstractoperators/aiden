@@ -1,6 +1,6 @@
 run-name: Build and push parameterized runtime to staging
 name: Build and push parameterized runtime to staging
-# Note: Only updates container on ECR. Starting a service is the responsibility of api server
+# Note: Only updates container on ECR. Starting a new service can be done with create-new-runtime-service.yaml
 # Update task definition manually
 
 on:

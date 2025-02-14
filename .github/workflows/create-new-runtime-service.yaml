@@ -5,9 +5,8 @@ on:
     workflow_dispatch:
         inputs:
             service-no:
-                description: "Service number"
+                description: "Service number for the new runtime service"
                 required: true
-                default: "1"
 
 jobs:
     new-service:
