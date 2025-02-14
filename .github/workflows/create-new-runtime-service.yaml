@@ -16,7 +16,7 @@ jobs:
             - name: Configure aws credentials for ELB
               uses: aws-actions/configure-aws-credentials@v4
               with:
-                  role-to-assume: arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ELB
                   aws-region: us-east-1
 
             - name: Register new target group
