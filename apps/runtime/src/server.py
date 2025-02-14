@@ -41,22 +41,36 @@ class Character(BaseModel):
     )
 
 
-@router.get("/character/is-running")
-def is_character_running():
+class CharacterStatus(BaseModel):
+    running: bool
+    agent_id: str = ""
+    msg: str = ""
+
+
+@router.get("/character/status")
+def get_character_status() -> CharacterStatus:
+    """
+    Checks if a character is running
+    """
     global agent_runtime_subprocess
 
     if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
         try:
-            requests.get("http://localhost:3000/")
+            agents = requests.get("http://localhost:3000/agents".json().get("agents"))
+            agent_id = agents[0].get("id") if agents else None
         except requests.exceptions.ConnectionError:
-            return {"status": "not running"}
-        return {"status": "running"}
+            return CharacterStatus(running=False)
+        return CharacterStatus(running=True, agent_id=agent_id)
     else:
-        return {"status": "not running"}
+        return CharacterStatus(running=False)
 
 
 @router.post("/character/start")
-def start_character(character: Character):
+def start_character(character: Character) -> CharacterStatus:
+    """
+    Attempts to start a character and returns its status after a wait.
+    """
+    # TODO: Respond immediately, and add figure out another way for the caller to know when the character is ready
     global agent_runtime_subprocess
     subprocess.Popen(["pwd"], cwd="../..")
     write_character(character)
@@ -72,50 +86,48 @@ def start_character(character: Character):
         preexec_fn=os.setsid,  # start the process in a new session (from chatgpt)
         stderr=subprocess.PIPE,
     )
-    # Assume that the server will always run on port 3000
-    # Wait until the server is up, and we can query localhost:3000/agents, or errors out
-    agent_id = None
-    for attempt in range(6):
-        if is_character_running().get("status") == "running":
-            agents = (
-                requests.get(
-                    "http://localhost:3000/agents",
-                    timeout=3,
-                )
-                .json()
-                .get("agents")
-            )
-            agent_id = agents[0].get("id") if agents else None
-            break
+
+    # Poll server for a while until it starts
+    for _ in range(10):
+        character_status = get_character_status()
+        if character_status.get("status"):
+            return character_status
         time.sleep(10)
 
-    if agent_id:
-        return {"status": "started", "agent_id": agent_id}
-    return {
-        "status": "error",
-        "message": (
+    # Failed to start the character (in time)
+    return CharacterStatus(
+        running=False,
+        msg=(
             "Failed to start the agent runtime"
             + "\n"
-            + str(agent_runtime_subprocess.stderr.read())
-            if agent_runtime_subprocess.stderr
-            else ""
+            + str(
+                agent_runtime_subprocess.stderr.read()
+                if agent_runtime_subprocess.stderr is not None
+                else ""
+            )
         ),
-    }
+    )
 
 
 @router.post("/character/read")
-def read_character():
+def read_character() -> Character:
+    """
+    Returns the configuration for the current character
+    """
     with open("../../eliza/characters/character.json", "r") as f:
         character_json = f.read()
 
     with open("../../eliza/.env", "r") as f:
         envs = f.read()
 
-    return {"character_json": character_json, "envs": envs}
+    return Character(character_json=character_json, envs=envs)
 
 
 @router.post("/character/stop")
 def stop_character():
+    """
+    Attempts to stop the currently running character
+    """
     global agent_runtime_subprocess
     if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
         os.killpg(os.getpgid(agent_runtime_subprocess.pid), signal.SIGINT)
@@ -126,6 +138,9 @@ def stop_character():
 
 
 def write_character(character: Character):
+    """
+    Writes the character json and envs to the eliza directory so that the character can be started.
+    """
     # TODO check if json and envs are valid
     with open("../../eliza/characters/character.json", "w") as f:
         f.write(character.character_json)

@@ -89,6 +89,8 @@ async def update_agent_runtime(agent_id: str, character: Character):
     update_endpoint = f"{agent_restapi_url}/controller/character/start"
     stop_endpoint = f"{agent_restapi_url}/controller/character/stop"
     requests.post(stop_endpoint)
+
+    # Start the new agent
     resp = requests.post(update_endpoint, json=character.model_dump())
     new_agent_id = resp.json().get("agent_id")
 
