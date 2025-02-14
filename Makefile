@@ -54,8 +54,10 @@ aws-ecr-push-api: aws-ecr-login
 
 build-token-contract:
 	cd apps/api/src/bonding_token && \
+	npm install && \
 	npx hardhat compile
 
 test-token-contract:
 	cd apps/api/src/bonding_token && \
+	npm install && \
 	npx hardhat test

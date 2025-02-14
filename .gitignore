@@ -9,7 +9,13 @@ __pycache__
 
 .vscode
 
+# Artifacts from contract compilation
 node_modules/
+solidity-files-cache.json
+bonding_token/cache/
+bonding_token/artifacts/@openzeppelin/
+bonding_token/artifacts/build-info/
+bonding_token/artifacts/contracts/BondingCurveToken.sol/BondingCurveToken.dbg.json
 
 # IDE
 .vscode

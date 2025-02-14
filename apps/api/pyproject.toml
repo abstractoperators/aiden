@@ -10,7 +10,6 @@ dependencies = [
     "pydantic==2.10.6",
     "python-dotenv==1.0.1",
     "uvicorn==0.34.0",
-    "py-solc-x==1.1.0",
     "web3==6.15.1"
 ]
 
