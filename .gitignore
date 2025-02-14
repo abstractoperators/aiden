@@ -9,6 +9,7 @@ __pycache__
 
 .vscode
 
+node_modules/
 
 # IDE
 .vscode
