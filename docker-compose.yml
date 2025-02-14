@@ -24,7 +24,9 @@ services:
     image: frontend:latest
       
   api:
-    env_file: "apps/api/.env.api"
+    env_file: 
+      - path: "apps/api/.env.api"
+        required: false
     build:
       context: apps/api
       dockerfile: ./Dockerfile.api
@@ -44,7 +46,6 @@ services:
     image: agent-runtime:latest
     ports:
       - "8002:80"
-
 
 volumes:
   eve-agent:
