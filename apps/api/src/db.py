@@ -19,18 +19,27 @@ pool = psycopg2.pool.SimpleConnectionPool(
 
 
 def get_unique_accounts(cursor: Tcursor):
+    """
+    Returns a list of unique accounts ~ agents.
+    """
     cursor.execute("SELECT id, name from accounts")
     accounts = cursor.fetchall()
     return accounts
 
 
 def create_runtime(cursor: Tcursor, url: str, agent_id: str = ""):
+    """
+    Create a new runtime entry.
+    """
     cursor.execute(
         "INSERT INTO RUNTIMES (url, agent_id) VALUES (%s, %s)", (url, agent_id)
     )
 
 
 def get_runtimes(cursor: Tcursor):
+    """
+    Returns a list of all runtimes
+    """
     cursor.execute("SELECT * from RUNTIMES")
     runtimes = cursor.fetchall()
     return runtimes

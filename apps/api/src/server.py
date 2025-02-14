@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
         logger.info("DB Connection Successful")
     else:
         logger.error("DB Connection Failed")
-
+        raise Exception("DB Connection Failed")
     yield
 
 
@@ -39,6 +39,10 @@ async def ping():
 
 @router.get("/agents")
 async def get_agents() -> list:
+    """
+    Returns a list of agent ids and names.
+    """
+    # TODO: Reconcile agent_ids found in runtimes w/ those found in accounts.
     conn: Tconnection = pool.getconn()
     with conn.cursor() as cursor:
         agents = get_unique_accounts(cursor)
@@ -74,6 +78,12 @@ async def get_agent_runtime_host(agent_id: str) -> str:
 
 @router.post("/agents/{agent_id}/update")
 async def update_agent_runtime(agent_id: str, character: Character):
+    """
+    Updates the agent runtime with a new character
+    Potentially overwrites an existing running agent
+        Note: agent name is a unique identifier, so using a character with a different name will create a new agent.
+        This is because eliza generates agent_id based on the agent name.
+    """
     # TODO: Only let FE do this.
     agent_restapi_url = await get_agent_runtime_host(agent_id)
     update_endpoint = f"{agent_restapi_url}/controller/character/start"
@@ -105,6 +115,11 @@ async def chat(agent_id: str) -> str:
 
 @router.post("/runtime/new")
 def new_runtime():
+    """
+    Sends a request to a github action which starts a new ECS service for a runtime
+    Created AWS resources include:
+    target group, listener rule, and ecs service
+    """
     # TODO: Only let FE do this.
     conn = pool.getconn()
     with conn.cursor() as cursor:
