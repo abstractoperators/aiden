@@ -1,7 +1,7 @@
+import os
 from contextlib import asynccontextmanager
 
 import requests
-from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI
 from psycopg2.extensions import connection as Tconnection
 
@@ -9,8 +9,6 @@ from . import logger
 from .db import get_runtimes, get_unique_accounts, pool
 from .models import Character, ChatRequest
 from .tests import test_db_connection
-
-load_dotenv()
 
 
 @asynccontextmanager
@@ -76,6 +74,7 @@ async def get_agent_runtime_host(agent_id: str) -> str | None:
 
 @router.post("/agents/{agent_id}/update")
 async def update_agent_runtime(agent_id: str, character: Character):
+    # TODO: Only let FE do this.
     agent_restapi_url = await get_agent_runtime_host(agent_id)
     update_endpoint = f"{agent_restapi_url}/api/character/start"
     stop_endpoint = f"{agent_restapi_url}/api/character/stop"
@@ -91,57 +90,69 @@ async def update_agent_runtime(agent_id: str, character: Character):
     runtime_host_to_agentid[agent_restapi_url] = new_agent_id
 
 
-@router.post("/agents/{agent_id}/chat")
+@router.post("/agents/{agent_id}/chat_endpoint")
 async def chat(agent_id: str, chat_request: ChatRequest) -> list[dict]:
-    agent_restapi_url = await get_agent_runtime_host(agent_id)
-    if (
-        requests.get(f"{agent_restapi_url}/api/character/is-running")
-        .json()
-        .get("status")
-        != "running"
-    ):
-        return [{"text": "Agent is not running"}]
+    return [{}]
+    # agent_restapi_url = await get_agent_runtime_host(agent_id)
+    # if requests.get(f"{agent_restapi_url}/api/character/is-running").json().get("status") != "running":
+    #     return [{"text": "Agent is not running"}]
 
-    chat_endpoint = f"{agent_restapi_url}/{agent_id}/message"
+    # chat_endpoint = f"{agent_restapi_url}/{agent_id}/message"
 
+    # try:
+    #     resp = requests.post(
+    #         chat_endpoint,
+    #         json={
+    #             "roomId": chat_request.roomId,
+    #             "user": chat_request.user,
+    #             "text": chat_request.text,
+    #         },
+    #     )
+    #     resp.raise_for_status()
+    # except Exception as e:
+    #     print(e)
+
+    # return resp.json()
+
+
+@router.post("/runtime/new")
+def new_runtime():
+    # TODO: Only let FE do this.
+    conn = pool.getconn()
+    with conn.cursor() as cursor:
+        runtimes = get_runtimes(cursor)
+        print(runtimes)
+        runtime_count = len(runtimes)
+
+    print("Runtime count:", runtime_count)
+
+    GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
+    next_runtime_number = runtime_count + 1
     try:
         resp = requests.post(
-            chat_endpoint,
-            json={
-                "roomId": chat_request.roomId,
-                "user": chat_request.user,
-                "text": chat_request.text,
+            "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
+                "X-GitHub-Api-Version": "2022-11-28",
             },
+            json={
+                "ref": "michael/crud-agents",
+                "inputs": {
+                    "service-no": str(next_runtime_number),
+                },
+            },
+            timeout=3,
         )
         resp.raise_for_status()
     except Exception as e:
         print(e)
+        return {"error": "Failed to start the runtime"}
 
-    return resp.json()
+    # TODO: Verify completion of the github action, and that the runtime is up and running
 
-
-@router.post("/runtime/new")
-def new_runtime(character: Character):
-    # TODO: Start a new aws service - probably via github actions to minimize permissions on this thing.
-    # TODO: Figure out how to find the url for this bad boy - you could wait for the github action to complete
-    # AWS
-    conn = pool.getconn()
-    with conn.cursor() as cursor:
-        runtimes = get_runtimes(cursor)
-        runtime_count = len(runtimes)
-
-    next_runtime_number = runtime_count + 1
-    requests.post(
-        "https://api.github.com/repos/abstractoperator/aiden/actions/workflows/TODO/dispatches",
-        headers={
-            "Accept": "application/vnd.github.v3+json",
-            "Authorization": "Bearer TODO PAT",
-        },
-        json={"ref": "main", "inputs": {"runtime-no": next_runtime_number}},
-    )  # Wait for completion?
-
-    # Get agent_id from the response
-    pass
+    url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
+    return {"url": url}
 
 
 app.include_router(router, prefix="/api")

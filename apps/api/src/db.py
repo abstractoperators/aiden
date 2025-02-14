@@ -3,6 +3,8 @@ import os
 import psycopg2.pool
 from psycopg2.extensions import cursor as Tcursor
 
+# TODO: ORM
+
 db_password = os.getenv("POSTGRES_DB_PASSWORD")
 db_host = os.getenv("POSTGRES_DB_HOST")
 pool = psycopg2.pool.SimpleConnectionPool(
@@ -22,7 +24,7 @@ def get_unique_accounts(cursor: Tcursor):
     return accounts
 
 
-def add_runtime(cursor: Tcursor, url: str, agent_id: str):
+def create_runtime(cursor: Tcursor, url: str, agent_id: str = ""):
     cursor.execute(
         "INSERT INTO RUNTIMES (url, agent_id) VALUES (%s, %s)", (url, agent_id)
     )
