@@ -1,0 +1,15 @@
+Metadata-Version: 2.2
+Name: api
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi==0.115.8
+Requires-Dist: psycopg2==2.9.10
+Requires-Dist: pydantic==2.10.6
+Requires-Dist: python-dotenv==1.0.1
+Requires-Dist: uvicorn==0.34.0
+Requires-Dist: py-solc-x==1.1.0
+
+
+

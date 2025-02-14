@@ -51,3 +51,11 @@ run-api-nodocker:
 aws-ecr-push-api: aws-ecr-login
 	docker tag api:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/api:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/api:latest
+
+build-token-contract:
+	cd apps/api/src/bonding_token && \
+	npx hardhat compile
+
+test-token-contract:
+	cd apps/api/src/bonding_token && \
+	npx hardhat test
