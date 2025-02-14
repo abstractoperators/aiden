@@ -6,7 +6,7 @@ from fastapi import APIRouter, FastAPI
 from psycopg2.extensions import connection as Tconnection
 
 from . import logger
-from .db import get_unique_accounts, pool
+from .db import get_runtimes, get_unique_accounts, pool
 from .models import Character, ChatRequest
 from .tests import test_db_connection
 
@@ -123,6 +123,24 @@ async def chat(agent_id: str, chat_request: ChatRequest) -> list[dict]:
 @router.post("/runtime/new")
 def new_runtime(character: Character):
     # TODO: Start a new aws service - probably via github actions to minimize permissions on this thing.
+    # TODO: Figure out how to find the url for this bad boy - you could wait for the github action to complete
+    # AWS
+    conn = pool.getconn()
+    with conn.cursor() as cursor:
+        runtimes = get_runtimes(cursor)
+        runtime_count = len(runtimes)
+
+    next_runtime_number = runtime_count + 1
+    requests.post(
+        "https://api.github.com/repos/abstractoperator/aiden/actions/workflows/TODO/dispatches",
+        headers={
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": "Bearer TODO PAT",
+        },
+        json={"ref": "main", "inputs": {"runtime-no": next_runtime_number}},
+    )  # Wait for completion?
+
+    # Get agent_id from the response
     pass
 
 

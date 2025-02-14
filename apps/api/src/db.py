@@ -26,3 +26,9 @@ def add_runtime(cursor: Tcursor, url: str, agent_id: str):
     cursor.execute(
         "INSERT INTO RUNTIMES (url, agent_id) VALUES (%s, %s)", (url, agent_id)
     )
+
+
+def get_runtimes(cursor: Tcursor):
+    cursor.execute("SELECT * from RUNTIMES")
+    runtimes = cursor.fetchall()
+    return runtimes
