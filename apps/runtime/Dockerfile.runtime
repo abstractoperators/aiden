@@ -1,0 +1,65 @@
+# Use a specific Node.js version for better reproducibility
+FROM node:23.3.0-slim AS builder
+
+# Install pnpm globally and install necessary build tools
+RUN npm install -g pnpm@9.4.0 && \
+    apt-get update && \
+    apt-get install -y git python3 make g++ && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set Python 3 as the default python
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package.json and other configuration files
+COPY eliza/package.json eliza/pnpm-lock.yaml eliza/pnpm-workspace.yaml eliza/.npmrc eliza/turbo.json ./
+
+# Copy the rest of the application code
+COPY eliza/agent ./agent
+COPY eliza/client ./client
+COPY eliza/lerna.json ./
+COPY eliza/packages ./packages
+COPY eliza/scripts ./scripts
+RUN mkdir characters
+
+# Install dependencies and build the project
+RUN pnpm install \
+    && pnpm build-docker \
+    && pnpm prune --prod
+
+# Create a new stage for the final image
+FROM node:23.3.0-slim
+
+# Install runtime dependencies if needed
+RUN npm install -g pnpm@9.4.0 && \
+    apt-get update && \
+    apt-get install -y git python3 nginx && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* 
+
+WORKDIR /app
+
+# Copy built artifacts and production dependencies from the builder stage
+RUN mkdir eliza
+COPY --from=builder /app/package.json ./eliza
+COPY --from=builder /app/pnpm-workspace.yaml ./eliza
+COPY --from=builder /app/.npmrc ./eliza
+COPY --from=builder /app/turbo.json ./eliza
+COPY --from=builder /app/node_modules ./eliza/node_modules
+COPY --from=builder /app/agent ./eliza/agent
+COPY --from=builder /app/client ./eliza/client
+COPY --from=builder /app/lerna.json ./eliza
+COPY --from=builder /app/packages ./eliza/packages
+COPY --from=builder /app/scripts ./eliza/scripts
+COPY --from=builder /app/characters ./eliza/characters
+
+COPY apps/runtime/nginx.conf /etc/nginx/nginx.conf
+
+COPY /apps/runtime/ /app/apps/runtime/
+COPY --from=ghcr.io/astral-sh/uv:0.4.27 /uv /uvx /bin/
+WORKDIR /app/apps/runtime
+CMD ["./start.sh"]
+

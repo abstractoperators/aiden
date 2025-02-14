@@ -1,6 +1,8 @@
 services:
   eve-agent:
-    env_file: ".env.eve"
+    env_file: 
+      - path: ".env.eve"
+        required: false
     build: 
       context: .
       dockerfile: Dockerfile.eve
@@ -24,7 +26,9 @@ services:
     image: frontend:latest
       
   api:
-    env_file: "apps/api/.env.api"
+    env_file: 
+      - path: "apps/api/.env.api"
+        required: false
     build:
       context: apps/api
       dockerfile: ./Dockerfile.api
@@ -34,6 +38,16 @@ services:
     ports:
       - "80:80"
 
+  agent-runtime:
+    build: 
+      # Needs to be in root folder to access the eliza directory
+      context: .
+      dockerfile: ./apps/runtime/Dockerfile.runtime
+    container_name: agent-runtime
+    platform: linux/amd64
+    image: agent-runtime:latest
+    ports:
+      - "8002:80"
 
 volumes:
   eve-agent:
