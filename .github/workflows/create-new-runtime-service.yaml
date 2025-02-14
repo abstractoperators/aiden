@@ -8,6 +8,8 @@ on:
                 description: "Service number"
                 required: true
                 default: "1"
+    pull_request:
+        
 
 jobs:
     new-service:
