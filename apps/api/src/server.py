@@ -14,7 +14,7 @@ from .db import (
     pool,
     update_runtime,
 )
-from .models import Character, ChatRequest
+from .models import Character
 from .tests import test_db_connection
 
 
@@ -88,29 +88,19 @@ async def update_agent_runtime(agent_id: str, character: Character):
             update_runtime(cursor, new_agent_id, agent_id)
 
 
-@router.post("/agents/{agent_id}/chat_endpoint")
-async def chat(agent_id: str, chat_request: ChatRequest) -> list[dict]:
-    return [{}]
-    # agent_restapi_url = await get_agent_runtime_host(agent_id)
-    # if requests.get(f"{agent_restapi_url}/api/character/is-running").json().get("status") != "running":
-    #     return [{"text": "Agent is not running"}]
+@router.get("/agents/{agent_id}/chat_endpoint")
+async def chat(agent_id: str) -> str:
+    """
+    Returns the endpoint to chat with an agent
+    """
 
-    # chat_endpoint = f"{agent_restapi_url}/{agent_id}/message"
+    conn = pool.getconn()
+    with conn.cursor() as cursor:
+        agent_host = get_runtime_for_agent(cursor, agent_id)
 
-    # try:
-    #     resp = requests.post(
-    #         chat_endpoint,
-    #         json={
-    #             "roomId": chat_request.roomId,
-    #             "user": chat_request.user,
-    #             "text": chat_request.text,
-    #         },
-    #     )
-    #     resp.raise_for_status()
-    # except Exception as e:
-    #     print(e)
-
-    # return resp.json()
+    if not agent_host:
+        return ""
+    return f"{agent_host}/{agent_id}/message"
 
 
 @router.post("/runtime/new")
