@@ -134,4 +134,4 @@ def write_character(character: Character):
         f.write(character.envs)
 
 
-app.include_router(router, prefix="/api")
+app.include_router(router, prefix="/controller")
