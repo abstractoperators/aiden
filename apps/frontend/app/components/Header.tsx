@@ -4,6 +4,9 @@ import Link from "next/link"
 import { DynamicWidget, useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import UserMenu from "./userMenu";
 import { DarkModeToggle } from "./darkModeToggle";
+import lightGhost from "@/public/brand_assets/light-ghost.svg"
+import darkGhost from "@/public/brand_assets/dark-ghost.svg"
+import ThemeImage from "@/components/ui/theme-image";
 
 export default function Header() {
   const { handleLogOut, primaryWallet, user } = useDynamicContext();
@@ -13,7 +16,12 @@ export default function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block">AIDEN</span>
+            <ThemeImage
+              className="w-6"
+              lightSrc={lightGhost}
+              darkSrc={darkGhost}
+              alt="AIDEN"
+            />
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link href="/#about">About Us</Link>

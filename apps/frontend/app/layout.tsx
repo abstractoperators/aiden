@@ -1,6 +1,6 @@
 import "./globals.css"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Aldrich } from "next/font/google"
 import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
@@ -8,6 +8,7 @@ import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { ThemeProvider } from "@/components/themeProvider"
 
 const inter = Inter({ subsets: ["latin"] })
+const aldrich = Aldrich({ weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "AIDEN - Web3 Agents",
@@ -21,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} flex justify-center`}>
+      <body className={`${aldrich.className} flex justify-center`}>
         <DynamicContextProvider
           settings={{
             environmentId: "08b64418-c698-4620-8ea2-d0e1a31ff10f",
