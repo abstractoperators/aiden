@@ -6,7 +6,14 @@ from fastapi import APIRouter, FastAPI
 from psycopg2.extensions import connection as Tconnection
 
 from . import logger
-from .db import get_runtimes, get_unique_accounts, pool
+from .db import (
+    create_runtime,
+    get_runtime_for_agent,
+    get_runtimes,
+    get_unique_accounts,
+    pool,
+    update_runtime,
+)
 from .models import Character, ChatRequest
 from .tests import test_db_connection
 
@@ -41,7 +48,12 @@ async def get_agents() -> list:
 
 @router.get("/agents/{agent_id}")
 async def get_agent(agent_id: str) -> list:
+    """
+    Returns a list of agent ids
+    """
+    # TODO: Reconcile agent_ids found in runtimes w/ those found in chat logs.
     conn: Tconnection = pool.getconn()
+
     with conn.cursor() as cursor:
         cursor.execute("SELECT * FROM accounts WHERE id = %s", (agent_id,))
         agent = cursor.fetchone()
@@ -49,45 +61,31 @@ async def get_agent(agent_id: str) -> list:
     return agent
 
 
-# TODO: Db
-# agentid_to_runtime_host = {
-#     "3fb0b89b-047f-034c-8026-40bb1ee01035": "https://eve.aiden.space",
-# }
-# runtime_host_to_agentid = {
-#     "https://eve.aiden.space": "3fb0b89b-047f-034c-8026-40bb1ee01035",
-# }
-agentid_to_runtime_host = {
-    "3fb0b89b-047f-034c-8026-40bb1ee01035": "http://localhost:8000",
-}
-runtime_host_to_agentid = {
-    "http://localhost:8000": "3fb0b89b-047f-034c-8026-40bb1ee01035",
-}
-
-
 @router.get("/agents/{agent_id}/hosturl")
-async def get_agent_runtime_host(agent_id: str) -> str | None:
+async def get_agent_runtime_host(agent_id: str) -> str:
     """
     Returns the url of the restapi of an agent runtime
+    Empty string if not found
     """
-    return agentid_to_runtime_host.get(agent_id, None)
+    conn = pool.getconn()
+    with conn.cursor() as cursor:
+        return get_runtime_for_agent(cursor, agent_id)
 
 
 @router.post("/agents/{agent_id}/update")
 async def update_agent_runtime(agent_id: str, character: Character):
     # TODO: Only let FE do this.
     agent_restapi_url = await get_agent_runtime_host(agent_id)
-    update_endpoint = f"{agent_restapi_url}/api/character/start"
-    stop_endpoint = f"{agent_restapi_url}/api/character/stop"
+    update_endpoint = f"{agent_restapi_url}/controller/character/start"
+    stop_endpoint = f"{agent_restapi_url}/controller/character/stop"
     requests.post(stop_endpoint)
     resp = requests.post(update_endpoint, json=character.model_dump())
     new_agent_id = resp.json().get("agent_id")
 
-    # Remove old mappings
-    agentid_to_runtime_host.pop(agent_id)
-
-    # Add new mappings
-    agentid_to_runtime_host[new_agent_id] = agent_restapi_url
-    runtime_host_to_agentid[agent_restapi_url] = new_agent_id
+    if new_agent_id:
+        conn = pool.getconn()
+        with conn.cursor() as cursor:
+            update_runtime(cursor, new_agent_id, agent_id)
 
 
 @router.post("/agents/{agent_id}/chat_endpoint")
@@ -121,10 +119,7 @@ def new_runtime():
     conn = pool.getconn()
     with conn.cursor() as cursor:
         runtimes = get_runtimes(cursor)
-        print(runtimes)
         runtime_count = len(runtimes)
-
-    print("Runtime count:", runtime_count)
 
     GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
     next_runtime_number = runtime_count + 1
@@ -146,12 +141,17 @@ def new_runtime():
         )
         resp.raise_for_status()
     except Exception as e:
-        print(e)
+        logger.error(e)
         return {"error": "Failed to start the runtime"}
 
     # TODO: Verify completion of the github action, and that the runtime is up and running
 
     url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
+
+    conn = pool.getconn()
+    with conn.cursor() as cursor:
+        create_runtime(cursor, url)
+
     return {"url": url}
 
 
