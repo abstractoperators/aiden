@@ -3,10 +3,11 @@
 import Image, { ImageProps } from "next/image";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { StaticImport } from "next/dist/shared/lib/get-img-props";
 
 interface ThemeImageProps extends Omit<ImageProps, "src"> {
-  lightSrc: string;
-  darkSrc: string;
+  lightSrc: string | StaticImport;
+  darkSrc: string | StaticImport;
 }
 
 // look at the link below if we need to rewrite this to use the placeholder prop

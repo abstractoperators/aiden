@@ -1,7 +1,7 @@
 import ThemeImage from "./ui/theme-image"
 import NewsletterSignup from "./newsletterSignup"
-import BannerSky from "@/public/brand_assets/banner-sky.svg"
-import BannerOrbit from "@/public/brand_assets/banner-orbit.svg"
+import BannerSky from "@/public/brand_assets/banner-sky.png"
+import BannerOrbit from "@/public/brand_assets/banner-orbit.png"
 
 export default function Hero() {
   return (
