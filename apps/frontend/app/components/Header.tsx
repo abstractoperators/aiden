@@ -1,24 +1,44 @@
+"use client";
+
 import Link from "next/link"
-import NewsletterSignup from "@/components/ui/newsletterSignup";
+import { DynamicWidget, useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import UserMenu from "./userMenu";
+import { DarkModeToggle } from "./darkModeToggle";
+import lightGhost from "@/public/brand_assets/light-ghost.svg"
+import darkGhost from "@/public/brand_assets/dark-ghost.svg"
+import ThemeImage from "@/components/ui/theme-image";
 
 export default function Header() {
+  const { handleLogOut, primaryWallet, user } = useDynamicContext();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block">AIDEN</span>
+            <ThemeImage
+              className="w-6"
+              lightSrc={lightGhost}
+              darkSrc={darkGhost}
+              alt="AIDEN"
+            />
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="#about">About Us</Link>
+            <Link href="/#about">About Us</Link>
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <NewsletterSignup className="hidden md:inline-flex">
-              Join Our Newsletter
-            </NewsletterSignup>
-          </div>
+          <DynamicWidget />
+          {
+            user &&
+            primaryWallet &&
+            <UserMenu
+              logout={handleLogOut}
+              user={user}
+              wallet={primaryWallet}
+            />
+          }
+          <DarkModeToggle />
         </div>
       </div>
     </header>
