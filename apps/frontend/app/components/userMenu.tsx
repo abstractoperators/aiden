@@ -21,17 +21,19 @@ export default function UserMenu({
   user: UserProfile,
   wallet: Wallet,
 }) {
+  const displayName = user.username || user.email || wallet.address
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
         <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid">
-          <AvatarFallback>AB</AvatarFallback>
+          <AvatarFallback>{displayName.substring(0, 2)}</AvatarFallback>
         </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel>{user.username || user.email || wallet.address}</DropdownMenuLabel>
+        <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <Link href="/profile">
