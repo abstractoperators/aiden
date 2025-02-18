@@ -29,9 +29,9 @@ class MetadataMixin(SQLModel):
     )
 
 
-class UserBase(Base, table=True):
-    public_key: str = Field(unique=True, description="Ethereum public key")
-    public_key_sei: str = Field(unique=True, description="SEI public key")
+class UserBase(Base):
+    public_key: str = Field(unique=True, index=True, description="Ethereum public key")
+    public_key_sei: str = Field(unique=True, index=True, description="SEI public key")
     email: str | None = Field(description="Email of the user.", nullable=True)
     phone_number: str | None = Field(
         description="Phone number of the user.", nullable=True
@@ -39,14 +39,22 @@ class UserBase(Base, table=True):
 
 
 class AgentBase(Base):
-    runtime_url: str | None = Field(
-        description="URL of the agents runtime. Potentially none", nullable=True
-    )
-    agent_id: str = Field(description="Eliza's agent id", nullable=False)
+    agent_id: str = Field(index=True, description="Eliza's agent id", nullable=False)
     owner_id: UUID = Field(
         foreign_key="user.id",
         description="UUID of the User who owns the agent.",
         nullable=False,
+    )
+    runtime_id: UUID | None = Field(
+        foreign_key="runtime.id",
+        description="UUID of the runtime the agent is running on.",
+        nullable=True,
+    )
+
+
+class Runtime(Base):
+    url: str = Field(
+        description="URL of the agents runtime. Potentially none", nullable=False
     )
 
 
@@ -60,3 +68,8 @@ class User(UserBase, MetadataMixin, table=True):
 
 class Agent(AgentBase, MetadataMixin, table=True):
     owner: User = Relationship(back_populates="agents")
+    runtime: Runtime = Relationship(back_populates="agent")
+
+
+class Runtime(Runtime, MetadataMixin, table=True):
+    agent: "Agent" = Relationship(back_populates="runtime")

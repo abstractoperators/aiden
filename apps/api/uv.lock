@@ -52,7 +52,7 @@ requires-dist = [
     { name = "pydantic", specifier = "==2.10.6" },
     { name = "python-dotenv", specifier = "==1.0.1" },
     { name = "requests", specifier = "==2.32.3" },
-    { name = "sqlmodel", specifier = ">=0.0.22" },
+    { name = "sqlmodel", specifier = "==0.0.22" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 
