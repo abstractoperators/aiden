@@ -54,23 +54,16 @@ async def deploy_token(name, ticker):
 
     # Test buying a tiny amount (To remove in prod)
     buy_amount = w3.to_wei(0.01, "ether")  # Buying 0.01 SEI worth of tokens
-    receipt = await buy_token(buy_amount, contract_address, contract_abi)
+    receipt = await buy_token(buy_amount, contract_address)
     print(receipt)
-    
+
     return contract_address
 
-async def buy_token(buy_amount, contract_address, contract_abi=None):
+async def buy_token(buy_amount, contract_address):
     w3 = AsyncWeb3(AsyncHTTPProvider(SEI_RPC_URL))
     # Check connection
     if not await w3.is_connected():
         raise ConnectionError("Failed to connect to Sei Network")
-    
-    if contract_abi is None:
-        with open("./src/bonding_token/artifacts/contracts/BondingCurveToken.sol/BondingCurveToken.json", "r") as f:
-            contract_json = json.load(f)
-            contract_abi = contract_json["abi"]
-
-    deployed_contract = w3.eth.contract(address=contract_address, abi=contract_abi)
 
     # Initialize account
     PRIVATE_KEY = os.getenv("TOKEN_DEPLOYER_PRIVATE_KEY")

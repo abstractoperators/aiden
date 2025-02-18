@@ -18,7 +18,7 @@ contract BondingCurveToken is ERC20, ReentrancyGuard {
         require(msg.value > 0, "Send SEI to buy tokens");
 
         uint256 supply = totalSupply();
-        uint256 amountToMint = calculateTokensForETH(msg.value, supply);
+        uint256 amountToMint = calculateTokensForSEI(msg.value, supply);
         require(amountToMint > 0, "Not enough SEI to mint tokens");
 
         reserveBalance += msg.value;
@@ -29,7 +29,7 @@ contract BondingCurveToken is ERC20, ReentrancyGuard {
         require(balanceOf(msg.sender) >= amount, "Insufficient balance");
 
         uint256 supply = totalSupply();
-        uint256 ethToReturn = calculateETHForTokens(amount, supply);
+        uint256 ethToReturn = calculateSEIForTokens(amount, supply);
         require(ethToReturn <= reserveBalance, "Not enough SEI in reserve");
 
         _burn(msg.sender, amount);
@@ -41,12 +41,12 @@ contract BondingCurveToken is ERC20, ReentrancyGuard {
         return totalSupply() * k;
     }
 
-    function calculateTokensForETH(uint256 ethAmount, uint256 supply) public pure returns (uint256) {
+    function calculateTokensForSEI(uint256 ethAmount, uint256 supply) public pure returns (uint256) {
         uint256 newSupply = supply + sqrt((2 * ethAmount) / k + supply * supply);
         return newSupply - supply;
     }
 
-    function calculateETHForTokens(uint256 tokenAmount, uint256 supply) public pure returns (uint256) {
+    function calculateSEIForTokens(uint256 tokenAmount, uint256 supply) public pure returns (uint256) {
         uint256 newSupply = supply - tokenAmount;
         require(newSupply >= 0, "Invalid token amount");
 
