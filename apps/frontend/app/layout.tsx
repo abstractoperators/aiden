@@ -7,7 +7,7 @@ import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { ThemeProvider } from "@/components/themeProvider"
 
-const inter = Inter({ subsets: ["latin"] })
+// const inter = Inter({ subsets: ["latin"] })
 const aldrich = Aldrich({ weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
