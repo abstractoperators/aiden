@@ -1,5 +1,5 @@
 from . import logger
-from .db import pool
+from .db.db import pool
 
 
 def test_db_connection() -> bool:
