@@ -56,7 +56,7 @@ def get_character_status() -> CharacterStatus:
 
     if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
         try:
-            agents = requests.get("http://localhost:3000/agents".json().get("agents"))
+            agents = requests.get("http://localhost:3000/agents").json().get("agents")
             agent_id = agents[0].get("id") if agents else None
         except requests.exceptions.ConnectionError:
             return CharacterStatus(running=False)
@@ -72,14 +72,13 @@ def start_character(character: Character) -> CharacterStatus:
     """
     # TODO: Respond immediately, and add figure out another way for the caller to know when the character is ready
     global agent_runtime_subprocess
-    subprocess.Popen(["pwd"], cwd="../..")
     write_character(character)
 
     # Start eliza server
     agent_runtime_subprocess = subprocess.Popen(
         [
             "pnpm",
-            "start",
+            "cleanstart:debug",
             "--characters=app/characters/character.json",
         ],
         cwd="../../eliza",
@@ -89,8 +88,8 @@ def start_character(character: Character) -> CharacterStatus:
 
     # Poll server for a while until it starts
     for _ in range(10):
-        character_status = get_character_status()
-        if character_status.get("status"):
+        character_status: CharacterStatus = get_character_status()
+        if character_status.running:
             return character_status
         time.sleep(10)
 

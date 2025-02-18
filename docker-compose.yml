@@ -44,6 +44,8 @@ services:
       context: .
       dockerfile: ./apps/runtime/Dockerfile.runtime
     container_name: agent-runtime
+    volumes:
+      - agent-runtime:/app/eliza/agent/data
     platform: linux/amd64
     image: agent-runtime:latest
     ports:
@@ -51,3 +53,4 @@ services:
 
 volumes:
   eve-agent:
+  agent-runtime:
