@@ -2,11 +2,23 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": [
+        "current"
+      ],
+      "cpu": [
+        "x64",
+        "arm64"
+      ]
+    }
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "PORT=80 next start",
-    "lint": "next lint"
+    "start": "PORT=3000 next start",
+    "lint": "next lint",
+    "clean": "rm -rf node_modules pnpm-lock.yaml"
   },
   "dependencies": {
     "@dynamic-labs/ethereum": "^4.6.0",
