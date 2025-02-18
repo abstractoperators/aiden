@@ -56,7 +56,7 @@ async def get_agent(agent_id: str) -> list:
     """
     Returns a list of agent ids
     """
-    # TODO: Reconcile agent_ids found in runtimes w/ those found in chat logs.
+    # TODO: Delete accounts table, and use runtimes table instead.
     conn: Tconnection = pool.getconn()
 
     with conn.cursor() as cursor:
@@ -117,6 +117,8 @@ async def update_agent_runtime(agent_id: str, character: Character):
         conn = pool.getconn()
         with conn.cursor() as cursor:
             update_runtime(cursor, new_agent_id, agent_id)
+
+    return {"url": agent_restapi_url, "agent_id": new_agent_id}
 
 
 @router.get("/agents/{agent_id}/chat_endpoint")
