@@ -26,7 +26,7 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 RUN apt-get update && \
-    apt-get install libcap2-bin && \
+    apt-get install libcap2-bin -y && \
     setcap cap_net_bind_service=+ep `readlink -f \`which node\``
 
 COPY --from=builder /app/public ./public
