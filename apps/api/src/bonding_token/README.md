@@ -8,7 +8,7 @@ The Bonding Token Contract describes an ERC20 token that sells tokens to buyers,
 
 In it's current iteration, the bonding curve is a simple linear relationship y = kx where y is the price, x is the total minted supply and k is an arbitrary coefficient.
 The price of n tokens is the area under the graph from `x1` to `x1+n`
-![alt text](linar_bonding_curve.png)
+![alt text](linear_bonding_curve.png)
 
 ## Compiling the contract
 
