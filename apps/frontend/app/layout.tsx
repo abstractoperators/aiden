@@ -1,6 +1,6 @@
 import "./globals.css"
 import type { Metadata } from "next"
-import { Inter, Aldrich } from "next/font/google"
+import { Aldrich } from "next/font/google"
 import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
