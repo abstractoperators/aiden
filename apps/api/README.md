@@ -9,7 +9,7 @@ Run `make run-api` to start a docker container hosting the API. (Make sure that 
 The API should be exposed on port 80 by default. Once the API is successfully deployed, you can go to localhost/docs to see a list of endpoints.
 
 ## Token Deployment
-Send a `POST` request to `http://localhost/deploy-token` to deploy a new instance of the Bonding Curve Token.
+Send a `POST` request to `http://localhost/api/deploy-token` to deploy a new instance of the Bonding Curve Token.
 The endpoint takes in a request body with a name and ticker.
 ```json
 {
