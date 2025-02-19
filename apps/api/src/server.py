@@ -1,18 +1,20 @@
 import os
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
 import requests
 from fastapi import APIRouter, FastAPI, Request
-from psycopg2.extensions import connection as Tconnection
 
 from . import logger
-from .db.crud import (
-    create_runtime,
-    get_runtime_for_agent,
-    get_runtimes,
-    get_unique_accounts,
-    pool,
-    update_runtime,
+from .db import Session, crud
+from .db.models import (  # User,; UserBase,
+    Agent,
+    AgentBase,
+    AgentUpdate,
+    Runtime,
+    RuntimeBase,
+    Token,
+    TokenBase,
 )
 from .models import Character
 from .tests import test_db_connection
@@ -20,7 +22,7 @@ from .token_deployment import deploy_token
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # noqa
     if test_db_connection():
         logger.info("DB Connection Successful")
     else:
@@ -39,114 +41,62 @@ async def ping():
 
 
 @router.get("/agents")
-async def get_agents() -> list:
+async def get_agents() -> Sequence[Agent]:
     """
     Returns a list of agent ids and names.
     """
-    # TODO: Reconcile agent_ids found in runtimes w/ those found in accounts.
-    conn: Tconnection = pool.getconn()
-    with conn.cursor() as cursor:
-        agents = get_unique_accounts(cursor)
-    pool.putconn(conn)
-    return agents
+    with Session() as session:
+        agents = crud.get_agents(session)
+    return list(agents)
 
 
 @router.get("/agents/{agent_id}")
-async def get_agent(agent_id: str) -> list:
+async def get_agent(agent_id: str) -> Agent | None:
     """
     Returns a list of agent ids
     """
-    # TODO: Delete accounts table, and use runtimes table instead.
-    conn: Tconnection = pool.getconn()
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
 
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT * FROM accounts WHERE id = %s", (agent_id,))
-        agent = cursor.fetchone()
-    pool.putconn(conn)
     return agent
 
 
 @router.post("/deploy-token")
-async def deploy_token_api(request: Request):
+async def deploy_token_api(request: Request) -> Token:
     # Validate inputs
-    print(request)
     body = await request.json()
     name = body.get("name")
     ticker = body.get("ticker")
 
     # Deploy the token
-    result = await deploy_token(name, ticker)
+    contract_address = await deploy_token(name, ticker)
 
-    # Return the result
-    return {
-        "message": f"Token {name} ({ticker}) deployed successfully!",
-        "result": result,
-    }
+    with Session() as session:
+        token = crud.create_token(
+            session,
+            TokenBase(
+                name=name,
+                ticker=ticker,
+                evm_contract_address=contract_address,
+            ),
+        )
 
-
-@router.get("/agents/{agent_id}/hosturl")
-async def get_agent_runtime_host(agent_id: str) -> str:
-    """
-    Returns the url of the restapi of an agent runtime
-    Empty string if not found
-    """
-    conn = pool.getconn()
-    with conn.cursor() as cursor:
-        return get_runtime_for_agent(cursor, agent_id)
+    return token
 
 
-@router.post("/agents/{agent_id}/update")
-async def update_agent_runtime(agent_id: str, character: Character):
-    """
-    Updates the agent runtime with a new character
-    Potentially overwrites an existing running agent
-        Note: agent name is a unique identifier, so using a character with a different name will create a new agent.
-        This is because eliza generates agent_id based on the agent name.
-    """
-    # TODO: Only let FE do this.
-    agent_restapi_url = await get_agent_runtime_host(agent_id)
-    update_endpoint = f"{agent_restapi_url}/controller/character/start"
-    stop_endpoint = f"{agent_restapi_url}/controller/character/stop"
-    requests.post(stop_endpoint)
+@router.post("/agent/create")
+def create_agent(agent: AgentBase) -> Agent:
+    with Session() as session:
+        agent = crud.create_agent(session, agent)
 
-    # Start the new agent
-    resp = requests.post(update_endpoint, json=character.model_dump())
-    new_agent_id = resp.json().get("agent_id")
-
-    if new_agent_id:
-        conn = pool.getconn()
-        with conn.cursor() as cursor:
-            update_runtime(cursor, new_agent_id, agent_id)
-
-    return {"url": agent_restapi_url, "agent_id": new_agent_id}
+    return agent
 
 
-@router.get("/agents/{agent_id}/chat_endpoint")
-async def chat(agent_id: str) -> str:
-    """
-    Returns the endpoint to chat with an agent
-    """
-
-    conn = pool.getconn()
-    with conn.cursor() as cursor:
-        agent_host = get_runtime_for_agent(cursor, agent_id)
-
-    if not agent_host:
-        return ""
-    return f"{agent_host}/{agent_id}/message"
-
-
-@router.post("/runtime/new")
-def new_runtime():
-    """
-    Sends a request to a github action which starts a new ECS service for a runtime
-    Created AWS resources include:
-    target group, listener rule, and ecs service
-    """
-    # TODO: Only let FE do this.
-    conn = pool.getconn()
-    with conn.cursor() as cursor:
-        runtimes = get_runtimes(cursor)
+@router.post("/runtime/create")
+def create_runtime() -> Runtime | None:
+    # Figure out how many runtimes there already are.j
+    with Session() as session:
+        runtimes = crud.get_runtimes(session)
         runtime_count = len(runtimes)
 
     GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
@@ -170,17 +120,85 @@ def new_runtime():
         resp.raise_for_status()
     except Exception as e:
         logger.error(e)
-        return {"error": "Failed to start the runtime"}
+        return None
 
     # TODO: Verify completion of the github action, and that the runtime is up and running
 
     url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
 
-    conn = pool.getconn()
-    with conn.cursor() as cursor:
-        create_runtime(cursor, url)
+    # Store the runtime in the database
+    with Session() as session:
+        runtime = crud.create_runtime(session, RuntimeBase(url=url))
 
-    return {"url": url}
+    return runtime
+
+
+@router.post("/agent/{agent_id}/start/{runtime_id}")
+def start_agent(
+    agent_id: str, runtime_id: str
+) -> tuple[Agent, Runtime] | tuple[None, None]:
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            return (None, None)
+    with Session() as session:
+        old_agent: Agent | None = crud.get_agent(session, agent_id)
+        if not old_agent:
+            return (None, None)
+    stop_endpoint = f"{runtime.url}/controller/character/stop"
+    start_endpoint = f"{runtime.url}/controller/character/start"
+
+    # Stop whatever agent is already running
+    requests.post(stop_endpoint)
+    # Update old agent to remove its runtime
+
+    with Session() as session:
+        crud.update_agent(session, old_agent, AgentUpdate(runtime_id=None))
+
+    # Start the new agent
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            return (None, None)
+    requests.post(
+        start_endpoint,
+        Character(
+            character_json=agent.character_json,
+            envs=agent.env_file,
+        ),
+    )
+    # Update the agent to have a runtime now
+    with Session() as session:
+        crud.update_agent(session, agent, AgentUpdate(runtime_id=runtime_id))
+
+    return (agent, runtime)
+
+
+@router.get("/agents/agent_id/runtime")
+async def get_runtime_for_agent(agent_id: str) -> Runtime | None:
+    """
+    Returns the url of the restapi of an agent runtime
+    Empty string if not found
+    """
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if agent is None:
+            return None
+        runtime = agent.runtime
+    return runtime
+
+
+@router.get("/agents/{agent_id}/chat_endpoint")
+async def chat(agent_id: str) -> str | None:
+    """
+    Returns the endpoint to chat with an agent
+    """
+    with Session() as session:
+        agent = crud.get_agent(session, agent_id)
+        if agent is None:
+            return None
+        runtime = agent.runtime
+    return f"{runtime.url}/{agent_id}/message"
 
 
 app.include_router(router, prefix="/api")
