@@ -14,6 +14,7 @@ export type Agent = {
   name: string
   ticker: string
   marketCapitalization: number
+  holderCount: number
 }
 
 export const columns: ColumnDef<Agent>[] = [
@@ -56,6 +57,12 @@ export const columns: ColumnDef<Agent>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Market Capitalization" />
     ),
+  },
+  {
+    accessorKey: "holderCount",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Holders" />
+    )
   },
   {
     id: "star",
