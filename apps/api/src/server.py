@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
 import requests
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, FastAPI, HTTPException
 
 from . import logger
 from .db import Session, crud
@@ -19,7 +19,7 @@ from .db.models import (
     UserBase,
     UserUpdate,
 )
-from .models import Character
+from .models import Character, TokenCreationRequest
 from .setup import test_db_connection
 from .token_deployment import deploy_token
 
@@ -65,11 +65,10 @@ async def get_agent(agent_id: str) -> Agent | None:
 
 
 @router.post("/deploy-token")
-async def deploy_token_api(request: Request) -> Token:
+async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     # Validate inputs
-    body = await request.json()
-    name = body.get("name")
-    ticker = body.get("ticker")
+    name = token_request.name
+    ticker = token_request.ticker
 
     # Deploy the token
     contract_address = await deploy_token(name, ticker)
@@ -137,32 +136,26 @@ def create_runtime() -> Runtime | None:
 
 
 @router.post("/agent/{agent_id}/start/{runtime_id}")
-def start_agent(
-    agent_id: str, runtime_id: str
-) -> tuple[Agent, Runtime] | tuple[None, None]:
+def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
-            return (None, None)
+            return HTTPException(status_code=404, detail="Runtime not found")
+
     with Session() as session:
         old_agent: Agent | None = crud.get_agent(session, agent_id)
-        if not old_agent:
-            return (None, None)
-    stop_endpoint = f"{runtime.url}/controller/character/stop"
+        if old_agent:
+            stop_endpoint = f"{runtime.url}/controller/character/stop"
+            requests.post(stop_endpoint)
+            crud.update_agent(session, old_agent, AgentUpdate(runtime_id=None))
+
     start_endpoint = f"{runtime.url}/controller/character/start"
-
-    # Stop whatever agent is already running
-    requests.post(stop_endpoint)
-    # Update old agent to remove its runtime
-
-    with Session() as session:
-        crud.update_agent(session, old_agent, AgentUpdate(runtime_id=None))
 
     # Start the new agent
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
-            return (None, None)
+            return HTTPException(status_code=404, detail="Agent not found")
     requests.post(
         start_endpoint,
         Character(

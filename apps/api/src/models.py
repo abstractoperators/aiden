@@ -12,6 +12,11 @@ class Character(BaseModel):
     )
 
 
+class TokenCreationRequest(BaseModel):
+    name: str = Field(description="Name of the token")
+    ticker: str = Field(description="Ticker of the token")
+
+
 class ChatRequest(BaseModel):
     roomId: str | None = None
     user: str | None = None
