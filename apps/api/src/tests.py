@@ -1,14 +1,16 @@
+import os
+
+from sqlmodel import text
+
 from . import logger
-from .db.db import pool
+from .db import Session
 
 
 def test_db_connection() -> bool:
-    conn = pool.getconn()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT 1")
-    except Exception as e:
-        logger.error(e)
-        return False
-
-    return True
+    with Session() as session:
+        try:
+            session.exec(text("SELECT 1"))
+            return True
+        except Exception as e:
+            logger.error(e)
+            return False
