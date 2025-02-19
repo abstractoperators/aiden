@@ -1,13 +1,13 @@
 import "./globals.css"
 import type { Metadata } from "next"
-import { Inter, Aldrich } from "next/font/google"
+import { Aldrich } from "next/font/google"
 import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { ThemeProvider } from "@/components/themeProvider"
 
-const inter = Inter({ subsets: ["latin"] })
+// const inter = Inter({ subsets: ["latin"] })
 const aldrich = Aldrich({ weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {

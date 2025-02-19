@@ -1,10 +1,47 @@
-FROM node:23-bookworm
+# syntax=docker.io/docker/dockerfile:1
+FROM node:23-bookworm AS base
 
+FROM base AS deps
 WORKDIR /app/
 
+COPY package.json pnpm-lock.yaml* ./
+RUN npm install --global corepack@latest && \
+    corepack enable pnpm && \
+    pnpm i --frozen-lockfile;
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npm i
-RUN npm run build
+RUN corepack enable pnpm && pnpm build
 
-CMD ["npm", "run", "start"]
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+RUN apt-get update && \
+    apt-get install libcap2-bin -y && \
+    setcap cap_net_bind_service=+ep `readlink -f \`which node\``
+
+COPY --from=builder /app/public ./public
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
+
+EXPOSE 80
+ENV PORT="80"
+ENV HOSTNAME="0.0.0.0"
+CMD ["node", "server.js"]
