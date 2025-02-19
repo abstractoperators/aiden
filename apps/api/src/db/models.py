@@ -5,8 +5,6 @@ from uuid import UUID, uuid4
 from sqlalchemy import DateTime, func
 from sqlmodel import Field, Relationship, SQLModel
 
-from .setup import Session
-
 
 # region Models
 class Base(SQLModel):
@@ -86,6 +84,11 @@ class AgentUpdate(Base):
         description="UUID of the runtime the agent uses.",
         nullable=True,
     )
+    token_id: UUID | None = Field(
+        foreign_key="token.id",
+        description="UUID of the token the agent uses.",
+        nullable=True,
+    )
     character_json: str | None = Field(
         description="Eliza character json", nullable=True
     )
@@ -122,8 +125,3 @@ class Token(TokenBase, MetadataMixin, table=True):
 
 class Runtime(RuntimeBase, MetadataMixin, table=True):
     agent: "Agent" = Relationship(back_populates="runtime")
-
-
-with Session() as session:
-    SQLModel.metadata.drop_all(session.get_bind())
-    SQLModel.metadata.create_all(session.get_bind())
