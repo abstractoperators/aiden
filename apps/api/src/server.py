@@ -20,7 +20,7 @@ from .db.models import (
     UserUpdate,
 )
 from .models import Character
-from .tests import test_db_connection
+from .setup import test_db_connection
 from .token_deployment import deploy_token
 
 

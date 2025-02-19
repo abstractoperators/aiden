@@ -1,5 +1,3 @@
-import os
-
 from sqlmodel import text
 
 from . import logger
