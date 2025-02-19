@@ -38,7 +38,7 @@ export default function UserMenu({
         <DropdownMenuGroup>
           <Link href="/user">
             <DropdownMenuItem>
-              User Home
+              Control Center
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>

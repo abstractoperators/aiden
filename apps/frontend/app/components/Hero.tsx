@@ -10,8 +10,8 @@ export default function Hero() {
         className="w-screen -mt-px"
         lightSrc={BannerSky}
         darkSrc={BannerOrbit}
-        priority={true}
         alt="Web3 &#129309; AI Agents"
+        priority={true}
       />
       {/* TODO: replace with proper modal integrating dynamic */}
       <NewsletterSignup size="lg">Reserve Your Username</NewsletterSignup>

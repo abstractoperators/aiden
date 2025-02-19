@@ -1,7 +1,4 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { UserSidebar } from "@/components/userSidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function User() {
   return (
