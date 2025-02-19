@@ -3,6 +3,9 @@ services:
     env_file: 
       - path: ".env.eve"
         required: false
+    env_file: 
+      - path: ".env.eve"
+        required: false
     build: 
       context: .
       dockerfile: Dockerfile.eve
