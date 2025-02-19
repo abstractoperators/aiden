@@ -198,7 +198,7 @@ async def chat(agent_id: str) -> str | None:
         if agent is None:
             return None
         runtime = agent.runtime
-    return f"{runtime.url}/{agent_id}/message"
+    return f"{runtime.url}/controller/character/chat"
 
 
 app.include_router(router, prefix="/api")
