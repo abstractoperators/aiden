@@ -5,8 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "alembic>=1.14.1",
-    "eth-typing>=5.1.0",
+    "eth-typing==5.1.0",
     "fastapi==0.115.8",
     "psycopg2==2.9.10",
     "pydantic==2.10.6",
@@ -14,14 +13,14 @@ dependencies = [
     "requests==2.32.3",
     "sqlmodel==0.0.22",
     "uvicorn==0.34.0",
-    "web3>=7.8.0",
+    "web3==7.8.0",
 ]
 
 [dependency-groups]
 dev = [
     "mypy==1.15.0",
     "pre-commit==4.1.0",
-    "pytest>=8.3.4",
+    "pytest==8.3.4",
     "ruff==0.9.5",
-    "types-requests>=2.32.0.20241016",
+    "types-requests==2.32.0.20241016",
 ]
