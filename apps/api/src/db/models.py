@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Any, Mapping, cast
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, func
+from pydantic import Json
+from sqlalchemy import JSON, DateTime, func
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -71,9 +72,9 @@ class AgentBase(Base):
         nullable=True,
     )
     # 🤮
-    character_json: str = Field(
-        description="Eliza character json", nullable=False
-    )  # store this as json?
+    character_json: Json = Field(
+        description="Eliza character json", nullable=False, sa_type=JSON
+    )
     env_file: str = Field(description=".env for the agent", nullable=False)
 
 
@@ -94,8 +95,8 @@ class AgentUpdate(Base):
         description="UUID of the token the agent uses.",
         nullable=True,
     )
-    character_json: str | None = Field(
-        description="Eliza character json", nullable=True
+    character_json: Json | None = Field(
+        description="Eliza character json", nullable=True, sa_type=JSON
     )
     env_file: str | None = Field(description=".env for the agent", nullable=True)
 
