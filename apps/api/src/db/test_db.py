@@ -10,13 +10,6 @@ from .models import Agent, AgentBase, Token, TokenBase, User, UserBase
 
 
 @pytest.fixture
-def setenv(monkeypatch):
-    monkeypatch.setenv("ENV", "test")
-    monkeypatch.setenv("POSTGRES_DB_PASSWORD", "")
-    monkeypatch.setenv("POSTGRES_DB_HOST", "")
-
-
-@pytest.fixture
 def session():
     with Session() as session:
         yield session
@@ -53,6 +46,7 @@ def token_factory(session):
     finally:
         for token in tokens:
             session.delete(token)
+        session.commit()
 
 
 @pytest.fixture
@@ -72,7 +66,7 @@ def agent_factory(session):
         session.commit()
 
 
-def test_tables_exist(setenv):
+def test_tables_exist():
     with Session() as session:
         tables = inspect(session.get_bind()).get_table_names()
         assert "user" in tables
@@ -81,7 +75,21 @@ def test_tables_exist(setenv):
         assert "token" in tables
 
 
-def test_create_user(setenv, user_factory):
+def test_create_token(token_factory):
+    token = token_factory(
+        ticker="AIDEN",
+        name="The greatest token ever",
+        evm_contract_address="0x123",
+    )
+
+    assert token is not None
+    assert token.id is not None
+    assert token.ticker == "AIDEN"
+    assert token.name == "The greatest token ever"
+    assert token.evm_contract_address == "0x123"
+
+
+def test_create_user(user_factory):
     user = user_factory(
         public_key="0x123",
         public_key_sei="0x456",
@@ -99,7 +107,7 @@ def test_create_user(setenv, user_factory):
     assert user.username == "larrypage"
 
 
-def test_create_agent(setenv, user_factory, token_factory, agent_factory):
+def test_create_agent(user_factory, token_factory, agent_factory):
     runtime_id = None
     character_json = "{}"
     env_file = ""
