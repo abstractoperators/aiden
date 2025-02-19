@@ -41,6 +41,16 @@ class UserBase(Base):
     username: str | None = Field(description="Username of the user.", nullable=True)
 
 
+class UserUpdate(Base):
+    public_key: str | None = Field(description="Ethereum public key", nullable=True)
+    public_key_sei: str | None = Field(description="SEI public key", nullable=True)
+    email: str | None = Field(description="Email of the user.", nullable=True)
+    phone_number: str | None = Field(
+        description="Phone number of the user.", nullable=True
+    )
+    username: str | None = Field(description="Username of the user.", nullable=True)
+
+
 class AgentBase(Base):
     # agent_id: str = Field(description="Eliza's agent id", nullable=False)
     owner_id: UUID = Field(

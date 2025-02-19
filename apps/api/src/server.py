@@ -7,7 +7,7 @@ from fastapi import APIRouter, FastAPI, Request
 
 from . import logger
 from .db import Session, crud
-from .db.models import (  # User,; UserBase,
+from .db.models import (
     Agent,
     AgentBase,
     AgentUpdate,
@@ -15,6 +15,9 @@ from .db.models import (  # User,; UserBase,
     RuntimeBase,
     Token,
     TokenBase,
+    User,
+    UserBase,
+    UserUpdate,
 )
 from .models import Character
 from .tests import test_db_connection
@@ -199,6 +202,21 @@ async def chat(agent_id: str) -> str | None:
             return None
         runtime = agent.runtime
     return f"{runtime.url}/controller/character/chat"
+
+
+@router.post("/user/create")
+async def create_user(user: UserBase) -> User:
+    with Session() as session:
+        user = crud.create_user(session, user)
+
+    return user
+
+
+@router.post("/user/{user_id}/update")
+async def update_user(user_id: str, user: UserUpdate) -> User | None:
+    with Session() as session:
+        user = crud.update_user(session, user_id, user)
+    return user
 
 
 app.include_router(router, prefix="/api")

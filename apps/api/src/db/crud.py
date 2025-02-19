@@ -14,6 +14,7 @@ from .models import (
     TokenBase,
     User,
     UserBase,
+    UserUpdate,
 )
 
 M = TypeVar("M", bound=Base)
@@ -39,6 +40,10 @@ def update_generic(session: Session, model: M, model_update: N) -> M:
 
 def create_user(session: Session, user: UserBase) -> User:
     return create_generic(session, User(**user.model_dump()))
+
+
+def update_user(session: Session, user: User, user_update: UserUpdate) -> User:
+    return update_generic(session, user, user_update)
 
 
 def create_runtime(session: Session, runtime: RuntimeBase) -> Runtime:
