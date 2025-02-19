@@ -19,18 +19,18 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import Link from "next/link"
 
 // This is sample data.
 const data = {
-  versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
   navMain: [
     {
-      title: "Getting Started",
+      title: "Settings",
       url: "#",
       items: [
         {
-          title: "Installation",
-          url: "#",
+          title: "Profile",
+          url: "/user/profile",
         },
         {
           title: "Project Structure",
@@ -196,7 +196,7 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
                     {item.items.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild isActive={item.isActive}>
-                          <a href={item.url}>{item.title}</a>
+                          <Link href={item.url}>{item.title}</Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}

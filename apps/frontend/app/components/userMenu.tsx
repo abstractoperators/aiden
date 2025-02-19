@@ -36,9 +36,9 @@ export default function UserMenu({
         <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href="/profile">
+          <Link href="/user">
             <DropdownMenuItem>
-                Profile
+              User Home
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
