@@ -83,3 +83,9 @@ run-runtime-nodocker:
 aws-ecr-push-runtime: aws-ecr-login
 	docker tag agent-runtime:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
+
+
+
+mypy:
+	cd apps/api && uv run mypy src || true
+	cd apps/runtime && uv run mypy src || true

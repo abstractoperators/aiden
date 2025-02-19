@@ -19,3 +19,9 @@ The endpoint takes in a request body with a name and ticker.
 ```
 
 To set up this endpoint, ensure that the environment variables `SEI_RPC_URL` and `TOKEN_DEPLOYER_PRIVATE_KEY` are set.
+
+
+## Development
+
+There is a ruff precommit for basic linting.
+Use mypy for type checking. Either run `uv run mypy src` or `make mypy` in the root directory.
