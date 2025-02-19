@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.14.1",
     "fastapi==0.115.8",
     "psycopg2==2.9.10",
     "pydantic==2.10.6",
@@ -12,7 +13,7 @@ dependencies = [
     "requests==2.32.3",
     "sqlmodel==0.0.22",
     "uvicorn==0.34.0",
-    "web3==6.15.1"
+    "web3==6.15.1",
 ]
 
 [dependency-groups]
