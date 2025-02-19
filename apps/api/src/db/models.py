@@ -32,11 +32,15 @@ class MetadataMixin(SQLModel):
 class UserBase(Base):
     public_key: str = Field(unique=True, description="Ethereum public key")
     public_key_sei: str = Field(unique=True, description="SEI public key")
-    email: str | None = Field(description="Email of the user.", nullable=True)
-    phone_number: str | None = Field(
-        description="Phone number of the user.", nullable=True
+    email: str | None = Field(
+        description="Email of the user.", nullable=True, default=None
     )
-    username: str | None = Field(description="Username of the user.", nullable=True)
+    phone_number: str | None = Field(
+        description="Phone number of the user.", nullable=True, default=None
+    )
+    username: str | None = Field(
+        description="Username of the user.", nullable=True, default=None
+    )
 
 
 class UserUpdate(Base):
