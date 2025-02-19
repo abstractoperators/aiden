@@ -54,7 +54,7 @@ class UserUpdate(Base):
 
 
 class AgentBase(Base):
-    # agent_id: str = Field(description="Eliza's agent id", nullable=False)
+    eliza_agent_id: str = Field(description="Eliza's agent id", nullable=False)
     owner_id: UUID = Field(
         foreign_key="user.id",
         description="UUID of the User who owns the agent.",
@@ -78,6 +78,7 @@ class AgentBase(Base):
 
 
 class AgentUpdate(Base):
+    eliza_agent_id: str | None = Field(description="Eliza's agent id", nullable=True)
     owner_id: UUID = Field(
         foreign_key="user.id",
         description="UUID of the User who owns the agent.",

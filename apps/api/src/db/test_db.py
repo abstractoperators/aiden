@@ -121,6 +121,7 @@ def test_create_agent(user_factory, token_factory, agent_factory):
         evm_contract_address="0x123",
     )
     agent: Agent = agent_factory(
+        eliza_agent_id="123",
         owner_id=owner.id,
         runtime_id=runtime_id,
         token_id=token.id,

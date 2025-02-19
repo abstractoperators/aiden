@@ -177,7 +177,7 @@ def start_agent(
     return (agent, runtime)
 
 
-@router.get("/agents/agent_id/runtime")
+@router.get("/agents/{agent_id}/runtime")
 async def get_runtime_for_agent(agent_id: str) -> Runtime | None:
     """
     Returns the url of the restapi of an agent runtime
@@ -201,7 +201,7 @@ async def chat(agent_id: str) -> str | None:
         if agent is None:
             return None
         runtime = agent.runtime
-    return f"{runtime.url}/controller/character/chat"
+    return f"{runtime.url}/{agent_id}/chat"
 
 
 @router.post("/user/create")
