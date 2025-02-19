@@ -1,5 +1,5 @@
-run-name: Deploy Aiden to Staging
-name: Deploy Aiden to Staging
+run-name: Deploy Aiden API to Staging
+name: Deploy Aiden API to Staging
 
 on:
     workflow_dispatch:
