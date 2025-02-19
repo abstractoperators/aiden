@@ -38,25 +38,54 @@ class UserBase(Base):
     phone_number: str | None = Field(
         description="Phone number of the user.", nullable=True
     )
+    username: str | None = Field(description="Username of the user.", nullable=True)
 
 
 class AgentBase(Base):
-    runtime_url: str | None = Field(
-        description="URL of the agents runtime. Potentially none", nullable=True
-    )
-    agent_id: str = Field(description="Eliza's agent id", nullable=False)
+    # agent_id: str = Field(description="Eliza's agent id", nullable=False)
     owner_id: UUID = Field(
         foreign_key="user.id",
         description="UUID of the User who owns the agent.",
         nullable=False,
     )
+    runtime_id: UUID | None = Field(
+        foreign_key="runtime.id",
+        description="UUID of the runtime the agent uses.",
+        nullable=True,
+    )
+    token_id: UUID | None = Field(
+        foreign_key="token.id",
+        description="UUID of the token the agent uses.",
+        nullable=True,
+    )
+    # 🤮
+    character_json: str = Field(
+        description="Eliza character json", nullable=False
+    )  # store this as json?
+    env_file: str = Field(description=".env for the agent", nullable=False)
+
+
+class AgentUpdate(Base):
+    owner_id: UUID = Field(
+        foreign_key="user.id",
+        description="UUID of the User who owns the agent.",
+        nullable=False,
+    )
+    runtime_id: UUID | None = Field(
+        foreign_key="runtime.id",
+        description="UUID of the runtime the agent uses.",
+        nullable=True,
+    )
+    character_json: str | None = Field(
+        description="Eliza character json", nullable=True
+    )
+    env_file: str | None = Field(description=".env for the agent", nullable=True)
 
 
 class TokenBase(Base):
     ticker: str = Field(description="Token ticker")
     name: str = Field(description="Token name")
     evm_contract_address: str = Field(description="EVM contract address")
-    evm_contract_abi: str = Field(description="EVM contract ABI")
 
 
 class RuntimeBase(Base):
