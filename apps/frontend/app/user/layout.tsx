@@ -1,8 +1,8 @@
-import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedRoute from "@/components/protected-route";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { UserSidebar } from "@/components/userSidebar";
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+import { UserSidebar } from "@/components/user-sidebar";
+import Footer from "@/components/footer";
+import Header from "@/components/header";
 
 export default function UserLayout({
   children,
@@ -12,14 +12,14 @@ export default function UserLayout({
   return (
     <ProtectedRoute>
       <SidebarProvider>
-        <div className="flex item-center justify-center flex-col min-h-screen">
+        <div className="flex flex-col w-full min-h-screen">
           <Header />
-          <main>
-            <UserSidebar />
-            <SidebarInset>
-              {children}
-            </SidebarInset>
-          </main>
+          <div className="flex-1 flex">
+            <UserSidebar className="top-14" collapsible="none" />
+              <main>
+                {children}
+              </main>
+          </div>
           <Footer />
         </div>
       </SidebarProvider>

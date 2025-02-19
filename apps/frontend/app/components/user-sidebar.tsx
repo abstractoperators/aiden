@@ -16,18 +16,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
-  SidebarTrigger,
+  // SidebarRail,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 
-// This is sample data.
 const data = {
   navMain: [
     {
       title: "Agents",
-      url: "/user/agents",
-      items: [],
+      url: "#",
+      items: [
+        {
+          title: "Created Agents",
+          url: "/user/agents/create",
+        }
+      ],
     },
     {
       title: "Settings",
@@ -36,6 +39,7 @@ const data = {
         {
           title: "Profile",
           url: "/user/profile",
+          isActive: true,
         },
       ],
     },
@@ -49,11 +53,9 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
     >
       <SidebarHeader>
         Control Center
-        <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent className="gap-0">
         {/* We create a collapsible SidebarGroup for each parent. */}
-        {/* TODO: if else on parent's items length */}
         {data.navMain.map((parent) => (
           <Collapsible
             key={parent.title}
@@ -76,7 +78,8 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
                   <SidebarMenu>
                     {parent.items.map((item) => (
                       <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild isActive={item.isActive}>
+                        {/* TODO: implement dynamic isActive */}
+                        <SidebarMenuButton asChild>
                           <Link href={item.url}>{item.title}</Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -88,7 +91,6 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
           </Collapsible>
         ))}
       </SidebarContent>
-      <SidebarRail />
     </Sidebar>
   )
 }

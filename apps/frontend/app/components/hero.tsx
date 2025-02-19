@@ -1,5 +1,5 @@
 import ThemeImage from "./ui/theme-image"
-import NewsletterSignup from "./newsletterSignup"
+import NewsletterSignup from "./newsletter-signup"
 import BannerSky from "@/public/brand_assets/banner-sky.png"
 import BannerOrbit from "@/public/brand_assets/banner-orbit.png"
 
