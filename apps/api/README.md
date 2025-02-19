@@ -24,4 +24,5 @@ To set up this endpoint, ensure that the environment variables `SEI_RPC_URL` and
 ## Development
 
 There is a ruff precommit for basic linting.
-Use mypy for type checking. Either run `uv run mypy src` or `make mypy` in the root directory.
+Use mypy for type checking. Either run `uv run mypy src` in this directory or `make mypy` in the root directory.
+Similarly, use pytest for testing. Run `uv run pytest src` in this directory or `make pytest` in the root directory.
