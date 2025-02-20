@@ -65,7 +65,7 @@ async def get_agent(agent_id: str) -> Agent:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
     if not agent:
-        return HTTPException(status_code=404, detail="Agent not found")
+        raise HTTPException(status_code=404, detail="Agent not found")
 
     return agent
 
@@ -116,7 +116,7 @@ async def get_token(token_id: str) -> Token:
         token: Token | None = crud.get_token(session, token_id)
 
     if not token:
-        return HTTPException(status_code=404, detail="Token not found")
+        raise HTTPException(status_code=404, detail="Token not found")
 
     return token
 
@@ -166,7 +166,7 @@ def create_runtime() -> Runtime:
         resp.raise_for_status()
     except Exception as e:
         logger.error(e)
-        return HTTPException(status_code=500, detail="Failed to start the runtime")
+        raise HTTPException(status_code=500, detail="Failed to start the runtime")
 
     # TODO: Verify completion of the github action, and that the runtime is up and running
 
@@ -200,12 +200,12 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
-            return HTTPException(status_code=404, detail="Agent not found")
+            raise HTTPException(status_code=404, detail="Agent not found")
 
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
-            return HTTPException(status_code=404, detail="Runtime not found")
+            raise HTTPException(status_code=404, detail="Runtime not found")
 
         old_agent = runtime.agent
         if old_agent:
@@ -255,7 +255,7 @@ async def update_user(user_id: str, user: UserUpdate) -> User:
     with Session() as session:
         user = crud.update_user(session, user_id, user)
     if not User:
-        return HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
@@ -268,6 +268,6 @@ async def delete_user(user_id: str) -> None:
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
-            return HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="User not found")
         crud.delete_user(session, user)
     return None
