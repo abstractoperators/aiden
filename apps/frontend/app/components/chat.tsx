@@ -52,7 +52,7 @@ export default function Chat() {
 
       const response = await fetch(
         // TODO: properly routed chats ofc
-        "https://aiden-runtime-1.aiden.space/3fb0b89b-047f-034c-8026-40bb1ee01035/message",
+        "https://aiden-runtime-2.aiden.space/4f507cc0-f2c4-0155-87e7-11b624010eb7/message",
         {
           method: "POST",
           headers: {
