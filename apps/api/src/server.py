@@ -217,3 +217,17 @@ async def update_user(user_id: str, user: UserUpdate) -> User:
     if not User:
         return HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: str) -> None:
+    """
+    Deletes a user from the database.
+    Returns a 404 if the user is not found.
+    """
+    with Session() as session:
+        user = crud.get_user(session, user_id)
+        if not user:
+            return HTTPException(status_code=404, detail="User not found")
+        crud.delete_user(session, user)
+    return None

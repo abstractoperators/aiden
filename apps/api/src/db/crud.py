@@ -38,12 +38,22 @@ def update_generic(session: Session, model: M, model_update: N) -> M:
     return model
 
 
+def delete_generic(session: Session, model: M) -> None:
+    session.delete(model)
+    session.commit()
+    return None
+
+
 def create_user(session: Session, user: UserBase) -> User:
     return create_generic(session, User(**user.model_dump()))
 
 
 def update_user(session: Session, user: User, user_update: UserUpdate) -> User:
     return update_generic(session, user, user_update)
+
+
+def delete_user(session: Session, user: User) -> User:
+    return delete_generic(session, user)
 
 
 def create_runtime(session: Session, runtime: RuntimeBase) -> Runtime:
