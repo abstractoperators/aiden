@@ -3,6 +3,8 @@
 
 import pytest
 from sqlalchemy import inspect
+from sqlmodel import SQLModel, create_engine
+from sqlmodel.pool import StaticPool
 
 from . import Session
 from .crud import create_agent, create_token, create_user
@@ -11,8 +13,17 @@ from .models import Agent, AgentBase, Token, TokenBase, User, UserBase
 
 @pytest.fixture
 def session():
+    engine = create_engine(
+        "sqlite:///test.db",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
     with Session() as session:
         yield session
+
+    SQLModel.metadata.drop_all(engine)
 
 
 @pytest.fixture
