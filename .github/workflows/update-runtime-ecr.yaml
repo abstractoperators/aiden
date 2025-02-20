@@ -1,0 +1,36 @@
+run-name: Build and push parameterized runtime to staging
+name: Build and push parameterized runtime to staging
+# Note: Only updates container on ECR. Starting a new service can be done with create-new-runtime-service.yaml
+# Update task definition manually
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build-and-push-runtime:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4.2.2
+              with:
+                submodules: 'true'
+            
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+                  aws-region: us-east-1
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+                
+            - name: Build eve, tag it, and push it to ECR
+              run: |
+                  make build-runtime
+                  make aws-ecr-push-runtime
+
+# Required for GitHub's OIDC provider 
+# https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
+permissions:
+    id-token: write
+    contents: read
