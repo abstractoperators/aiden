@@ -40,7 +40,7 @@ app = FastAPI(lifespan=lifespan)
 @app.get("/ping")
 async def ping():
     """
-    what more do you want it's a ping
+    pong
     """
     return "pong"
 
