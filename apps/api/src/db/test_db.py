@@ -109,7 +109,7 @@ def test_create_user(user_factory):
 
 def test_create_agent(user_factory, token_factory, agent_factory):
     runtime_id = None
-    character_json = "{}"
+    character_json = {}
     env_file = ""
     owner: User = user_factory(
         public_key="0x123",

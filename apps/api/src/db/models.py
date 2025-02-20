@@ -72,7 +72,7 @@ class AgentBase(Base):
         nullable=True,
     )
     # 🤮
-    character_json: Json = Field(
+    character_json: dict = Field(
         description="Eliza character json", nullable=False, sa_type=JSON
     )
     env_file: str = Field(description=".env for the agent", nullable=False)
