@@ -12,7 +12,7 @@ export default function Header() {
   const { handleLogOut, primaryWallet, user } = useDynamicContext();
 
   return (
-    <header className="sticky flex items-center justify-center top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky flex items-center justify-center top-0 z-50 w-full bg-background/10 backdrop-blur supports-[backdrop-filter]:bg-background/10">
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
