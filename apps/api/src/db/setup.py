@@ -7,8 +7,6 @@ from sqlmodel import SQLModel, create_engine
 
 from .models import *  # noqa
 
-# TODO: ORM
-
 db_password = os.getenv("POSTGRES_DB_PASSWORD")
 db_host = os.getenv("POSTGRES_DB_HOST")
 is_test = os.getenv("ENV") == "test"
@@ -44,6 +42,7 @@ def Session():
         session.close()
 
 
+# TODO: Don't do this in prod
 with Session() as session:
     SQLModel.metadata.drop_all(session.get_bind())
     SQLModel.metadata.create_all(session.get_bind())

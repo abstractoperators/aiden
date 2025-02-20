@@ -70,7 +70,7 @@ async def get_agent(agent_id: str) -> Agent:
     return agent
 
 
-@app.post("/deploy-token")
+@app.post("/tokens")
 async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     """
     Deploys a token smart contract to the block chain.
@@ -92,6 +92,31 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
                 evm_contract_address=contract_address,
             ),
         )
+
+    return token
+
+
+@app.get("/tokens")
+async def get_tokens() -> Sequence[Token]:
+    """
+    Returns a list of tokens.
+    """
+    with Session() as session:
+        tokens = crud.get_tokens(session)
+    return tokens
+
+
+@app.get("/tokens/{token_id}")
+async def get_token(token_id: str) -> Token:
+    """
+    Returns a token by id.
+    Raises a 404 if the token is not found.
+    """
+    with Session() as session:
+        token: Token | None = crud.get_token(session, token_id)
+
+    if not token:
+        return HTTPException(status_code=404, detail="Token not found")
 
     return token
 

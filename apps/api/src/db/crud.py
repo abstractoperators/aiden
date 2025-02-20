@@ -21,6 +21,7 @@ M = TypeVar("M", bound=Base)
 N = TypeVar("N", bound=Base)
 
 
+# region Generics
 def create_generic(session: Session, model: M) -> M:
     session.add(model)
     session.commit()
@@ -44,6 +45,10 @@ def delete_generic(session: Session, model: M) -> None:
     return None
 
 
+# endregion Generics
+
+
+# region Users
 def create_user(session: Session, user: UserBase) -> User:
     return create_generic(session, User(**user.model_dump()))
 
@@ -56,16 +61,15 @@ def delete_user(session: Session, user: User) -> User:
     return delete_generic(session, user)
 
 
-def create_runtime(session: Session, runtime: RuntimeBase) -> Runtime:
-    return create_generic(session, Runtime(**runtime.model_dump()))
+def get_user(session: Session, public_key: str) -> User | None:
+    stmt = select(User).where(User.public_key == public_key)
+    return session.exec(stmt).first()
 
 
+# endregion Users
+# region Agents
 def create_agent(session: Session, agent: AgentBase) -> Agent:
     return create_generic(session, Agent(**agent.model_dump()))
-
-
-def create_token(session: Session, token: TokenBase) -> Token:
-    return create_generic(session, Token(**token.model_dump()))
 
 
 def update_agent(session, agent: Agent, agent_update: AgentUpdate) -> Agent:
@@ -82,9 +86,12 @@ def get_agent(session: Session, agent_id: str) -> Agent | None:
     return session.exec(stmt).first()
 
 
-def get_user(session: Session, public_key: str) -> User | None:
-    stmt = select(User).where(User.public_key == public_key)
-    return session.exec(stmt).first()
+# endregion Agents
+# region Runtimes
+
+
+def create_runtime(session: Session, runtime: RuntimeBase) -> Runtime:
+    return create_generic(session, Runtime(**runtime.model_dump()))
 
 
 def get_runtime(session: Session, runtime_id: str) -> Runtime | None:
@@ -97,3 +104,22 @@ def get_runtimes(
 ) -> Sequence[Runtime]:
     stmt = select(Runtime).offset(skip).limit(limit)
     return session.scalars(stmt).all()
+
+
+# endregion Runtimes
+# region Tokens
+def create_token(session: Session, token: TokenBase) -> Token:
+    return create_generic(session, Token(**token.model_dump()))
+
+
+def get_tokens(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Token]:
+    stmt = select(Token).offset(skip).limit(limit)
+    return session.scalars(stmt).all()
+
+
+def get_token(session: Session, token_id: str) -> Token | None:
+    stmt = select(Token).where(Token.id == token_id)
+    return session.exec(stmt).first()
+
+
+# endregion Tokens
