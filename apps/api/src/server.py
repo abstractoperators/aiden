@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
 import requests
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 
 from . import logger
 from .db import Session, crud
@@ -35,25 +35,27 @@ async def lifespan(app: FastAPI):  # noqa
 
 
 app = FastAPI(lifespan=lifespan)
-router = APIRouter()
 
 
-@router.get("/ping")
+@app.get("/ping")
 async def ping():
+    """
+    what more do you want it's a ping
+    """
     return "pong"
 
 
-@router.get("/agents")
+@app.get("/agents")
 async def get_agents() -> Sequence[Agent]:
     """
-    Returns a list of agent ids and names.
+    Returns a list of Agents.
     """
     with Session() as session:
         agents = crud.get_agents(session)
     return list(agents)
 
 
-@router.get("/agents/{agent_id}")
+@app.get("/agents/{agent_id}")
 async def get_agent(agent_id: str) -> Agent | None:
     """
     Returns a list of agent ids
@@ -64,7 +66,7 @@ async def get_agent(agent_id: str) -> Agent | None:
     return agent
 
 
-@router.post("/deploy-token")
+@app.post("/deploy-token")
 async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     # Validate inputs
     name = token_request.name
@@ -86,7 +88,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     return token
 
 
-@router.post("/agent/create")
+@app.post("/agent/create")
 def create_agent(agent: AgentBase) -> Agent:
     with Session() as session:
         agent = crud.create_agent(session, agent)
@@ -94,7 +96,7 @@ def create_agent(agent: AgentBase) -> Agent:
     return agent
 
 
-@router.post("/runtime/create")
+@app.post("/runtime/create")
 def create_runtime() -> Runtime | None:
     # Figure out how many runtimes there already are.j
     with Session() as session:
@@ -135,7 +137,7 @@ def create_runtime() -> Runtime | None:
     return runtime
 
 
-@router.post("/agent/{agent_id}/start/{runtime_id}")
+@app.post("/agent/{agent_id}/start/{runtime_id}")
 def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
@@ -170,7 +172,7 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     return (agent, runtime)
 
 
-@router.get("/agents/{agent_id}/runtime")
+@app.get("/agents/{agent_id}/runtime")
 async def get_runtime_for_agent(agent_id: str) -> Runtime | None:
     """
     Returns the url of the restapi of an agent runtime
@@ -184,7 +186,7 @@ async def get_runtime_for_agent(agent_id: str) -> Runtime | None:
     return runtime
 
 
-@router.get("/agents/{agent_id}/chat_endpoint")
+@app.get("/agents/{agent_id}/chat_endpoint")
 async def chat(agent_id: str) -> str | None:
     """
     Returns the endpoint to chat with an agent
@@ -197,7 +199,7 @@ async def chat(agent_id: str) -> str | None:
     return f"{runtime.url}/{agent_id}/chat"
 
 
-@router.post("/user/create")
+@app.post("/user/create")
 async def create_user(user: UserBase) -> User:
     with Session() as session:
         user = crud.create_user(session, user)
@@ -205,11 +207,8 @@ async def create_user(user: UserBase) -> User:
     return user
 
 
-@router.post("/user/{user_id}/update")
+@app.post("/user/{user_id}/update")
 async def update_user(user_id: str, user: UserUpdate) -> User | None:
     with Session() as session:
         user = crud.update_user(session, user_id, user)
     return user
-
-
-app.include_router(router, prefix="/api")
