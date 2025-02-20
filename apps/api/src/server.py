@@ -88,7 +88,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     return token
 
 
-@app.post("/agent/create")
+@app.post("/agents")
 def create_agent(agent: AgentBase) -> Agent:
     with Session() as session:
         agent = crud.create_agent(session, agent)
@@ -96,7 +96,7 @@ def create_agent(agent: AgentBase) -> Agent:
     return agent
 
 
-@app.post("/runtime/create")
+@app.post("/runtimes")
 def create_runtime() -> Runtime | None:
     # Figure out how many runtimes there already are.j
     with Session() as session:
@@ -137,7 +137,7 @@ def create_runtime() -> Runtime | None:
     return runtime
 
 
-@app.post("/agent/{agent_id}/start/{runtime_id}")
+@app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
@@ -172,34 +172,7 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     return (agent, runtime)
 
 
-@app.get("/agents/{agent_id}/runtime")
-async def get_runtime_for_agent(agent_id: str) -> Runtime | None:
-    """
-    Returns the url of the restapi of an agent runtime
-    Empty string if not found
-    """
-    with Session() as session:
-        agent: Agent | None = crud.get_agent(session, agent_id)
-        if agent is None:
-            return None
-        runtime = agent.runtime
-    return runtime
-
-
-@app.get("/agents/{agent_id}/chat_endpoint")
-async def chat(agent_id: str) -> str | None:
-    """
-    Returns the endpoint to chat with an agent
-    """
-    with Session() as session:
-        agent = crud.get_agent(session, agent_id)
-        if agent is None:
-            return None
-        runtime = agent.runtime
-    return f"{runtime.url}/{agent_id}/chat"
-
-
-@app.post("/user/create")
+@app.post("/users")
 async def create_user(user: UserBase) -> User:
     with Session() as session:
         user = crud.create_user(session, user)
@@ -207,7 +180,7 @@ async def create_user(user: UserBase) -> User:
     return user
 
 
-@app.post("/user/{user_id}/update")
+@app.patch("/users/{user_id}")
 async def update_user(user_id: str, user: UserUpdate) -> User | None:
     with Session() as session:
         user = crud.update_user(session, user_id, user)
