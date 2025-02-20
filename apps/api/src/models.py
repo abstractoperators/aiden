@@ -27,10 +27,6 @@ class ChatRequest(BaseModel):
     text: str
 
 
-class MessageExample:
-    user: 
-
-
 class ElizaCharacterJson(BaseModel):
     model_config = ConfigDict(extra="allow")
     name: str
