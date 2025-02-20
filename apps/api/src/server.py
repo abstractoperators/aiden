@@ -52,22 +52,30 @@ async def get_agents() -> Sequence[Agent]:
     """
     with Session() as session:
         agents = crud.get_agents(session)
-    return list(agents)
+    return agents
 
 
 @app.get("/agents/{agent_id}")
-async def get_agent(agent_id: str) -> Agent | None:
+async def get_agent(agent_id: str) -> Agent:
     """
-    Returns a list of agent ids
+    Returns an agent by id.
+    Raises a 404 if the agent is not found.
     """
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
+
+    if not agent:
+        return HTTPException(status_code=404, detail="Agent not found")
 
     return agent
 
 
 @app.post("/deploy-token")
 async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
+    """
+    Deploys a token smart contract to the block chain.
+    Returns the token object.
+    """
     # Validate inputs
     name = token_request.name
     ticker = token_request.ticker
@@ -90,6 +98,9 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
 
 @app.post("/agents")
 def create_agent(agent: AgentBase) -> Agent:
+    """
+    Creates an agent
+    """
     with Session() as session:
         agent = crud.create_agent(session, agent)
 
@@ -97,8 +108,14 @@ def create_agent(agent: AgentBase) -> Agent:
 
 
 @app.post("/runtimes")
-def create_runtime() -> Runtime | None:
-    # Figure out how many runtimes there already are.j
+def create_runtime() -> Runtime:
+    """
+    Creates a new runtime via github actions.
+    Runtime will not truly be started until the github action is completed, and aws resources are up and running (~5min)
+    Raises a 500 if the github action fails to start.
+    Returns the runtime object.
+    """
+    # Figure out how many runtimes there already are.
     with Session() as session:
         runtimes = crud.get_runtimes(session)
         runtime_count = len(runtimes)
@@ -124,7 +141,7 @@ def create_runtime() -> Runtime | None:
         resp.raise_for_status()
     except Exception as e:
         logger.error(e)
-        return None
+        return HTTPException(status_code=500, detail="Failed to start the runtime")
 
     # TODO: Verify completion of the github action, and that the runtime is up and running
 
@@ -139,6 +156,12 @@ def create_runtime() -> Runtime | None:
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
+    """
+    Starts an agent on a runtime.
+    Returns a tuple of the agent and runtime.
+    Potentially stops the old agent on the runtime.
+    Returns a 404 if the agent or runtime is not found.
+    """
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
@@ -167,13 +190,16 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     )
     # Update the agent to have a runtime now
     with Session() as session:
-        crud.update_agent(session, agent, AgentUpdate(runtime_id=runtime_id))
+        agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=runtime_id))
 
     return (agent, runtime)
 
 
 @app.post("/users")
 async def create_user(user: UserBase) -> User:
+    """
+    Creates a new user in the database, and returns the full user.
+    """
     with Session() as session:
         user = crud.create_user(session, user)
 
@@ -181,7 +207,13 @@ async def create_user(user: UserBase) -> User:
 
 
 @app.patch("/users/{user_id}")
-async def update_user(user_id: str, user: UserUpdate) -> User | None:
+async def update_user(user_id: str, user: UserUpdate) -> User:
+    """
+    Updates an existing in the database, and returns the full user.
+    Returns a 404 if the user is not found.
+    """
     with Session() as session:
         user = crud.update_user(session, user_id, user)
+    if not User:
+        return HTTPException(status_code=404, detail="User not found")
     return user
