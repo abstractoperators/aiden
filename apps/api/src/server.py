@@ -154,6 +154,16 @@ def create_runtime() -> Runtime:
     return runtime
 
 
+@app.get("/runtimes")
+def get_runtimes() -> Sequence[Runtime]:
+    """
+    Returns a list of up to 100 runtimes.
+    """
+    with Session() as session:
+        runtimes = crud.get_runtimes(session)
+    return runtimes
+
+
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     """

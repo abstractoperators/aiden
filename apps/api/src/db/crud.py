@@ -72,7 +72,7 @@ def update_agent(session, agent: Agent, agent_update: AgentUpdate) -> Agent:
     return update_generic(session, agent, agent_update)
 
 
-def get_agents(session: Session, skip: int = 0, limit: int = 0) -> Sequence[Agent]:
+def get_agents(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Agent]:
     stmt = select(Agent).offset(skip).limit(limit)
     return session.scalars(stmt).all()
 
@@ -92,6 +92,8 @@ def get_runtime(session: Session, runtime_id: str) -> Runtime | None:
     return session.exec(stmt).first()
 
 
-def get_runtimes(session: Session, skip: int = 0, limit: int = 0) -> Sequence[Runtime]:
+def get_runtimes(
+    session: Session, skip: int = 0, limit: int = 100
+) -> Sequence[Runtime]:
     stmt = select(Runtime).offset(skip).limit(limit)
     return session.scalars(stmt).all()
