@@ -1,5 +1,5 @@
 import ProtectedRoute from "@/components/protected-route";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { UserSidebar } from "@/components/user-sidebar";
 import Footer from "@/components/footer";
 import Header from "@/components/header";

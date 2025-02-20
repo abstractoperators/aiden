@@ -70,6 +70,7 @@ export const columns: ColumnDef<Agent>[] = [
       <Button variant="ghost" size="icon">
         {/* TODO: fill prop for Star */}
         <Star />
+        <span className="sr-only">{row.getValue("name")}</span>
       </Button>
     )
   }

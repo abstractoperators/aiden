@@ -39,6 +39,7 @@ export default function Profile() {
   async function onSubmit(formData: z.infer<typeof formSchema>) {
     try {
       // TODO: Send form to backend
+      console.log(formData.email)
 
       toast({
         title: "Profile successfully updated!",
