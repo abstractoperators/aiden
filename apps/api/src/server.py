@@ -198,12 +198,16 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     Returns a 404 if the agent or runtime is not found.
     """
     with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            return HTTPException(status_code=404, detail="Agent not found")
+
+    with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             return HTTPException(status_code=404, detail="Runtime not found")
 
-    with Session() as session:
-        old_agent: Agent | None = crud.get_agent(session, agent_id)
+        old_agent = runtime.agent
         if old_agent:
             stop_endpoint = f"{runtime.url}/controller/character/stop"
             requests.post(stop_endpoint)
@@ -212,10 +216,6 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
     start_endpoint = f"{runtime.url}/controller/character/start"
 
     # Start the new agent
-    with Session() as session:
-        agent: Agent | None = crud.get_agent(session, agent_id)
-        if not agent:
-            return HTTPException(status_code=404, detail="Agent not found")
     resp = requests.post(
         start_endpoint,
         Character(
