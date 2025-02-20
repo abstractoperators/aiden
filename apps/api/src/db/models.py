@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Mapping, cast
+from typing import Any, Mapping, Optional, cast
 from uuid import UUID, uuid4
 
 from pydantic import Json
@@ -30,6 +30,7 @@ class MetadataMixin(SQLModel):
     )
 
 
+# TODO: Allow multiple wallets.
 class UserBase(Base):
     public_key: str = Field(unique=True, description="Ethereum public key")
     public_key_sei: str = Field(unique=True, description="SEI public key")
@@ -66,7 +67,7 @@ class AgentBase(Base):
         description="UUID of the runtime the agent uses.",
         nullable=True,
     )
-    token_id: UUID | None = Field(
+    token_id: UUID = Field(
         foreign_key="token.id",
         description="UUID of the token the agent uses.",
         nullable=True,
@@ -122,12 +123,12 @@ class User(UserBase, MetadataMixin, table=True):
 class Agent(AgentBase, MetadataMixin, table=True):
     owner: User = Relationship(back_populates="agents")
     token: "Token" = Relationship(back_populates="agent")
-    runtime: "Runtime" = Relationship(back_populates="agent")
+    runtime: Optional["Runtime"] = Relationship(back_populates="agent")
 
 
 class Token(TokenBase, MetadataMixin, table=True):
-    agent: "Agent" = Relationship(back_populates="token")
+    agent: Optional["Agent"] = Relationship(back_populates="token")
 
 
 class Runtime(RuntimeBase, MetadataMixin, table=True):
-    agent: "Agent" = Relationship(back_populates="runtime")
+    agent: Optional["Agent"] = Relationship(back_populates="runtime")
