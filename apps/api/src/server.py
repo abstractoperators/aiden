@@ -221,7 +221,7 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
         Character(
             character_json=agent.character_json,
             envs=agent.env_file,
-        ),
+        ).model_dump_json(),
     )
     eliza_agent_id = resp.json().get("agent_id")
     # Update the agent to have a runtime now
@@ -247,15 +247,17 @@ async def create_user(user: UserBase) -> User:
 
 
 @app.patch("/users/{user_id}")
-async def update_user(user_id: str, user: UserUpdate) -> User:
+async def update_user(user_pub_key: str, user_update: UserUpdate) -> User:
     """
     Updates an existing in the database, and returns the full user.
     Returns a 404 if the user is not found.
     """
     with Session() as session:
-        user = crud.update_user(session, user_id, user)
-    if not User:
-        raise HTTPException(status_code=404, detail="User not found")
+        user = crud.get_user(session, user_pub_key)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user = crud.update_user(session, user, user_update)
     return user
 
 

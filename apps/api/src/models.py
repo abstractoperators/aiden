@@ -6,9 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class Character(
     BaseModel
 ):  # TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
-    character_json: str = Field(
-        "{}",
-        description="Escaped character json for an eliza agent",
+    character_json: dict = Field(
+        {},
+        description="A dictionary representing the character json for the eliza agent",
     )
     envs: str = Field(
         "",
