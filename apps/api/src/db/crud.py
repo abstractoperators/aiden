@@ -57,7 +57,7 @@ def update_user(session: Session, user: User, user_update: UserUpdate) -> User:
     return update_generic(session, user, user_update)
 
 
-def delete_user(session: Session, user: User) -> User:
+def delete_user(session: Session, user: User) -> None:
     return delete_generic(session, user)
 
 
