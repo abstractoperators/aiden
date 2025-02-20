@@ -216,16 +216,21 @@ def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             return HTTPException(status_code=404, detail="Agent not found")
-    requests.post(
+    resp = requests.post(
         start_endpoint,
         Character(
             character_json=agent.character_json,
             envs=agent.env_file,
         ),
     )
+    eliza_agent_id = resp.json().get("agent_id")
     # Update the agent to have a runtime now
     with Session() as session:
-        agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=runtime_id))
+        agent = crud.update_agent(
+            session,
+            agent,
+            AgentUpdate(eliza_agent_id=eliza_agent_id, runtime_id=runtime_id),
+        )
 
     return (agent, runtime)
 
