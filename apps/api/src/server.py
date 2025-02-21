@@ -3,8 +3,11 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
 import requests
-from db import Session, crud, init_db
-from db.models import (
+from fastapi import FastAPI, HTTPException
+
+from src import logger
+from src.db import Session, crud, init_db
+from src.db.models import (
     Agent,
     AgentBase,
     AgentUpdate,
@@ -16,12 +19,10 @@ from db.models import (
     UserBase,
     UserUpdate,
 )
-from fastapi import FastAPI, HTTPException
+from src.models import Character, TokenCreationRequest
+from src.setup import test_db_connection
 
-from . import logger
-from .models import Character, TokenCreationRequest
-from .setup import test_db_connection
-from .token_deployment import deploy_token
+from src.token_deployment import deploy_token
 
 
 @asynccontextmanager

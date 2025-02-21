@@ -6,6 +6,8 @@ WORKDIR /api
 
 COPY . .
 RUN mv src/.env.api.example src/.env.api
+# Locally, docker-compose loads .env.api
+# On aws, task definition loads from secrets manager.
 
 RUN uv sync
 

@@ -6,8 +6,8 @@ from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine.url import URL
 from sqlmodel import SQLModel
 
-pass
-from db.models import *  # noqa
+pass  # Prevent isort from reordering imports
+from src.db.models import *  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
