@@ -10,7 +10,6 @@ export default function Hero() {
           className="w-1/2"
           src={LightGhost}
           alt="AIDEN"
-          priority={true}
         />
         <h1 className="text-3xl tracking-widest font-bold sm:text-4xl md:text-5xl lg:text-6xl">
           AIDEN
