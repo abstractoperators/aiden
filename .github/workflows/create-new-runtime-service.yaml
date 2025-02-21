@@ -82,14 +82,14 @@ jobs:
                         \"targetGroupArn\": \"${{ env.TARGET_GROUP_ARN }}\",
                         \"containerName\": \"runtime\",
                         \"containerPort\": 80
-                        }]" \
+                    }]" \
                     --network-configuration "{
                         \"awsvpcConfiguration\": {
                             \"subnets\": [\"subnet-0c145d71e9bc921ce\", \"subnet-08a79f79b7375c569\"],
                             \"securityGroups\": [\"sg-0475538bebfc71f2e\"],
                             \"assignPublicIp\": \"ENABLED\"
-                            }
-                        }" \
+                        }
+                    }" \
                     --overrides "{
                         \"containerOverrides\": [{
                             \"name\": \"runtime\",
@@ -103,6 +103,7 @@ jobs:
                                 }
                             }
                         }]
+                    }"
 
 permissions:
     id-token: write
