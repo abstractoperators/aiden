@@ -26,11 +26,9 @@ export default function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid">
+        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid transition-[color,drop-shadow] hover:bg-destructive/100">
           <AvatarFallback>{displayName.substring(0, 2)}</AvatarFallback>
         </Avatar>
-        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel>{displayName}</DropdownMenuLabel>

@@ -2,6 +2,7 @@ import Link from "next/link"
 import AbopIcon from "@/public/abstractoperators_favicon.jpg"
 import Image from "next/image"
 import SeiIcon from "@/public/sei-favicon.png"
+import { Twitter } from "lucide-react"
 
 export default function Footer() {
   return (
@@ -13,6 +14,13 @@ export default function Footer() {
           </p>
         </div>
         <nav className="flex items-center space-x-4">
+          <Link
+            href="https://x.com/aiden_agents"
+            className="text-gray-500 hover:text-gray-700"
+            target="_blank"
+          >
+            <Twitter size={28} strokeWidth={2.5} />
+          </Link>
           <Link
             href="https://abop.ai/"
             className="text-gray-500 hover:text-gray-700"
