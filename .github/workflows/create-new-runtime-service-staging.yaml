@@ -1,5 +1,5 @@
-run-name: Create new runtime service
-name: Create new runtime service
+run-name: Create new runtime service for staging
+name: Create new runtime service for staging
 
 on:
     workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
               run: |
 
                   TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-                  --name "aiden-runtime-${{ inputs.service-no }}" \
+                  --name "aiden-runtime-staging${{ inputs.service-no }}" \
                   --protocol HTTP \
                   --port 80 \
                   --vpc-id vpc-028f84ceaa7ceffdf \
@@ -43,7 +43,7 @@ jobs:
                     --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11 \
                     --conditions "[{
                         \"Field\": \"host-header\",
-                        \"Values\": [\"aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
+                        \"Values\": [\"staging.aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
                         }]" \
                     --actions "[{
                         \"Type\": \"forward\",
@@ -56,7 +56,7 @@ jobs:
                     --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654 \
                     --conditions "[{
                       \"Field\": \"host-header\",
-                      \"Values\": [\"aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
+                      \"Values\": [\"staging.aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
                       }]" \
                     --actions "[{
                         \"Type\": \"forward\",
@@ -75,7 +75,7 @@ jobs:
                   aws ecs create-service \
                     --cluster AidenStaging \
                     --launch-type FARGATE \
-                    --service-name "aiden-runtime-${{ inputs.service-no }}" \
+                    --service-name "aiden-runtime-staging${{ inputs.service-no }}" \
                     --task-definition arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging \
                     --desired-count 1 \
                     --load-balancers "[{
