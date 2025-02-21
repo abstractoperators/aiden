@@ -150,9 +150,9 @@ def create_runtime() -> Runtime:
     next_runtime_number = runtime_count + 1
     try:
         if os.getenv("ENV") == "staging":
-            url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches"
-        else:
-            url = ""  # TODO
+            url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373"
+        elif os.getenv("ENV") == "prod":
+            url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661"
         resp = requests.post(
             url=url,
             headers={
@@ -161,7 +161,7 @@ def create_runtime() -> Runtime:
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={
-                "ref": "michael/crud-agents",
+                "ref": "main",
                 "inputs": {
                     "service-no": str(next_runtime_number),
                 },
