@@ -1,23 +1,4 @@
 services:
-  eve-agent:
-    env_file: 
-      - path: ".env.eve"
-        required: false
-    env_file: 
-      - path: ".env.eve"
-        required: false
-    build: 
-      context: .
-      dockerfile: Dockerfile.eve
-    container_name: eve-agent
-    volumes:
-      - eve-agent:/app/db.sqlite
-    platform: linux/amd64
-    ports:
-      - "8000:80"
-      - "5173:5173"
-    image: eve-agent:latest
-  
   frontend:
     build:
       context: ./apps/frontend
