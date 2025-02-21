@@ -89,7 +89,20 @@ jobs:
                             \"securityGroups\": [\"sg-0475538bebfc71f2e\"],
                             \"assignPublicIp\": \"ENABLED\"
                             }
-                        }"
+                        }" \
+                    --overrides "{
+                        \"containerOverrides\": [{
+                            \"name\": \"runtime\",
+                            \"logConfiguration\": {
+                                \"logDriver\": \"awslogs\",
+                                \"options\": {
+                                    \"awslogs-group\": \"/ecs/aiden-runtime-${{ inputs.service-no }}\",
+                                    \"awslogs-stream-prefix\": \"ecs\",
+                                    \"awslogs-region\": \"us-east-1\",
+                                    \"awslogs-create-group\": \"true\"
+                                }
+                            }
+                        }]
 
 permissions:
     id-token: write
