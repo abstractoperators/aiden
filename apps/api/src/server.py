@@ -3,11 +3,8 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
 import requests
-from fastapi import FastAPI, HTTPException
-
-from . import logger
-from .db import Session, crud
-from .db.models import (
+from db import Session, crud, init_db
+from db.models import (
     Agent,
     AgentBase,
     AgentUpdate,
@@ -19,6 +16,9 @@ from .db.models import (
     UserBase,
     UserUpdate,
 )
+from fastapi import FastAPI, HTTPException
+
+from . import logger
 from .models import Character, TokenCreationRequest
 from .setup import test_db_connection
 from .token_deployment import deploy_token
@@ -26,6 +26,7 @@ from .token_deployment import deploy_token
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
+    init_db()
     if test_db_connection():
         logger.info("DB Connection Successful")
     else:
