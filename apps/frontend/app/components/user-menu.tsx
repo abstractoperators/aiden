@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { UserProfile, Wallet } from "@dynamic-labs/sdk-react-core";
 import {
   DropdownMenu,
