@@ -13,6 +13,12 @@ jobs:
     new-service:
         runs-on: ubuntu-latest
         steps:
+            - name: Fail if no service number is provided
+              run: |
+                  if [ -z "${{ inputs.service-no }}" ]; then
+                      echo "No service number provided"
+                      exit 1
+                  fi
             - name: Configure aws credentials for ELB
               uses: aws-actions/configure-aws-credentials@v4
               with:

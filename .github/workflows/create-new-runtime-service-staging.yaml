@@ -13,6 +13,12 @@ jobs:
     new-service:
         runs-on: ubuntu-latest
         steps:
+            - name: Fail if no service number is provided
+              run: |
+                  if [ -z "${{ inputs.service-no }}" ]; then
+                      echo "No service number provided"
+                      exit 1
+                  fi
             - name: Configure aws credentials for ELB
               uses: aws-actions/configure-aws-credentials@v4
               with:
@@ -23,7 +29,7 @@ jobs:
               run: |
 
                   TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
-                  --name "aiden-runtime-staging${{ inputs.service-no }}" \
+                  --name "aiden-runtime-staging-${{ inputs.service-no }}" \
                   --protocol HTTP \
                   --port 80 \
                   --vpc-id vpc-028f84ceaa7ceffdf \
