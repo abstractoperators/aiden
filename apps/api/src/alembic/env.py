@@ -1,9 +1,13 @@
+import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine.url import URL
+from sqlmodel import SQLModel
+
+pass
+from db.models import *  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -18,12 +22,37 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+db_password = os.getenv("POSTGRES_DB_PASSWORD")
+db_host = os.getenv("POSTGRES_DB_HOST")
+is_test = os.getenv("ENV") == "test"
+print("is_test", is_test)
+print("db_password", db_password)
+
+if not is_test and (db_password and db_host):
+    SQLALCHEMY_DATABASE_URL = URL.create(
+        drivername="postgresql+psycopg2",
+        username="postgres",
+        password=db_password,
+        host=db_host,
+        database="postgres",
+    )
+    connect_args = {}
+else:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///test.db"
+
+    connect_args = {"check_same_thread": False}
+
+print("Alembic SQLALCHEMY_DATABASE_URL", SQLALCHEMY_DATABASE_URL)
+config.set_main_option(
+    "sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL).replace("***", db_password)
+)
 
 
 def run_migrations_offline() -> None:
