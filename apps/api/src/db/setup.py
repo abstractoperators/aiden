@@ -20,13 +20,7 @@ if not is_test and (db_password and db_host):
     )
     connect_args = {}
 else:
-    SQLALCHEMY_DATABASE_URL = URL.create(
-        drivername="sqlite",
-        username="",
-        password="",
-        host="",
-        database="test.db",
-    )
+    SQLALCHEMY_DATABASE_URL = "sqlite:///test.db"
 
     connect_args = {"check_same_thread": False}
 
@@ -45,4 +39,4 @@ def Session():
 # TODO: Don't do this in prod
 with Session() as session:
     SQLModel.metadata.drop_all(session.get_bind())
-    SQLModel.metadata.create_all(session.get_bind())
+    # SQLModel.metadata.create_all(session.get_bind())
