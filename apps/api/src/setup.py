@@ -1,7 +1,7 @@
 from sqlmodel import text
 
-from . import logger
-from .db import Session
+from src import logger
+from src.db import Session
 
 
 def test_db_connection() -> bool:

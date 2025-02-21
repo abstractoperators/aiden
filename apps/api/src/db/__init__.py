@@ -1,3 +1,5 @@
-from .setup import Session
+import src  # noqa
 
-__all__ = ["Session"]
+from .setup import Session, init_db
+
+__all__ = ["Session", "init_db"]

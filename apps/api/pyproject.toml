@@ -1,10 +1,11 @@
 [project]
 name = "api"
 version = "0.1.0"
-description = "Add your description here"
+description = "API backend for aiden"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic==1.14.1",
     "eth-typing==5.1.0",
     "fastapi==0.115.8",
     "psycopg2==2.9.10",

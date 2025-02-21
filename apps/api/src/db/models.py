@@ -114,8 +114,9 @@ class RuntimeBase(Base):
 
 # endregion Models
 
-
 # region Tables
+
+
 class User(UserBase, MetadataMixin, table=True):
     agents: list["Agent"] = Relationship(back_populates="owner")
 

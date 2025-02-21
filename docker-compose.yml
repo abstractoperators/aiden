@@ -11,7 +11,7 @@ services:
       
   api:
     env_file: 
-      - path: "apps/api/.env.api"
+      - path: "apps/api/src/.env.api"
         required: false
     build:
       context: apps/api
