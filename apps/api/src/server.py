@@ -21,7 +21,6 @@ from src.db.models import (
 )
 from src.models import Character, TokenCreationRequest
 from src.setup import test_db_connection
-
 from src.token_deployment import deploy_token
 
 
@@ -150,8 +149,12 @@ def create_runtime() -> Runtime:
     GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
     next_runtime_number = runtime_count + 1
     try:
+        if os.getenv("ENV") == "staging":
+            url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches"
+        else:
+            url = ""  # TODO
         resp = requests.post(
-            "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches",
+            url=url,
             headers={
                 "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
