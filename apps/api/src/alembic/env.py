@@ -32,8 +32,6 @@ target_metadata = SQLModel.metadata
 db_password = os.getenv("POSTGRES_DB_PASSWORD")
 db_host = os.getenv("POSTGRES_DB_HOST")
 is_test = os.getenv("ENV") == "test"
-print("is_test", is_test)
-print("db_password", db_password)
 
 if not is_test and (db_password and db_host):
     SQLALCHEMY_DATABASE_URL = URL.create(
