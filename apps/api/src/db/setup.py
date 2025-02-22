@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import contextmanager
 
@@ -54,3 +55,6 @@ def init_db():
         dir_path = os.path.dirname(os.path.realpath(__file__))
         alembic_cfg = Config(os.path.join(dir_path, "../../alembic.ini"))
         command.upgrade(alembic_cfg, "head")
+
+        logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger("alembic").propagate = True
