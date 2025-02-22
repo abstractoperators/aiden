@@ -81,7 +81,7 @@ jobs:
                   aws ecs create-service \
                     --cluster AidenStaging \
                     --launch-type FARGATE \
-                    --service-name "aiden-runtime-staging${{ inputs.service-no }}" \
+                    --service-name "aiden-runtime-staging-${{ inputs.service-no }}" \
                     --task-definition arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging \
                     --desired-count 1 \
                     --load-balancers "[{
