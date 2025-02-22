@@ -3,9 +3,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class Character(
-    BaseModel
-):  # TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
+# TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
+class Character(BaseModel):
     character_json: dict = Field(
         {},
         description="A dictionary representing the character json for the eliza agent",
