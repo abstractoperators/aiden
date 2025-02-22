@@ -27,6 +27,22 @@ class ChatRequest(BaseModel):
     text: str
 
 
+class ElizaContent(BaseModel):
+    text: str | None = Field(description="Text content of the message")
+    # TODO: Include these additional fields foudn in client-direct/dist/index.js/createApiRouter.
+    # action
+    # source
+
+
+class ElizaMessage(BaseModel):
+    user: str = Field(
+        description=r"User or agent. Potentially a placeholder like {{user1}}"
+    )
+    content: ElizaContent = Field(
+        description="Content of the message, including text and potentially other fields"
+    )
+
+
 class ElizaCharacterJson(BaseModel):
     model_config = ConfigDict(extra="allow")
     name: str

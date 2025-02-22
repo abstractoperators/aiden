@@ -150,9 +150,11 @@ def create_runtime() -> Runtime:
     next_runtime_number = runtime_count + 1
     try:
         if os.getenv("ENV") == "staging":
-            url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373"
+            url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/create-new-runtime-staging.yaml/dispatches"
         elif os.getenv("ENV") == "prod":
             url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661"
+        print(url)
+        print(next_runtime_number)
         resp = requests.post(
             url=url,
             headers={
@@ -161,7 +163,7 @@ def create_runtime() -> Runtime:
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={
-                "ref": "main",
+                "ref": "refs/heads/michael/prod",
                 "inputs": {
                     "service-no": str(next_runtime_number),
                 },
@@ -171,7 +173,7 @@ def create_runtime() -> Runtime:
         resp.raise_for_status()
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail="Failed to start the runtime")
+        raise HTTPException(status_code=400, detail=f"Failed to start the runtime {e}")
 
     # TODO: Verify completion of the github action, and that the runtime is up and running
 
