@@ -7,7 +7,6 @@ on:
             service-no:
                 description: "Service number for the new runtime service"
                 required: true
-
 jobs:
     new-service:
         runs-on: ubuntu-latest
