@@ -1,0 +1,19 @@
+run-name: Create new runtime service for staging
+name: Create new runtime service for staging
+
+on:
+    workflow_dispatch:
+        inputs:
+            service-no:
+                description: "Service number for the new runtime service"
+                required: true
+jobs:
+    new-service:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Fail if no service number is provided
+              run: |
+                  if [ -z "${{ inputs.service-no }}" ]; then
+                      echo "No service number provided"
+                      exit 1
+                  fi
