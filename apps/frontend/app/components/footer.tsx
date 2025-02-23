@@ -43,11 +43,20 @@ export default function Footer({ variant }: variantProp) {
         </div>
         <nav className="flex items-center space-x-4">
           <Link
+            href="/about"
+            className="transition duration-300 hover:invert-[.5]"
+          >
+            About Us
+          </Link>
+          <Link
             href="https://x.com/aiden_agents"
-            className="text-gray-500 hover:text-gray-700"
+            className="transition duration-300 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
             target="_blank"
           >
-            <Twitter size={28} strokeWidth={2.5} />
+            <Twitter
+              size={28}
+              strokeWidth={2.5}
+            />
           </Link>
           <Link
             href="https://abop.ai/"
@@ -55,7 +64,7 @@ export default function Footer({ variant }: variantProp) {
             target="_blank"
           >
             <Image
-              className="w-6 rounded-full transition-[color,drop-shadow] hover:bg-destructive/90"
+              className="transition duration-300 w-6 rounded-full hover:invert-[.8] dark:invert dark:hover:invert-[.2]"
               src={AbopIcon}
               alt="Abop"
             />
@@ -67,7 +76,7 @@ export default function Footer({ variant }: variantProp) {
             target="_blank"
           >
             <Image
-              className="w-6 rounded-full transition-[color,drop-shadow] hover:bg-primary/20"
+              className="transition duration-300 w-6 rounded-full hover:invert-[.5]"
               src={SeiIcon}
               alt="Sei"
             />

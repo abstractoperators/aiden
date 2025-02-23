@@ -28,7 +28,7 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
       return {
         headerStyle: headerStyles.landing,
         aidenImage: <Image
-          className="w-6"
+          className="w-6 transition duration-300 hover:invert-[.5]"
           src={LightGhost}
           alt="AIDEN"
         />,
@@ -38,7 +38,7 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
       return {
         headerStyle: headerStyles.main,
         aidenImage: <ThemeImage
-          className="w-6"
+          className="w-6 transition duration-300 hover:invert-[.5]"
           lightSrc={LightGhost}
           darkSrc={DarkGhost}
           alt="AIDEN"
@@ -56,12 +56,19 @@ export default function Header({ variant }: variantProp) {
     >
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
+          <Link
+            href="/"
+            className="mr-6 flex items-center space-x-2"
+          >
             {aidenImage}
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="/about">About Us</Link>
-            <Link href="/agents/Kent">Chat with an Agent</Link>
+            <Link
+              className="transition duration-300 hover:invert-[.5]"
+              href="/agents/Kent"
+            >
+              Chat with an Agent
+            </Link>
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
