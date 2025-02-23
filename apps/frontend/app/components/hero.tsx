@@ -1,6 +1,5 @@
 import LightGhost from "@/public/brand_assets/light-ghost.svg"
 import Image from "next/image"
-import DynamicWaitlistButton from "./dynamic-waitlist-button"
 
 export default function Hero() {
   return (
@@ -19,8 +18,6 @@ export default function Hero() {
         <h1 className="text-2xl tracking-wide font-bold sm:text-2xl md:text-3xl lg:text-4xl">
           High Performance Onchain Agents
         </h1>
-        {/* TODO: replace with proper modal integrating dynamic */}
-        <DynamicWaitlistButton cta="Join the Waitlist" />
       </div>
     </section>
   )
