@@ -106,6 +106,7 @@ class TokenBase(Base):
     ticker: str = Field(description="Token ticker")
     name: str = Field(description="Token name")
     evm_contract_address: str = Field(description="EVM contract address")
+    abi: Json = Field(description="EVM contract ABI", sa_type=JSON)
 
 
 class RuntimeBase(Base):
