@@ -80,12 +80,26 @@ class AgentBase(Base):
 
 
 class AgentUpdate(Base):
-    eliza_agent_id: str | None = None
-    owner_id: UUID | None = None
-    runtime_id: UUID | None = None
-    token_id: UUID | None = None
-    character_json: Json | None = None
-    env_file: str | None = None
+    eliza_agent_id: str | None = Field(
+        description="Agent id of the eliza agent (different from Agent.id)",
+        nullable=True,
+        default=None,
+    )
+    owner_id: UUID | None = Field(
+        description="UUID of the User who owns the agent.", nullable=True, default=None
+    )
+    runtime_id: UUID | None = Field(
+        description="UUID of the runtime the agent uses.", nullable=True, default=None
+    )
+    token_id: UUID | None = Field(
+        description="UUID of the token associated with the agent.",
+        nullable=True,
+        default=None,
+    )
+    character_json: Json | None = Field(
+        description="Eliza character json. Json or dict.", nullable=True, default=None
+    )
+    env_file: str | None = Field(description=".env for the agent", nullable=True)
 
 
 class TokenBase(Base):
