@@ -47,6 +47,18 @@ async def ping():
     return "pong"
 
 
+@app.post("/agents")
+def create_agent(agent: AgentBase) -> Agent:
+    """
+    Creates an agent. Does not start the agent.
+    Only stores it in db.
+    """
+    with Session() as session:
+        agent = crud.create_agent(session, agent)
+
+    return agent
+
+
 @app.get("/agents")
 async def get_agents() -> Sequence[Agent]:
     """
@@ -123,17 +135,6 @@ async def get_token(token_id: str) -> Token:
     return token
 
 
-@app.post("/agents")
-def create_agent(agent: AgentBase) -> Agent:
-    """
-    Creates an agent
-    """
-    with Session() as session:
-        agent = crud.create_agent(session, agent)
-
-    return agent
-
-
 @app.post("/runtimes")
 def create_runtime() -> Runtime:
     """
@@ -189,6 +190,21 @@ def get_runtimes() -> Sequence[Runtime]:
     with Session() as session:
         runtimes = crud.get_runtimes(session)
     return runtimes
+
+
+@app.get("/runtimes/{runtime_id}")
+def get_runtime(runtime_id: str) -> Runtime:
+    """
+    Returns a runtime by id.
+    Raises a 404 if the runtime is not found.
+    """
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+
+    if not runtime:
+        raise HTTPException(status_code=404, detail="Runtime not found")
+
+    return runtime
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
