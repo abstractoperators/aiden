@@ -1,9 +1,11 @@
-import os
 import json
-from web3 import AsyncWeb3, AsyncHTTPProvider
+import os
+
 from eth_account import Account
+from web3 import AsyncHTTPProvider, AsyncWeb3
 
 SEI_RPC_URL = os.getenv("SEI_RPC_URL")  # Get the SEI EVM RPC URL
+
 
 # Connects to SEI's EVM RPC and deploys a new instance of the token contract.
 async def deploy_token(name, ticker):
@@ -18,7 +20,10 @@ async def deploy_token(name, ticker):
         raise ConnectionError("Failed to connect to Sei Network")
 
     # Load ABI and bytecode
-    with open("./src/bonding_token/artifacts/contracts/BondingCurveToken.sol/BondingCurveToken.json", "r") as f:
+    with open(
+        "./src/bonding_token/artifacts/contracts/BondingCurveToken.sol/BondingCurveToken.json",
+        "r",
+    ) as f:
         contract_json = json.load(f)
     contract_abi = contract_json["abi"]
     contract_bytecode = contract_json["bytecode"]
@@ -34,17 +39,19 @@ async def deploy_token(name, ticker):
     gas_price = await w3.eth.gas_price
     chain_id = await w3.eth.chain_id
     # Build transaction with the given name and ticker
-    deploy_txn = await contract.constructor(name, ticker).build_transaction({
-        'from': deployer_address,
-        'nonce': nonce,
-        'gas': 5000000,
-        'gasPrice': gas_price,
-        'chainId': chain_id
-    })
+    deploy_txn = await contract.constructor(name, ticker).build_transaction(
+        {
+            "from": deployer_address,
+            "nonce": nonce,
+            "gas": 5000000,
+            "gasPrice": gas_price,
+            "chainId": chain_id,
+        }
+    )
 
     # Sign and send deployment transaction
     signed_txn = w3.eth.account.sign_transaction(deploy_txn, PRIVATE_KEY)
-    tx_hash = await w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    tx_hash = await w3.eth.send_raw_transaction(signed_txn.raw_transaction)
     print(f"Deployment TX sent: {tx_hash.hex()}")
 
     # Wait for deployment receipt
@@ -58,6 +65,7 @@ async def deploy_token(name, ticker):
     print(receipt)
 
     return contract_address
+
 
 async def buy_token(buy_amount, contract_address):
     w3 = AsyncWeb3(AsyncHTTPProvider(SEI_RPC_URL))
@@ -76,17 +84,17 @@ async def buy_token(buy_amount, contract_address):
     chain_id = await w3.eth.chain_id
 
     buy_txn = {
-        'to': contract_address,
-        'value': buy_amount,
-        'from': deployer_address,
-        'nonce': nonce,
-        'gas': 300000,
-        'gasPrice': gas_price,
-        'chainId': chain_id
+        "to": contract_address,
+        "value": buy_amount,
+        "from": deployer_address,
+        "nonce": nonce,
+        "gas": 300000,
+        "gasPrice": gas_price,
+        "chainId": chain_id,
     }
 
     signed_buy_txn = w3.eth.account.sign_transaction(buy_txn, PRIVATE_KEY)
-    buy_tx_hash = await w3.eth.send_raw_transaction(signed_buy_txn.rawTransaction)
+    buy_tx_hash = await w3.eth.send_raw_transaction(signed_buy_txn.raw_transaction)
     print(f"Buy transaction sent: {buy_tx_hash.hex()}")
 
     buy_receipt = await w3.eth.wait_for_transaction_receipt(buy_tx_hash)

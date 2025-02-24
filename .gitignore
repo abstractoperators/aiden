@@ -20,3 +20,5 @@ solidity-files-cache.json
 
 # IDE
 .vscode
+
+*.db
