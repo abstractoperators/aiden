@@ -10,6 +10,7 @@ from .models import (
     Base,
     Runtime,
     RuntimeBase,
+    RuntimeUpdate,
     Token,
     TokenBase,
     User,
@@ -114,6 +115,12 @@ def get_runtimes(
 ) -> Sequence[Runtime]:
     stmt = select(Runtime).offset(skip).limit(limit)
     return session.scalars(stmt).all()
+
+
+def update_runtime(
+    session: Session, runtime: Runtime, runtime_update: RuntimeUpdate
+) -> Runtime:
+    return update_generic(session, runtime, runtime_update)
 
 
 # endregion Runtimes
