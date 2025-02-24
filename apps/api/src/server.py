@@ -1,10 +1,11 @@
+import asyncio
 import os
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 
 from src import logger
 from src.db import Session, crud, init_db
@@ -14,6 +15,7 @@ from src.db.models import (
     AgentUpdate,
     Runtime,
     RuntimeBase,
+    RuntimeUpdate,
     Token,
     TokenBase,
     User,
@@ -136,52 +138,67 @@ async def get_token(token_id: UUID) -> Token:
 
 
 @app.post("/runtimes")
-def create_runtime() -> Runtime:
+def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     """
     Creates a new runtime via github actions.
     Runtime will not truly be started until the github action is completed, and aws resources are up and running (~5min)
     Raises a 500 if the github action fails to start.
     Returns the runtime object.
     """
-    # Figure out how many runtimes there already are.
     with Session() as session:
         runtimes = crud.get_runtimes(session)
         runtime_count = len(runtimes)
-
-    GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
     next_runtime_number = runtime_count + 1
-    try:
-        resp = requests.post(
-            "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches",
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-            json={
-                "ref": "michael/crud-agents",
-                "inputs": {
-                    "service-no": str(next_runtime_number),
-                },
-            },
-            timeout=3,
-        )
-        resp.raise_for_status()
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(status_code=500, detail="Failed to start the runtime")
-
-    # TODO: Verify completion of the github action, and that the runtime is up and running
-    # High-key, so important. Probably do it on this server tbh?
-    # i.g. you could just ping it until it's up? Sounds a little ridiculous
-    # whip up a background task and just ping the server for a couple of minutes?
-    # what happens if create_runtime is called again before the first one is up?
-
-    url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
-
+    if os.getenv("ENV") == "staging":
+        url = f"https://staging.aiden-runtime-{next_runtime_number}-staging.aiden.space"
+    else:
+        url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
     # Store the runtime in the database
     with Session() as session:
-        runtime = crud.create_runtime(session, RuntimeBase(url=url))
+        runtime = crud.create_runtime(
+            session,
+            RuntimeBase(url=url, started=False),
+        )
+
+    async def helper():
+        GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
+        next_runtime_number = runtime_count + 1
+        try:
+            resp = requests.post(
+                "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches",
+                headers={
+                    "Accept": "application/vnd.github+json",
+                    "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                },
+                json={
+                    "ref": "michael/crud-agents",
+                    "inputs": {
+                        "service-no": str(next_runtime_number),
+                    },
+                },
+                timeout=3,
+            )
+            resp.raise_for_status()
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail="Failed to start the runtime.")
+
+        # Poll the runtime for a couple of minutes to see if it stands up
+        for _ in range(60):
+            await asyncio.sleep(10)
+            resp = requests.get(f"{url}/ping")
+            if resp.status_code == 200:
+                with Session() as session:
+                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+                return
+
+        with Session() as session:
+            crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+
+    # TODO: Actually kill the runtime and delete if it doesn't start up instead of leaving on a potential aws crash loop
+    # TODO: Heartbeat beyond the initial startup
+    background_tasks.add_task(helper)
 
     return runtime
 
