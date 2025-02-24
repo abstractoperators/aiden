@@ -66,6 +66,11 @@ def get_user(session: Session, public_key: str) -> User | None:
     return session.exec(stmt).first()
 
 
+def get_users(session: Session, skip: int = 0, limit: int = 100) -> Sequence[User]:
+    stmt = select(User).offset(skip).limit(limit)
+    return session.scalars(stmt).all()
+
+
 # endregion Users
 # region Agents
 def create_agent(session: Session, agent: AgentBase) -> Agent:

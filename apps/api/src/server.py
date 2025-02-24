@@ -21,7 +21,6 @@ from src.db.models import (
 )
 from src.models import Character, TokenCreationRequest
 from src.setup import test_db_connection
-
 from src.token_deployment import deploy_token
 
 
@@ -262,6 +261,16 @@ async def create_user(user: UserBase) -> User:
         user = crud.create_user(session, user)
 
     return user
+
+
+@app.get("/users")
+async def get_users() -> Sequence[User]:
+    """
+    Returns a list of users.
+    """
+    with Session() as session:
+        users = crud.get_users(session)
+    return users
 
 
 @app.patch("/users/{user_id}")
