@@ -1,0 +1,135 @@
+from datetime import datetime
+from typing import Any, Mapping, Optional, cast
+from uuid import UUID, uuid4
+
+from pydantic import Json
+from sqlalchemy import JSON, DateTime, func
+from sqlmodel import Field, Relationship, SQLModel
+
+
+# region Models
+class Base(SQLModel):
+    def __repr__(self) -> str:
+        return self.model_dump_json(indent=4, exclude_unset=True, exclude_none=True)
+
+
+class MetadataMixin(SQLModel):
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    created_at: datetime | None = Field(
+        default=None,
+        sa_type=cast(Any, DateTime(timezone=True)),
+        sa_column_kwargs=cast(Mapping[str, Any], {"server_default": func.now()}),
+        nullable=False,
+    )
+    modified_at: datetime | None = Field(
+        default=None,
+        sa_type=cast(Any, DateTime(timezone=True)),
+        sa_column_kwargs=cast(
+            Mapping[str, Any], {"onupdate": func.now(), "server_default": func.now()}
+        ),
+    )
+
+
+# TODO: Allow multiple wallets.
+class UserBase(Base):
+    public_key: str = Field(unique=True, description="Ethereum public key")
+    public_key_sei: str = Field(unique=True, description="SEI public key")
+    email: str | None = Field(
+        description="Email of the user.", nullable=True, default=None
+    )
+    phone_number: str | None = Field(
+        description="Phone number of the user.", nullable=True, default=None
+    )
+    username: str | None = Field(
+        description="Username of the user.", nullable=True, default=None
+    )
+
+
+class UserUpdate(Base):
+    public_key: str | None = Field(description="Ethereum public key", nullable=True)
+    public_key_sei: str | None = Field(description="SEI public key", nullable=True)
+    email: str | None = Field(description="Email of the user.", nullable=True)
+    phone_number: str | None = Field(
+        description="Phone number of the user.", nullable=True
+    )
+    username: str | None = Field(description="Username of the user.", nullable=True)
+
+
+class AgentBase(Base):
+    eliza_agent_id: str = Field(description="Eliza's agent id", nullable=False)
+    owner_id: UUID = Field(
+        foreign_key="user.id",
+        description="UUID of the User who owns the agent.",
+        nullable=False,
+    )
+    runtime_id: UUID | None = Field(
+        foreign_key="runtime.id",
+        description="UUID of the runtime the agent uses.",
+        nullable=True,
+    )
+    token_id: UUID = Field(
+        foreign_key="token.id",
+        description="UUID of the token the agent uses.",
+        nullable=True,
+    )
+    # 🤮
+    character_json: dict = Field(
+        description="Eliza character json", nullable=False, sa_type=JSON
+    )
+    env_file: str = Field(description=".env for the agent", nullable=False)
+
+
+class AgentUpdate(Base):
+    eliza_agent_id: str | None = Field(
+        description="Agent id of the eliza agent (different from Agent.id)",
+        nullable=True,
+        default=None,
+    )
+    owner_id: UUID | None = Field(
+        description="UUID of the User who owns the agent.", nullable=True, default=None
+    )
+    runtime_id: UUID | None = Field(
+        description="UUID of the runtime the agent uses.", nullable=True, default=None
+    )
+    token_id: UUID | None = Field(
+        description="UUID of the token associated with the agent.",
+        nullable=True,
+        default=None,
+    )
+    character_json: Json | None = Field(
+        description="Eliza character json. Json or dict.", nullable=True, default=None
+    )
+    env_file: str | None = Field(description=".env for the agent", nullable=True)
+
+
+class TokenBase(Base):
+    ticker: str = Field(description="Token ticker")
+    name: str = Field(description="Token name")
+    evm_contract_address: str = Field(description="EVM contract address")
+
+
+class RuntimeBase(Base):
+    url: str = Field(description="URL of the agents runtime.")
+
+
+# endregion Models
+
+# region Tables
+
+
+class User(UserBase, MetadataMixin, table=True):
+    agents: list["Agent"] = Relationship(back_populates="owner")
+
+
+class Agent(AgentBase, MetadataMixin, table=True):
+    owner: User = Relationship(back_populates="agents")
+    token: "Token" = Relationship(back_populates="agent")
+    runtime: Optional["Runtime"] = Relationship(back_populates="agent")
+
+
+class Token(TokenBase, MetadataMixin, table=True):
+    agent: Optional["Agent"] = Relationship(back_populates="token")
+
+
+class Runtime(RuntimeBase, MetadataMixin, table=True):
+    agent: Optional["Agent"] = Relationship(back_populates="runtime")
