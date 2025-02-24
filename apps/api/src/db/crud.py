@@ -139,4 +139,9 @@ def get_token(session: Session, token_id: str) -> Token | None:
     return session.exec(stmt).first()
 
 
+def get_token_by_address(session: Session, token_address: str) -> Token | None:
+    stmt = select(Token).where(Token.evm_contract_address == token_address)
+    return session.exec(stmt).first()
+
+
 # endregion Tokens
