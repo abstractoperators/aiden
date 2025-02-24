@@ -24,7 +24,7 @@ from src.db.models import (
 )
 from src.models import Character, TokenCreationRequest
 from src.setup import test_db_connection
-from src.token_deployment import deploy_token
+from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
 
 @asynccontextmanager
@@ -135,6 +135,53 @@ async def get_token(token_id: UUID) -> Token:
         raise HTTPException(status_code=404, detail="Token not found")
 
     return token
+
+
+@app.get("/tokens/{token_id}/sell_txn")
+def get_sell_txn(token_id: UUID, user_address: str, amount_tokens: int) -> dict:
+    """
+    Returns an unsigned transaction to sell tokens for SEI.
+
+    contract_address: Address of the token contract
+    user_address: Address of the user selling the tokens
+    amount: Amount of tokens to sell
+    """
+    with Session() as session:
+        token = crud.get_token_by_address(session, token_id)
+
+        if not token:
+            raise ValueError(f"Token {token_id} not found")
+
+        contract_address = token.evm_contract_address
+        contract_abi = token.abi
+
+    return sell_token_unsigned(
+        amount_tokens,
+        contract_abi,
+        contract_address,
+        user_address,
+    )
+
+
+@app.get("/tokens/{token_id}/buy_txn")
+def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
+    """
+    Returns an unsigned transaction buy tokens with Sei
+    TODO: Change amount_sei -> amount_tokens
+    """
+    with Session() as session:
+        token = crud.get_token_by_address(session, token_id)
+
+        if not token:
+            raise ValueError(f"Token {token_id} not found")
+
+        contract_address = token.evm_contract_address
+
+    return buy_token_unsigned(
+        amount_sei,
+        contract_address,
+        user_address,
+    )
 
 
 @app.post("/runtimes")
