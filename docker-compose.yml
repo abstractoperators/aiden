@@ -36,5 +36,4 @@ services:
       - "8002:80"
 
 volumes:
-  eve-agent:
   agent-runtime:
