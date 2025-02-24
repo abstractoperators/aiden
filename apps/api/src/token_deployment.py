@@ -4,7 +4,6 @@ import os
 from eth_account import Account
 from web3 import AsyncHTTPProvider, AsyncWeb3
 
-
 SEI_RPC_URL = os.getenv("SEI_RPC_URL")  # Get the SEI EVM RPC URL
 
 
@@ -52,7 +51,7 @@ async def deploy_token(name, ticker):
 
     # Sign and send deployment transaction
     signed_txn = w3.eth.account.sign_transaction(deploy_txn, PRIVATE_KEY)
-    tx_hash = await w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    tx_hash = await w3.eth.send_raw_transaction(signed_txn.raw_transaction)
     print(f"Deployment TX sent: {tx_hash.hex()}")
 
     # Wait for deployment receipt
@@ -95,7 +94,7 @@ async def buy_token(buy_amount, contract_address):
     }
 
     signed_buy_txn = w3.eth.account.sign_transaction(buy_txn, PRIVATE_KEY)
-    buy_tx_hash = await w3.eth.send_raw_transaction(signed_buy_txn.rawTransaction)
+    buy_tx_hash = await w3.eth.send_raw_transaction(signed_buy_txn.raw_transaction)
     print(f"Buy transaction sent: {buy_tx_hash.hex()}")
 
     buy_receipt = await w3.eth.wait_for_transaction_receipt(buy_tx_hash)

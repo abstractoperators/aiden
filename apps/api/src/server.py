@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
@@ -22,7 +23,7 @@ from src.db.models import (
     UserBase,
     UserUpdate,
 )
-from src.models import Character, TokenCreationRequest
+from src.models import TokenCreationRequest
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -83,6 +84,23 @@ async def get_agent(agent_id: UUID) -> Agent:
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
+    return agent
+
+
+@app.patch("/agents/{agent_id}")
+async def update_agent(agent_id: str, agent_update: AgentUpdate) -> Agent:
+    """
+    Updates an agent by id.
+    Raises a 404 if the agent is not found.
+    """
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    with Session() as session:
+        agent = crud.update_agent(session, agent, agent_update)
     return agent
 
 
@@ -299,17 +317,19 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         if old_agent:
             stop_endpoint = f"{runtime.url}/controller/character/stop"
             requests.post(stop_endpoint)
-            crud.update_agent(session, old_agent, AgentUpdate(runtime_id=None))
+            crud.update_agent(
+                session,
+                old_agent,
+                AgentUpdate(runtime_id=None),
+            )
 
-    start_endpoint = f"{runtime.url}/controller/character/start"
+        start_endpoint = f"{runtime.url}/controller/character/start"
 
     # Start the new agent
+    character_json = json.dumps(agent.character_json)
     resp = requests.post(
         start_endpoint,
-        Character(
-            character_json=agent.character_json,
-            envs=agent.env_file,
-        ).model_dump_json(),
+        json={"character_json": character_json, "envs": agent.env_file},
     )
     eliza_agent_id = resp.json().get("agent_id")
     # Update the agent to have a runtime now

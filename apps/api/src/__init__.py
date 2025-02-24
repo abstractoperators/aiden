@@ -1,8 +1,13 @@
+import logging
 import os
 from logging import getLogger
 
 from dotenv import load_dotenv
 
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 logger = getLogger(__name__)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))

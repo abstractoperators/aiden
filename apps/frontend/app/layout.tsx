@@ -5,7 +5,7 @@ import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
-import { ThemeProvider } from "@/components/themeProvider"
+import { ThemeProvider } from "@/components/theme-provider"
 
 // const inter = Inter({ subsets: ["latin"] })
 const aldrich = Aldrich({ weight: "400", subsets: ["latin"] });
@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${aldrich.className} flex justify-center`}>
+      <body className={`${aldrich.className} w-screen min-h-screen`}>
         <DynamicContextProvider
           settings={{
             environmentId: "08b64418-c698-4620-8ea2-d0e1a31ff10f",

@@ -32,9 +32,9 @@ def create_generic(session: Session, model: M) -> M:
 
 
 def update_generic(session: Session, model: M, model_update: N) -> M:
-    fields_payload = model_update.model_dump(exclude_none=True)
-    for value in fields_payload:
-        setattr(model, value, fields_payload[value])
+    fields_payload = model_update.model_dump(exclude_unset=True)
+    model.sqlmodel_update(fields_payload)
+    session.add(model)
     session.commit()
     session.refresh(model)
 

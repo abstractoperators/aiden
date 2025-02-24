@@ -1,5 +1,5 @@
 import ThemeImage from "./ui/theme-image"
-import NewsletterSignup from "./newsletterSignup"
+import NewsletterSignup from "./newsletter-signup"
 import BannerSky from "@/public/brand_assets/banner-sky.png"
 import BannerOrbit from "@/public/brand_assets/banner-orbit.png"
 
@@ -11,6 +11,7 @@ export default function Hero() {
         lightSrc={BannerSky}
         darkSrc={BannerOrbit}
         alt="Web3 &#129309; AI Agents"
+        priority={true}
       />
       {/* TODO: replace with proper modal integrating dynamic */}
       <NewsletterSignup size="lg">Reserve Your Username</NewsletterSignup>

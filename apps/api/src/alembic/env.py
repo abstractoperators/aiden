@@ -1,10 +1,13 @@
+import logging
 import os
-from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine.url import URL
 from sqlmodel import SQLModel
+
+# from logging.config import fileConfig
+
 
 pass  # Prevent isort from reordering imports
 from src.db.models import *  # noqa
@@ -15,8 +18,17 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# if config.config_file_name is not None:
+#     fileConfig(config.config_file_name)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+
+# Enable log propagation for Alembic
+logging.getLogger("alembic").propagate = True
 
 # add your model's MetaData object here
 # for 'autogenerate' support

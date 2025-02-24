@@ -36,9 +36,9 @@ export default function UserMenu({
         <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href="/profile">
+          <Link href="/user/agents/create">
             <DropdownMenuItem>
-                Profile
+              Control Center
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
