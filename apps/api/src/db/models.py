@@ -106,10 +106,25 @@ class TokenBase(Base):
     ticker: str = Field(description="Token ticker")
     name: str = Field(description="Token name")
     evm_contract_address: str = Field(description="EVM contract address")
+    abi: Json = Field(description="EVM contract ABI", sa_type=JSON)
 
 
 class RuntimeBase(Base):
     url: str = Field(description="URL of the agents runtime.")
+    # AWS does an actual heartbeat/healthcheck + restarts the runtime if it's down.
+    # This is a temp solution so that you can't attempt to start an agent until the runtime has been confirmed to have started at least once
+    started: bool | None = Field(
+        description="If the runtime has started. Proxies for a heartbeat.",
+        default=None,
+    )
+
+
+class RuntimeUpdate(Base):
+    url: str | None = Field(description="URL of the agents runtime.", nullable=True)
+    started: bool | None = Field(
+        description="If the runtime has started. Proxies for a heartbeat.",
+        nullable=True,
+    )
 
 
 # endregion Models

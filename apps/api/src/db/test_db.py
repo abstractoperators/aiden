@@ -1,12 +1,11 @@
 # from unittest.mock import MagicMock
-
+import json
 
 import pytest
 from sqlalchemy import inspect
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from . import Session
 from .crud import create_agent, create_token, create_user
 from .models import Agent, AgentBase, Token, TokenBase, User, UserBase
 
@@ -20,10 +19,13 @@ def session():
     )
     SQLModel.metadata.create_all(engine)
 
-    with Session() as session:
-        yield session
-
-    SQLModel.metadata.drop_all(engine)
+    sess = Session(engine)
+    try:
+        yield sess
+    finally:
+        sess.close()
+        SQLModel.metadata.drop_all(engine)
+        engine.dispose()
 
 
 @pytest.fixture
@@ -77,13 +79,12 @@ def agent_factory(session):
         session.commit()
 
 
-def test_tables_exist():
-    with Session() as session:
-        tables = inspect(session.get_bind()).get_table_names()
-        assert "user" in tables
-        assert "agent" in tables
-        assert "runtime" in tables
-        assert "token" in tables
+def test_tables_exist(session):
+    tables = inspect(session.get_bind()).get_table_names()
+    assert "user" in tables
+    assert "agent" in tables
+    assert "runtime" in tables
+    assert "token" in tables
 
 
 def test_create_token(token_factory):
@@ -91,6 +92,7 @@ def test_create_token(token_factory):
         ticker="AIDEN",
         name="The greatest token ever",
         evm_contract_address="0x123",
+        abi=json.dumps({"key": "value"}),
     )
 
     assert token is not None
@@ -98,6 +100,7 @@ def test_create_token(token_factory):
     assert token.ticker == "AIDEN"
     assert token.name == "The greatest token ever"
     assert token.evm_contract_address == "0x123"
+    assert token.abi == {"key": "value"}
 
 
 def test_create_user(user_factory):
@@ -130,6 +133,7 @@ def test_create_agent(user_factory, token_factory, agent_factory):
         ticker="AIDEN",
         name="The greatest token ever",
         evm_contract_address="0x123",
+        abi=json.dumps({"key": "value"}),
     )
     agent: Agent = agent_factory(
         eliza_agent_id="123",
