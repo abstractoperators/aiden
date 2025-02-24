@@ -172,6 +172,10 @@ def create_runtime() -> Runtime:
         raise HTTPException(status_code=500, detail="Failed to start the runtime")
 
     # TODO: Verify completion of the github action, and that the runtime is up and running
+    # High-key, so important. Probably do it on this server tbh?
+    # i.g. you could just ping it until it's up? Sounds a little ridiculous
+    # whip up a background task and just ping the server for a couple of minutes?
+    # what happens if create_runtime is called again before the first one is up?
 
     url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
 
