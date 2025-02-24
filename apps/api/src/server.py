@@ -181,7 +181,7 @@ def create_runtime() -> Runtime:
                 "X-GitHub-Api-Version": "2022-11-28",
             },
             json={
-                "ref": "michael/prod",
+                "ref": "main",
                 "inputs": {
                     "service-no": str(next_runtime_number),
                 },
