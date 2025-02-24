@@ -16,7 +16,7 @@ export default function ProtectedRoute({
     if (!isLoggedIn) {
       router.replace('/');
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, router]);
 
   return <>{children}</>;
 }
