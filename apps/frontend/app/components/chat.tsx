@@ -28,6 +28,16 @@ interface AgentMessage {
   action: string,
 }
 
+function getPrefix() {switch(process.env.NODE_ENV) {
+  case "development":
+    return "staging."
+  case "production":
+    return ""
+  case "test":
+    return "staging."
+}}
+const chatURL = `https://${getPrefix()}aiden-runtime-2.aiden.space/4f507cc0-f2c4-0155-87e7-11b624010eb7/message`
+
 const left = "m-4 flex flex-col justify-center items-start text-left"
 const right = "m-4 flex flex-col justify-center items-end text-right"
 
@@ -52,7 +62,7 @@ export default function Chat() {
 
       const response = await fetch(
         // TODO: properly routed chats ofc
-        "https://aiden-runtime-2.aiden.space/4f507cc0-f2c4-0155-87e7-11b624010eb7/message",
+        chatURL,
         {
           method: "POST",
           headers: {
