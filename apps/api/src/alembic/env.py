@@ -42,15 +42,15 @@ if not is_test and (db_password and db_host):
         database="postgres",
     )
     connect_args = {}
+
+    config.set_main_option(
+        "sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL).replace("***", db_password)
+    )
 else:
-    SQLALCHEMY_DATABASE_URL = "sqlite:///test.db"
+    SQLALCHEMY_DATABASE_URL = URL.create(drivername="sqlite", database="./test.db")
 
     connect_args = {"check_same_thread": False}
-
-print("Alembic SQLALCHEMY_DATABASE_URL", SQLALCHEMY_DATABASE_URL)
-config.set_main_option(
-    "sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL).replace("***", db_password)
-)
+    config.set_main_option("sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL))
 
 
 def run_migrations_offline() -> None:
