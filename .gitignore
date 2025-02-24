@@ -7,6 +7,7 @@ __pycache__
 *.py[cod]
 *$py.class__pycache__/
 
+.DS_Store
 .vscode
 
 # Artifacts from contract compilation
