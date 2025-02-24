@@ -17,3 +17,85 @@ jobs:
                       echo "No service number provided"
                       exit 1
                   fi
+            - name: Configure aws credentials for ELB
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ELB
+                  aws-region: us-east-1
+
+            - name: Register new target group
+              run: |
+
+                  TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
+                  --name "aiden-runtime-staging-${{ inputs.service-no }}" \
+                  --protocol HTTP \
+                  --port 80 \
+                  --vpc-id vpc-028f84ceaa7ceffdf \
+                  --target-type ip \
+                  --health-check-path "/ping" \
+                  --health-check-interval-seconds 30 \
+                  --query "TargetGroups[0].TargetGroupArn" \
+                  --output text)
+
+                  echo "TARGET_GROUP_ARN=$TARGET_GROUP_ARN" >> $GITHUB_ENV
+
+            - name: Register new rules
+              run: |
+                  PRIORITY=$((100 + ${{ inputs.service-no }})) 
+
+                  # HTTP listener
+                  aws elbv2 create-rule \
+                    --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11 \
+                    --conditions "[{
+                        \"Field\": \"host-header\",
+                        \"Values\": [\"staging.aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
+                        }]" \
+                    --actions "[{
+                        \"Type\": \"forward\",
+                        \"TargetGroupArn\": \"${{ env.TARGET_GROUP_ARN }}\"
+                        }]" \
+                    --priority $PRIORITY
+
+                  # HTTPS listener
+                  aws elbv2 create-rule \
+                    --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654 \
+                    --conditions "[{
+                      \"Field\": \"host-header\",
+                      \"Values\": [\"staging.aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
+                      }]" \
+                    --actions "[{
+                        \"Type\": \"forward\",
+                        \"TargetGroupArn\": \"${{ env.TARGET_GROUP_ARN }}\"
+                        }]" \
+                    --priority $PRIORITY
+
+            - name: Configure aws credentials for ECS
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS
+                  aws-region: us-east-1
+
+            - name: Create new service
+              run: |
+                  aws ecs create-service \
+                    --cluster AidenStaging \
+                    --launch-type FARGATE \
+                    --service-name "aiden-runtime-staging-${{ inputs.service-no }}" \
+                    --task-definition arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging \
+                    --desired-count 1 \
+                    --load-balancers "[{
+                        \"targetGroupArn\": \"${{ env.TARGET_GROUP_ARN }}\",
+                        \"containerName\": \"runtime\",
+                        \"containerPort\": 80
+                        }]" \
+                    --network-configuration "{
+                        \"awsvpcConfiguration\": {
+                            \"subnets\": [\"subnet-0c145d71e9bc921ce\", \"subnet-08a79f79b7375c569\"],
+                            \"securityGroups\": [\"sg-0475538bebfc71f2e\"],
+                            \"assignPublicIp\": \"ENABLED\"
+                            }
+                        }"
+
+permissions:
+    id-token: write
+    contents: read

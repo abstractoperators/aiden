@@ -57,7 +57,7 @@ def get_character_status() -> CharacterStatus:
     if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
         try:
             agents = requests.get("http://localhost:3000/agents").json().get("agents")
-            agent_id = agents[0].get("id") if agents else None
+            agent_id = agents[0].get("id") if agents else ""
         except requests.exceptions.ConnectionError:
             return CharacterStatus(running=False)
         return CharacterStatus(running=True, agent_id=agent_id)
@@ -108,7 +108,7 @@ def start_character(character: Character) -> CharacterStatus:
     )
 
 
-@router.post("/character/read")
+@router.get("/character/read")
 def read_character() -> Character:
     """
     Returns the configuration for the current character
