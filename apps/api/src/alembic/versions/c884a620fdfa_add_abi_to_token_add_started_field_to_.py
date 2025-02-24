@@ -6,6 +6,7 @@ Create Date: 2025-02-24 16:58:17.506301
 
 """
 
+import json
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -24,16 +25,16 @@ def upgrade() -> None:
     op.add_column("token", sa.Column("abi", sa.JSON(), nullable=True))
 
     # Add an example ABI.
+    example_abi = [
+        {
+            "inputs": [],
+            "stateMutability": "nonpayable",
+            "type": "constructor",
+        }
+    ]
+
     op.execute(
-        """
-        INSERT INTO token (abi) VALUES '[
-            {
-                "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            }
-        ]';
-        """
+        "INSERT INTO token (abi) VALUES (:abi)", {"abi": json.dumps(example_abi)}
     )
 
     op.alter_column("token", "abi", existing_type=sa.JSON(), nullable=False)
