@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from typing import TypeVar
+from uuid import UUID
 
 from sqlmodel import Session, select
 
@@ -62,7 +63,7 @@ def delete_user(session: Session, user: User) -> None:
     return delete_generic(session, user)
 
 
-def get_user(session: Session, user_id: str) -> User | None:
+def get_user(session: Session, user_id: UUID) -> User | None:
     stmt = select(User).where(User.id == user_id)
     return session.exec(stmt).first()
 
@@ -92,7 +93,7 @@ def get_agents(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Ag
     return session.scalars(stmt).all()
 
 
-def get_agent(session: Session, agent_id: str) -> Agent | None:
+def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     stmt = select(Agent).where(Agent.id == agent_id)
     return session.exec(stmt).first()
 
@@ -105,7 +106,7 @@ def create_runtime(session: Session, runtime: RuntimeBase) -> Runtime:
     return create_generic(session, Runtime(**runtime.model_dump()))
 
 
-def get_runtime(session: Session, runtime_id: str) -> Runtime | None:
+def get_runtime(session: Session, runtime_id: UUID) -> Runtime | None:
     stmt = select(Runtime).where(Runtime.id == runtime_id)
     return session.exec(stmt).first()
 
@@ -134,7 +135,7 @@ def get_tokens(session: Session, skip: int = 0, limit: int = 100) -> Sequence[To
     return session.scalars(stmt).all()
 
 
-def get_token(session: Session, token_id: str) -> Token | None:
+def get_token(session: Session, token_id: UUID) -> Token | None:
     stmt = select(Token).where(Token.id == token_id)
     return session.exec(stmt).first()
 

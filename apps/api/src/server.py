@@ -147,7 +147,7 @@ def get_sell_txn(token_id: UUID, user_address: str, amount_tokens: int) -> dict:
     amount: Amount of tokens to sell
     """
     with Session() as session:
-        token = crud.get_token_by_address(session, token_id)
+        token = crud.get_token(session, token_id)
 
         if not token:
             raise ValueError(f"Token {token_id} not found")
@@ -170,7 +170,7 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
     TODO: Change amount_sei -> amount_tokens
     """
     with Session() as session:
-        token = crud.get_token_by_address(session, token_id)
+        token = crud.get_token(session, token_id)
 
         if not token:
             raise ValueError(f"Token {token_id} not found")
