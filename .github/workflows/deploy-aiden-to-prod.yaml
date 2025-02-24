@@ -1,0 +1,23 @@
+run-name: Deploy Aiden API to prod
+name: Deploy Aiden API to prod
+
+on:
+    workflow_dispatch:
+
+jobs:
+    force-redeployment:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS
+                  aws-region: us-east-1
+
+            - name: Force redeployment
+              run: |
+                  aws ecs update-service --cluster Aiden --service aiden-api --force-new-deployment
+
+permissions:
+    id-token: write
+    contents: read
