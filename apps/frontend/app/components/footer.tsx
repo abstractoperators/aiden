@@ -35,9 +35,9 @@ export default function Footer({ variant }: variantProp) {
 
   return (
     <footer className={footerStyle}>
-      <div className="container flex flex-col items-center justify-between gap-4 py-10 md:flex-row md:py-4">
+      <div className="container flex flex-col items-center justify-between text-sm gap-4 py-10 md:flex-row md:py-4">
         <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-          <p className="text-center text-sm leading-loose md:text-left">
+          <p className="text-center leading-loose md:text-left">
             © 2025 AIDEN. All rights reserved.
           </p>
         </div>
