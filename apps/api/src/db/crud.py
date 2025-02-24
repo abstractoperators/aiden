@@ -61,7 +61,12 @@ def delete_user(session: Session, user: User) -> None:
     return delete_generic(session, user)
 
 
-def get_user(session: Session, public_key: str) -> User | None:
+def get_user(session: Session, user_id: str) -> User | None:
+    stmt = select(User).where(User.id == user_id)
+    return session.exec(stmt).first()
+
+
+def get_user_by_public_key(session: Session, public_key: str) -> User | None:
     stmt = select(User).where(User.public_key == public_key)
     return session.exec(stmt).first()
 

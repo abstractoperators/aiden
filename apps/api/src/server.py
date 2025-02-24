@@ -1,6 +1,7 @@
 import os
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
+from uuid import UUID
 
 import requests
 from fastapi import FastAPI, HTTPException
@@ -69,7 +70,7 @@ async def get_agents() -> Sequence[Agent]:
 
 
 @app.get("/agents/{agent_id}")
-async def get_agent(agent_id: str) -> Agent:
+async def get_agent(agent_id: UUID) -> Agent:
     """
     Returns an agent by id.
     Raises a 404 if the agent is not found.
@@ -120,7 +121,7 @@ async def get_tokens() -> Sequence[Token]:
 
 
 @app.get("/tokens/{token_id}")
-async def get_token(token_id: str) -> Token:
+async def get_token(token_id: UUID) -> Token:
     """
     Returns a token by id.
     Raises a 404 if the token is not found.
@@ -192,7 +193,7 @@ def get_runtimes() -> Sequence[Runtime]:
 
 
 @app.get("/runtimes/{runtime_id}")
-def get_runtime(runtime_id: str) -> Runtime:
+def get_runtime(runtime_id: UUID) -> Runtime:
     """
     Returns a runtime by id.
     Raises a 404 if the runtime is not found.
@@ -207,7 +208,7 @@ def get_runtime(runtime_id: str) -> Runtime:
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
-def start_agent(agent_id: str, runtime_id: str) -> tuple[Agent, Runtime]:
+def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
     """
     Starts an agent on a runtime.
     Returns a tuple of the agent and runtime.
@@ -273,14 +274,44 @@ async def get_users() -> Sequence[User]:
     return users
 
 
+@app.get("/users/{user_id}")
+async def get_user(user_id: UUID) -> User:
+    """
+    Returns a user by id.
+    Raises a 404 if the user is not found.
+    """
+    with Session() as session:
+        user: User | None = crud.get_user(session, user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
+@app.get("/users/{public_key}")
+async def get_user_by_public_key(public_key: str) -> User:
+    """
+    Returns a user by public key.
+    Raises a 404 if the user is not found.
+    """
+    with Session() as session:
+        user: User | None = crud.get_user_by_public_key(session, public_key)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
 @app.patch("/users/{user_id}")
-async def update_user(user_pub_key: str, user_update: UserUpdate) -> User:
+async def update_user(user_id: UUID, user_update: UserUpdate) -> User:
     """
     Updates an existing in the database, and returns the full user.
     Returns a 404 if the user is not found.
     """
     with Session() as session:
-        user = crud.get_user(session, user_pub_key)
+        user = crud.get_user(session, user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -289,7 +320,7 @@ async def update_user(user_pub_key: str, user_update: UserUpdate) -> User:
 
 
 @app.delete("/users/{user_id}")
-async def delete_user(user_id: str) -> None:
+async def delete_user(user_id: UUID) -> None:
     """
     Deletes a user from the database.
     Returns a 404 if the user is not found.
