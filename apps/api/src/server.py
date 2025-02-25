@@ -323,6 +323,7 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         ping_endpoint = f"{runtime.url}/ping"
         resp = requests.get(ping_endpoint)
         resp.raise_for_status()
+        runtime.started = True
 
         old_agent = runtime.agent
         if old_agent:
