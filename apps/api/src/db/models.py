@@ -56,7 +56,9 @@ class UserUpdate(Base):
 
 
 class AgentBase(Base):
-    eliza_agent_id: str = Field(description="Eliza's agent id", nullable=False)
+    eliza_agent_id: str | None = Field(
+        description="Eliza's agent id", nullable=True, default=None
+    )
     owner_id: UUID = Field(
         foreign_key="user.id",
         description="UUID of the User who owns the agent.",
@@ -66,11 +68,13 @@ class AgentBase(Base):
         foreign_key="runtime.id",
         description="UUID of the runtime the agent uses.",
         nullable=True,
+        default=None,
     )
     token_id: UUID = Field(
         foreign_key="token.id",
         description="UUID of the token the agent uses.",
         nullable=True,
+        default=None,
     )
     # 🤮
     character_json: dict = Field(
