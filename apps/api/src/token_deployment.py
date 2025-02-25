@@ -64,7 +64,7 @@ async def deploy_token(name, ticker):
     receipt = await buy_token(buy_amount, contract_address)
     print(receipt)
 
-    return contract_address
+    return contract_address, contract_abi
 
 
 async def buy_token(buy_amount, contract_address):
