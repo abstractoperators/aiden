@@ -218,9 +218,13 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     if os.getenv("ENV") == "staging":
         url = f"https://staging.aiden-runtime-{next_runtime_number}-staging.aiden.space"
         actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373/dispatches"
-    else:
+    elif os.getenv("ENV") == "prod":
         url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
         actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches"
+    else:
+        # TODO: dev env w/ local runtime.
+        pass
+
     # Store the runtime in the database
     with Session() as session:
         runtime = crud.create_runtime(
