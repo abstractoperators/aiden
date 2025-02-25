@@ -217,8 +217,10 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     next_runtime_number = runtime_count + 1
     if os.getenv("ENV") == "staging":
         url = f"https://staging.aiden-runtime-{next_runtime_number}-staging.aiden.space"
+        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373/dispatches"
     else:
         url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
+        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches"
     # Store the runtime in the database
     with Session() as session:
         runtime = crud.create_runtime(
@@ -226,30 +228,30 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
             RuntimeBase(url=url, started=False),
         )
 
-    async def helper():
-        GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
-        next_runtime_number = runtime_count + 1
-        try:
-            resp = requests.post(
-                "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches",
-                headers={
-                    "Accept": "application/vnd.github+json",
-                    "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
-                    "X-GitHub-Api-Version": "2022-11-28",
+    GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
+    next_runtime_number = runtime_count + 1
+    try:
+        resp = requests.post(
+            actions_url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            json={
+                "ref": "main",
+                "inputs": {
+                    "service-no": str(next_runtime_number),
                 },
-                json={
-                    "ref": "michael/crud-agents",
-                    "inputs": {
-                        "service-no": str(next_runtime_number),
-                    },
-                },
-                timeout=3,
-            )
-            resp.raise_for_status()
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail="Failed to start the runtime.")
+            },
+            timeout=3,
+        )
+        resp.raise_for_status()
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail="Failed to start the runtime.")
 
+    async def helper():
         # Poll the runtime for a couple of minutes to see if it stands up
         for _ in range(60):
             await asyncio.sleep(10)
