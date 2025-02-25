@@ -226,11 +226,6 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         pass
 
     # Store the runtime in the database
-    with Session() as session:
-        runtime = crud.create_runtime(
-            session,
-            RuntimeBase(url=url, started=False),
-        )
 
     GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
     next_runtime_number = runtime_count + 1
@@ -254,6 +249,13 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Failed to start the runtime.")
+
+    # Assume that if the action didn't error, then all is good 🤡
+    with Session() as session:
+        runtime = crud.create_runtime(
+            session,
+            RuntimeBase(url=url, started=False),
+        )
 
     async def helper():
         # Poll the runtime for a couple of minutes to see if it stands up

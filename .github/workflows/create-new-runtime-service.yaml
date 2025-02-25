@@ -79,7 +79,7 @@ jobs:
             - name: Create new service
               run: |
                   aws ecs create-service \
-                    --cluster 
+                    --cluster Aiden
                     --launch-type FARGATE \
                     --service-name "aiden-runtime-${{ inputs.service-no }}" \
                     --task-definition arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime \
