@@ -88,7 +88,7 @@ async def get_agent(agent_id: UUID) -> Agent:
 
 
 @app.patch("/agents/{agent_id}")
-async def update_agent(agent_id: str, agent_update: AgentUpdate) -> Agent:
+async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> Agent:
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
@@ -303,7 +303,9 @@ def get_runtime(runtime_id: UUID) -> Runtime:
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
-def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
+def start_agent(
+    agent_id: UUID, runtime_id: UUID, background_tasks: BackgroundTasks
+) -> tuple[Agent, Runtime]:
     """
     Starts an agent on a runtime.
     Returns a tuple of the agent and runtime.
@@ -314,6 +316,8 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
+        agent_character_json: dict = agent.character_json
+        agent_env_file: str = agent.env_file
 
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
@@ -328,7 +332,8 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         old_agent = runtime.agent
         if old_agent:
             stop_endpoint = f"{runtime.url}/controller/character/stop"
-            requests.post(stop_endpoint)
+            resp = requests.post(stop_endpoint)
+            resp.raise_for_status()
             crud.update_agent(
                 session,
                 old_agent,
@@ -338,20 +343,37 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         start_endpoint = f"{runtime.url}/controller/character/start"
 
     # Start the new agent
-    character_json = json.dumps(agent.character_json)
-    resp = requests.post(
-        start_endpoint,
-        json={"character_json": character_json, "envs": agent.env_file},
-    )
-    eliza_agent_id = resp.json().get("agent_id")
-    # Update the agent to have a runtime now
-    with Session() as session:
-        agent = crud.update_agent(
-            session,
-            agent,
-            AgentUpdate(eliza_agent_id=eliza_agent_id, runtime_id=runtime_id),
+    async def helper():
+        """
+        Polls the runtime to ensure the agent has started.
+        Allows for a faster response to the caller
+        """
+        character_json: str = json.dumps(agent_character_json)
+        env_file: str = agent_env_file
+        resp = requests.post(
+            start_endpoint,
+            json={"character_json": character_json, "envs": env_file},
         )
+        resp.raise_for_status()
+        # Update the agent once it has been confirmed to be started.
 
+        for _ in range(60):
+            resp = requests.get(f"{runtime.url}/controller/character/status")
+            if resp.status_code == 200:
+                eliza_agent_id: str = resp.json().get("agent_id")
+                with Session() as session:
+                    crud.update_agent(
+                        session,
+                        agent,
+                        AgentUpdate(
+                            eliza_agent_id=eliza_agent_id,
+                            runtime_id=runtime_id,
+                        ),
+                    )
+                return
+            await asyncio.sleep(10)
+
+    background_tasks.add_task(helper)
     return (agent, runtime)
 
 
