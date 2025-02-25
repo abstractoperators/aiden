@@ -56,7 +56,8 @@ async def deploy_token(name, ticker) -> tuple[str, list]:
 
     # Wait for deployment receipt
     receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
-    contract_address = receipt.contractAddress
+    # Mypy complains, but it's working fine.
+    contract_address = receipt.contractAddress  # type: ignore
     print(f"Contract deployed at: {contract_address}")
 
     # Test buying a tiny amount (To remove in prod)
