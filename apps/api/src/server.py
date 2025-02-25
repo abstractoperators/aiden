@@ -115,7 +115,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     ticker = token_request.ticker
 
     # Deploy the token
-    contract_address = await deploy_token(name, ticker)
+    contract_address, contract_abi = await deploy_token(name, ticker)
 
     with Session() as session:
         token = crud.create_token(
@@ -124,6 +124,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
                 name=name,
                 ticker=ticker,
                 evm_contract_address=contract_address,
+                abi=json.dumps(contract_abi),
             ),
         )
 

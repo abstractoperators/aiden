@@ -8,7 +8,7 @@ SEI_RPC_URL = os.getenv("SEI_RPC_URL")  # Get the SEI EVM RPC URL
 
 
 # Connects to SEI's EVM RPC and deploys a new instance of the token contract.
-async def deploy_token(name, ticker):
+async def deploy_token(name, ticker) -> tuple[str, list]:
     SEI_RPC_URL = os.getenv("SEI_RPC_URL")
     PRIVATE_KEY = os.getenv("TOKEN_DEPLOYER_PRIVATE_KEY")
 
@@ -64,7 +64,7 @@ async def deploy_token(name, ticker):
     receipt = await buy_token(buy_amount, contract_address)
     print(receipt)
 
-    return contract_address
+    return contract_address, contract_abi
 
 
 async def buy_token(buy_amount, contract_address):
