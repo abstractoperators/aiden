@@ -124,7 +124,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
                 name=name,
                 ticker=ticker,
                 evm_contract_address=contract_address,
-                abi=contract_abi,
+                abi=json.dumps(contract_abi),
             ),
         )
 
