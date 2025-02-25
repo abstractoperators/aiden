@@ -319,8 +319,10 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
-        if not runtime.started:
-            raise HTTPException(status_code=500, detail="Runtime not started")
+
+        ping_endpoint = f"{runtime.url}/ping"
+        resp = requests.get(ping_endpoint)
+        resp.raise_for_status()
 
         old_agent = runtime.agent
         if old_agent:
