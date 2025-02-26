@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .db.models import AgentBase, RuntimeBase, TokenBase
+
 
 # TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
 class Character(BaseModel):
@@ -57,3 +59,10 @@ class ElizaCharacterJson(BaseModel):
     topics: list[str]
     style: dict[str, Any]
     adjectives: list[str]
+
+
+# Mirror of Agent model in db.models, but with base model for runtime and token instead of their table types.
+# https://sqlmodel.tiangolo.com/tutorial/fastapi/relationships/#update-the-path-operations
+class AgentPublic(AgentBase):
+    token: TokenBase | None = None
+    runtime: RuntimeBase | None = None
