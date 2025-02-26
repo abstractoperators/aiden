@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .db.models import AgentBase, RuntimeBase, TokenBase
+
 
 # TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
 class Character(BaseModel):
@@ -57,3 +59,8 @@ class ElizaCharacterJson(BaseModel):
     topics: list[str]
     style: dict[str, Any]
     adjectives: list[str]
+
+
+class AgentPublic(AgentBase):
+    token: TokenBase | None
+    runtime: RuntimeBase | None
