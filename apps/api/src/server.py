@@ -216,7 +216,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         runtime_count = len(runtimes)
     next_runtime_number = runtime_count + 1
     if os.getenv("ENV") == "staging":
-        url = f"https://staging.aiden-runtime-{next_runtime_number}-staging.aiden.space"
+        url = f"https://aiden-runtime-{next_runtime_number}.staigen.space"
         actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373/dispatches"
     elif os.getenv("ENV") == "prod":
         url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
