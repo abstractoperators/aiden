@@ -11,9 +11,10 @@ import Link from "next/link"
 // You can use a Zod schema here if you want.
 // TODO: use Zod schema here
 // TODO: generalize agent type and create an additional AgentDraft type
-export type Agent = {
+export interface Agent {
   name: string
   ticker: string
+  runtimeUrl: string
   marketCapitalization: number
   holderCount: number
 }
@@ -48,7 +49,14 @@ export const columns: ColumnDef<Agent>[] = [
     ),
     cell: ({ row }) => (
       // TODO: replace with dynamic route
-      <Link href={`/agents/${row.getValue("name")}`}>
+      <Link
+        href={{
+          pathname: `/agents/${row.getValue("name")}`,
+          query: {
+            runtimeUrl: row.getValue("runtimeUrl"),
+          }
+        }}
+      >
         <hgroup>
           <h2>{row.getValue("name")}</h2>
           <h3>${row.original.ticker}</h3>

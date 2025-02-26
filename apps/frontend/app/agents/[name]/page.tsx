@@ -4,14 +4,15 @@ import Chat from "@/components/chat"
 import Footer from "@/components/footer"
 import Header from "@/components/header"
 
-// export async function generateStaticParams() {}
-
 export default async function AgentHome({
   params,
+  searchParams,
 }: {
-  params: Promise<{ name: string }>
+  params: Promise<{ name: string }>,
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>,
 }) {
-  const { name } = await params
+  const name = decodeURI((await params).name)
+  const { runtimeUrl = "" } = await searchParams
 
   return (
     <div className="flex flex-col items-center w-full min-h-screen">
@@ -20,7 +21,9 @@ export default async function AgentHome({
         <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
           {name}
         </h1>
-        <Chat />
+        <Chat
+          runtimeUrl={typeof(runtimeUrl) === "string" ? runtimeUrl : runtimeUrl[0]}
+        />
       </main>
       <Footer />
     </div>
