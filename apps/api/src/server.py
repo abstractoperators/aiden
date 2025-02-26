@@ -7,6 +7,7 @@ from uuid import UUID
 
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from pydantic import TypeAdapter
 
 from src import logger
@@ -460,3 +461,6 @@ async def delete_user(user_id: UUID) -> None:
             raise HTTPException(status_code=404, detail="User not found")
         crud.delete_user(session, user)
     return None
+
+
+FastAPIInstrumentor.instrument_app(app)
