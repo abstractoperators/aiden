@@ -7,6 +7,7 @@ from uuid import UUID
 
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from pydantic import TypeAdapter
 
 from src import logger
 from src.db import Session, crud, init_db
@@ -73,7 +74,7 @@ async def get_agents() -> Sequence[Agent]:
 
 
 @app.get("/agents/{agent_id}")
-async def get_agent(agent_id: UUID, response_model=AgentPublic) -> AgentPublic:
+async def get_agent(agent_id: UUID) -> AgentPublic:
     """
     Returns an agent by id.
     Raises a 404 if the agent is not found.
@@ -86,9 +87,9 @@ async def get_agent(agent_id: UUID, response_model=AgentPublic) -> AgentPublic:
 
         # Prefetch the runtime
         agent.runtime  # noqa
-        agent.token
+        agent.token  # noqa
 
-        return agent
+        return TypeAdapter(AgentPublic).validate_python(agent)
 
 
 @app.patch("/agents/{agent_id}")

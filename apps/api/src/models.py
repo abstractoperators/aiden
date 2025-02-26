@@ -61,6 +61,8 @@ class ElizaCharacterJson(BaseModel):
     adjectives: list[str]
 
 
+# Mirror of Agent model in db.models, but with base model for runtime and token instead of their table types.
+# https://sqlmodel.tiangolo.com/tutorial/fastapi/relationships/#update-the-path-operations
 class AgentPublic(AgentBase):
-    token: TokenBase | None
-    runtime: RuntimeBase | None
+    token: TokenBase | None = None
+    runtime: RuntimeBase | None = None
