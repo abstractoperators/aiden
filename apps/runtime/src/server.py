@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 import fastapi
 import requests
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 
 
@@ -27,7 +26,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Instrumentator().instrument(app).expose(app)
 
 agent_runtime_subprocess = None
 
