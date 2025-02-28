@@ -20,7 +20,7 @@ services:
     platform: linux/amd64
     image: api:latest
     ports:
-      - "80:80"
+      - "8003:80"
 
   agent-runtime:
     build: 
