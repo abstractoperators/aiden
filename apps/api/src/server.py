@@ -32,7 +32,6 @@ from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_un
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
-    Instrumentator().instrument(app).expose(app)
     init_db()
     if test_db_connection():
         logger.info("DB Connection Successful")
@@ -43,6 +42,8 @@ async def lifespan(app: FastAPI):  # noqa
 
 
 app = FastAPI(lifespan=lifespan)
+
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/ping")
