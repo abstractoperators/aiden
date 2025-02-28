@@ -7,6 +7,7 @@ from uuid import UUID
 
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import TypeAdapter
 
 from src import logger
@@ -41,6 +42,8 @@ async def lifespan(app: FastAPI):  # noqa
 
 
 app = FastAPI(lifespan=lifespan)
+
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/ping")
