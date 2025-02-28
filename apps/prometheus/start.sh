@@ -7,7 +7,7 @@ ENV=${ENV:-dev}
 
 case "$ENV" in
   prod)
-    CONFIG_FILE="/etc/prometheus/prometheus.prod.yml"
+    CONFIG_FILE="/etc/prometheus/prometheus.yml"
     ;;
   staging)
     CONFIG_FILE="/etc/prometheus/prometheus.staging.yml"
