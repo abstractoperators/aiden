@@ -69,6 +69,9 @@ build-prometheus:
 	docker compose -f docker-compose.yml build prometheus
 run-prometheus: down-prometheus build-prometheus
 	docker compose -f docker-compose.yml up -d prometheus
+aws-ecr-push-prometheus: aws-ecr-login
+	docker tag prometheus:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 
 mypy:
 	cd apps/api && uv run mypy src || true
