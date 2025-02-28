@@ -12,3 +12,5 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: ["host.docker.internal:8003"]
+
+  # TODO: Add frontend and agent-runtime scrape configs
