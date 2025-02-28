@@ -41,6 +41,7 @@ services:
       dockerfile: ./Dockerfile.prometheus
     container_name: prometheus
     platform: linux/amd64
+    image: prometheus:latest
     ports:
       - "9090:9090"
 
