@@ -62,7 +62,13 @@ aws-ecr-push-runtime: aws-ecr-login
 	docker tag agent-runtime:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
 
-
+##### Prometheus ##### 
+down-prometheus:
+	docker compose -f docker-compose.yml down prometheus
+build-prometheus:
+	docker compose -f docker-compose.yml build prometheus
+run-prometheus: down-prometheus build-prometheus
+	docker compose -f docker-compose.yml up -d prometheus
 
 mypy:
 	cd apps/api && uv run mypy src || true

@@ -35,6 +35,15 @@ services:
     ports:
       - "8002:80"
 
+  prometheus:
+    build:
+      context: ./apps/prometheus
+      dockerfile: ./Dockerfile.prometheus
+    container_name: prometheus
+    platform: linux/amd64
+    ports:
+      - "9090:9090"
+
 volumes:
   eve-agent:
   agent-runtime:
