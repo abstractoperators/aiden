@@ -14,7 +14,6 @@ import {
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import {
     ATTR_SERVICE_NAME,
-    ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
 
 console.log("Registering prometheus exporter...");
@@ -27,8 +26,7 @@ const detectedResources = detectResourcesSync({
 });
 
 const customResources = new Resource({
-    [ATTR_SERVICE_NAME]: 'my-app',
-    [ATTR_SERVICE_VERSION]: '0.1.0',
+    [ATTR_SERVICE_NAME]: 'aiden-frontend',
 });
 
 const resources = detectedResources.merge(customResources);
@@ -38,7 +36,7 @@ const meterProvider = new MeterProvider({
     resource: resources,
 });
 const hostMetrics = new HostMetrics({
-    name: `my-app-metrics`,
+    name: `aiden-frontend`,
     meterProvider,
 });
 
