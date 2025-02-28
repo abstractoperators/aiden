@@ -9,7 +9,7 @@ case "$ENV" in
   prod)
     CONFIG_FILE="/etc/prometheus/prometheus.prod.yml"
     ;;
-  stage)
+  staging)
     CONFIG_FILE="/etc/prometheus/prometheus.staging.yml"
     ;;
   *)
@@ -22,4 +22,5 @@ echo "Starting Prometheus with config file: $CONFIG_FILE"
 exec /bin/prometheus \
   --config.file="$CONFIG_FILE" \
   --storage.tsdb.path=/prometheus \
+  --web.listen-address="0.0.0.0:9090" \
   "$@"
