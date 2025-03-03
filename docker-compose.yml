@@ -44,6 +44,9 @@ services:
     image: prometheus:latest
     ports:
       - "9090:9090"
+    env_file:
+      - path: "./apps/prometheus/.env"
+        required: true
 
 volumes:
   eve-agent:

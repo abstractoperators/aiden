@@ -24,6 +24,10 @@ esac
 echo "Starting Prometheus with config file: $CONFIG_FILE"
 echo "Starting Prometheus with web config file: $WEB_CONFIG_FILE"
 
+# Update config file with secrets read from environment variables because config file doesn't support environment vars
+# Also can't bake them into config files because we're open sourced.
+sed -in "s/\$PROMETHEUS_BASIC_AUTH/${PROMETHEUS_BASIC_AUTH}/g" $CONFIG_FILE
+
 exec /bin/prometheus \
   --config.file="$CONFIG_FILE" \
   --storage.tsdb.path=/prometheus \

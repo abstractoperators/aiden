@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import TypeAdapter
 
@@ -42,6 +42,21 @@ async def lifespan(app: FastAPI):  # noqa
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.middleware("http")
+async def metrics_auth_middleware(request: Request, call_next):
+    if request.url.path == "/metrics":
+        auth_header = request.headers.get("Authorization")
+        if (
+            not auth_header
+            or auth_header.split(" ")[0] != "Basic"
+            or auth_header.split(" ")[1] != os.getenv("PROMETHEUS_BASIC_AUTH")
+        ):
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+    return await call_next(request)
+
 
 Instrumentator().instrument(app).expose(app)
 
