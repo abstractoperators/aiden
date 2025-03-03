@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Plus } from "lucide-react"
 
 import {
   Collapsible,
@@ -9,6 +9,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -19,6 +20,7 @@ import {
   // SidebarRail,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 const data = {
   navMain: [
@@ -28,7 +30,7 @@ const data = {
       items: [
         {
           title: "Created Agents",
-          url: "/user/agents/create",
+          url: "/user/agents/created",
         }
       ],
     },
@@ -91,6 +93,14 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
           </Collapsible>
         ))}
       </SidebarContent>
+      <SidebarFooter className="flex flex-col w-full justify-center items-center">
+        <Link href="/user/agents/creation">
+          <Button>
+            <Plus strokeWidth={5}/>
+            Create an Agent
+          </Button>
+        </Link>
+      </SidebarFooter>
     </Sidebar>
   )
 }
