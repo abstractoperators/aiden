@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from uuid import UUID
@@ -46,16 +47,40 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.middleware("http")
-async def metrics_auth_middleware(request: Request, call_next):
+async def auth_middleware(request: Request, call_next):
     if request.url.path == "/metrics":
         auth_header = request.headers.get("Authorization")
-        if (
-            not auth_header
-            or auth_header.split(" ")[0] != "Basic"
-            or auth_header.split(" ")[1] != os.getenv("PROMETHEUS_BASIC_AUTH")
-        ):
-            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+        if not auth_header:
+            return JSONResponse(
+                status_code=401, content={"detail": "No authorization header"}
+            )
 
+        scheme_name, credentials_b64_encoded = auth_header.split(" ")
+        if scheme_name != "Basic":
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": f"Invalid authorization scheme {scheme_name}. Should be Basic."
+                },
+            )
+
+        credentials = b64decode(credentials_b64_encoded).decode("utf-8")
+        username, password = credentials.split(":")
+        print(credentials)
+        if not username == "prometheus":
+            return JSONResponse(
+                status_code=401,
+                content={"detail": f"User {username} is not authorized"},
+            )
+        if not password == os.getenv("PROMETHEUS_BASIC_AUTH"):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": f"Incorrect password for user {username}"},
+            )
+
+        return await call_next(request)
+    else:
+        pass
     return await call_next(request)
 
 
