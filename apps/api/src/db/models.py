@@ -108,7 +108,7 @@ class AgentUpdate(Base):
         nullable=True,
         default=None,
     )
-    character_json: Json | None = Field(
+    character_json: dict | None = Field(
         description="Eliza character json. Json or dict.", nullable=True, default=None
     )
     env_file: str | None = Field(
