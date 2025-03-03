@@ -46,17 +46,27 @@ class UserBase(Base):
 
 
 class UserUpdate(Base):
-    public_key: str | None = Field(description="Ethereum public key", nullable=True)
-    public_key_sei: str | None = Field(description="SEI public key", nullable=True)
-    email: str | None = Field(description="Email of the user.", nullable=True)
-    phone_number: str | None = Field(
-        description="Phone number of the user.", nullable=True
+    public_key: str | None = Field(
+        description="Ethereum public key", nullable=True, default=None
     )
-    username: str | None = Field(description="Username of the user.", nullable=True)
+    public_key_sei: str | None = Field(
+        description="SEI public key", nullable=True, default=None
+    )
+    email: str | None = Field(
+        description="Email of the user.", nullable=True, default=None
+    )
+    phone_number: str | None = Field(
+        description="Phone number of the user.", nullable=True, default=None
+    )
+    username: str | None = Field(
+        description="Username of the user.", nullable=True, default=None
+    )
 
 
 class AgentBase(Base):
-    eliza_agent_id: str = Field(description="Eliza's agent id", nullable=False)
+    eliza_agent_id: str | None = Field(
+        description="Eliza's agent id", nullable=True, default=None
+    )
     owner_id: UUID = Field(
         foreign_key="user.id",
         description="UUID of the User who owns the agent.",
@@ -66,11 +76,13 @@ class AgentBase(Base):
         foreign_key="runtime.id",
         description="UUID of the runtime the agent uses.",
         nullable=True,
+        default=None,
     )
     token_id: UUID = Field(
         foreign_key="token.id",
         description="UUID of the token the agent uses.",
         nullable=True,
+        default=None,
     )
     # 🤮
     character_json: dict = Field(
@@ -99,7 +111,9 @@ class AgentUpdate(Base):
     character_json: Json | None = Field(
         description="Eliza character json. Json or dict.", nullable=True, default=None
     )
-    env_file: str | None = Field(description=".env for the agent", nullable=True)
+    env_file: str | None = Field(
+        description=".env for the agent", nullable=True, default=None
+    )
 
 
 class TokenBase(Base):
@@ -120,10 +134,13 @@ class RuntimeBase(Base):
 
 
 class RuntimeUpdate(Base):
-    url: str | None = Field(description="URL of the agents runtime.", nullable=True)
+    url: str | None = Field(
+        description="URL of the agents runtime.", nullable=True, default=None
+    )
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
         nullable=True,
+        default=None,
     )
 
 

@@ -11,6 +11,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.sql import text
 
 # revision identifiers, used by Alembic.
 revision: str = "c884a620fdfa"
@@ -33,9 +34,8 @@ def upgrade() -> None:
         }
     ]
 
-    op.execute(
-        "INSERT INTO token (abi) VALUES (:abi)", {"abi": json.dumps(example_abi)}
-    )
+    conn = op.get_bind()
+    conn.execute(text("UPDATE token SET abi = :abi"), {"abi": json.dumps(example_abi)})
 
     op.alter_column("token", "abi", existing_type=sa.JSON(), nullable=False)
     # ### end Alembic commands ###

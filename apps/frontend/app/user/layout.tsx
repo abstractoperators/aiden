@@ -1,4 +1,3 @@
-import ProtectedRoute from "@/components/protected-route";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { UserSidebar } from "@/components/user-sidebar";
 import Footer from "@/components/footer";
@@ -10,7 +9,6 @@ export default function UserLayout({
   children: React.ReactNode,
 }) {
   return (
-    <ProtectedRoute>
       <SidebarProvider>
         <div className="flex flex-col w-full min-h-screen">
           <Header />
@@ -23,6 +21,5 @@ export default function UserLayout({
           <Footer />
         </div>
       </SidebarProvider>
-    </ProtectedRoute>
   )
 }

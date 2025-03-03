@@ -8,7 +8,7 @@ SEI_RPC_URL = os.getenv("SEI_RPC_URL")  # Get the SEI EVM RPC URL
 
 
 # Connects to SEI's EVM RPC and deploys a new instance of the token contract.
-async def deploy_token(name, ticker):
+async def deploy_token(name, ticker) -> tuple[str, list]:
     SEI_RPC_URL = os.getenv("SEI_RPC_URL")
     PRIVATE_KEY = os.getenv("TOKEN_DEPLOYER_PRIVATE_KEY")
 
@@ -56,7 +56,8 @@ async def deploy_token(name, ticker):
 
     # Wait for deployment receipt
     receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
-    contract_address = receipt.contractAddress
+    # Mypy complains, but it's working fine.
+    contract_address = receipt.contractAddress  # type: ignore
     print(f"Contract deployed at: {contract_address}")
 
     # Test buying a tiny amount (To remove in prod)
@@ -64,7 +65,7 @@ async def deploy_token(name, ticker):
     receipt = await buy_token(buy_amount, contract_address)
     print(receipt)
 
-    return contract_address
+    return contract_address, contract_abi
 
 
 async def buy_token(buy_amount, contract_address):

@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s # By default, scrape targets every 15 seconds.
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          group: "prometheus"
+    basic_auth:
+      username: "admin"
+      password: "$PROMETHEUS_BASIC_AUTH"
+
+  - job_name: "api"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["host.docker.internal:8003"]
+    basic_auth:
+      username: "prometheus"
+      password: "$PROMETHEUS_BASIC_AUTH"
+      # Note: Env vars don't actually work in prometheus files.
+      # start.sh will sed these with env vars before starting prometheus

@@ -28,7 +28,7 @@ run-api: down-api build-api
 
 run-api-nodocker:
 	cd apps/api && \
-	uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8001
+	uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8003
 
 aws-ecr-push-api: aws-ecr-login
 	docker tag api:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/api:latest
@@ -62,7 +62,16 @@ aws-ecr-push-runtime: aws-ecr-login
 	docker tag agent-runtime:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
 
-
+##### Prometheus ##### 
+down-prometheus:
+	docker compose -f docker-compose.yml down prometheus
+build-prometheus:
+	docker compose -f docker-compose.yml build prometheus
+run-prometheus: down-prometheus build-prometheus
+	docker compose -f docker-compose.yml up -d prometheus
+aws-ecr-push-prometheus: aws-ecr-login
+	docker tag prometheus:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 
 mypy:
 	cd apps/api && uv run mypy src || true

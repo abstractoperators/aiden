@@ -20,7 +20,7 @@ services:
     platform: linux/amd64
     image: api:latest
     ports:
-      - "80:80"
+      - "8003:80"
 
   agent-runtime:
     build: 
@@ -34,6 +34,19 @@ services:
     image: agent-runtime:latest
     ports:
       - "8002:80"
+
+  prometheus:
+    build:
+      context: ./apps/prometheus
+      dockerfile: ./Dockerfile.prometheus
+    container_name: prometheus
+    platform: linux/amd64
+    image: prometheus:latest
+    ports:
+      - "9090:9090"
+    env_file:
+      - path: "./apps/prometheus/.env"
+        required: true
 
 volumes:
   agent-runtime:

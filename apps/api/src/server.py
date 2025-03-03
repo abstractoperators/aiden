@@ -1,12 +1,16 @@
 import asyncio
 import json
 import os
+from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from pydantic import TypeAdapter
 
 from src import logger
 from src.db import Session, crud, init_db
@@ -23,7 +27,7 @@ from src.db.models import (
     UserBase,
     UserUpdate,
 )
-from src.models import TokenCreationRequest
+from src.models import AgentPublic, TokenCreationRequest
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -40,6 +44,55 @@ async def lifespan(app: FastAPI):  # noqa
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    if request.url.path == "/metrics":
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return JSONResponse(
+                status_code=401, content={"detail": "No authorization header"}
+            )
+
+        scheme_name, credentials_b64_encoded = auth_header.split(" ")
+        if scheme_name != "Basic":
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": f"Invalid authorization scheme {scheme_name}. Should be Basic."
+                },
+            )
+
+        credentials = b64decode(credentials_b64_encoded).decode("utf-8")
+        username, password = credentials.split(":")
+        if not username == "prometheus":
+            return JSONResponse(
+                status_code=401,
+                content={"detail": f"User {username} is not authorized"},
+            )
+        if not password == os.getenv("PROMETHEUS_BASIC_AUTH"):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": f"Incorrect password for user {username}"},
+            )
+
+        return await call_next(request)
+    else:
+        pass
+    return await call_next(request)
+
+
+instrumentator = Instrumentator(
+    excluded_handlers=["/metrics"],
+)
+
+# Handler and method included by default
+instrumentator.add(metrics.latency())
+instrumentator.add(metrics.request_size())
+instrumentator.add(metrics.response_size())
+
+instrumentator.instrument(app).expose(app)
 
 
 @app.get("/ping")
@@ -73,7 +126,7 @@ async def get_agents() -> Sequence[Agent]:
 
 
 @app.get("/agents/{agent_id}")
-async def get_agent(agent_id: UUID) -> Agent:
+async def get_agent(agent_id: UUID) -> AgentPublic:
     """
     Returns an agent by id.
     Raises a 404 if the agent is not found.
@@ -81,14 +134,18 @@ async def get_agent(agent_id: UUID) -> Agent:
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
 
-    return agent
+        # Prefetch the runtime
+        agent.runtime  # noqa
+        agent.token  # noqa
+
+        return TypeAdapter(AgentPublic).validate_python(agent)
 
 
 @app.patch("/agents/{agent_id}")
-async def update_agent(agent_id: str, agent_update: AgentUpdate) -> Agent:
+async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> Agent:
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
@@ -115,7 +172,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     ticker = token_request.ticker
 
     # Deploy the token
-    contract_address = await deploy_token(name, ticker)
+    contract_address, contract_abi = await deploy_token(name, ticker)
 
     with Session() as session:
         token = crud.create_token(
@@ -124,6 +181,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
                 name=name,
                 ticker=ticker,
                 evm_contract_address=contract_address,
+                abi=json.dumps(contract_abi),
             ),
         )
 
@@ -215,10 +273,41 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         runtime_count = len(runtimes)
     next_runtime_number = runtime_count + 1
     if os.getenv("ENV") == "staging":
-        url = f"https://staging.aiden-runtime-{next_runtime_number}-staging.aiden.space"
-    else:
+        url = f"https://aiden-runtime-{next_runtime_number}.staigen.space"
+        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373/dispatches"
+    elif os.getenv("ENV") == "prod":
         url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
+        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches"
+    else:
+        # TODO: dev env w/ local runtime.
+        pass
+
     # Store the runtime in the database
+
+    GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
+    next_runtime_number = runtime_count + 1
+    try:
+        resp = requests.post(
+            actions_url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            json={
+                "ref": "main",
+                "inputs": {
+                    "service-no": str(next_runtime_number),
+                },
+            },
+            timeout=3,
+        )
+        resp.raise_for_status()
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail="Failed to start the runtime.")
+
+    # Assume that if the action didn't error, then all is good 🤡
     with Session() as session:
         runtime = crud.create_runtime(
             session,
@@ -226,29 +315,6 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         )
 
     async def helper():
-        GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
-        next_runtime_number = runtime_count + 1
-        try:
-            resp = requests.post(
-                "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches",
-                headers={
-                    "Accept": "application/vnd.github+json",
-                    "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
-                    "X-GitHub-Api-Version": "2022-11-28",
-                },
-                json={
-                    "ref": "michael/crud-agents",
-                    "inputs": {
-                        "service-no": str(next_runtime_number),
-                    },
-                },
-                timeout=3,
-            )
-            resp.raise_for_status()
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail="Failed to start the runtime.")
-
         # Poll the runtime for a couple of minutes to see if it stands up
         for _ in range(60):
             await asyncio.sleep(10)
@@ -294,7 +360,9 @@ def get_runtime(runtime_id: UUID) -> Runtime:
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
-def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
+def start_agent(
+    agent_id: UUID, runtime_id: UUID, background_tasks: BackgroundTasks
+) -> tuple[Agent, Runtime]:
     """
     Starts an agent on a runtime.
     Returns a tuple of the agent and runtime.
@@ -305,18 +373,24 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
+        agent_character_json: dict = agent.character_json
+        agent_env_file: str = agent.env_file
 
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
-        if not runtime.started:
-            raise HTTPException(status_code=500, detail="Runtime not started")
+
+        ping_endpoint = f"{runtime.url}/ping"
+        resp = requests.get(ping_endpoint)
+        resp.raise_for_status()
+        runtime.started = True
 
         old_agent = runtime.agent
         if old_agent:
             stop_endpoint = f"{runtime.url}/controller/character/stop"
-            requests.post(stop_endpoint)
+            resp = requests.post(stop_endpoint)
+            resp.raise_for_status()
             crud.update_agent(
                 session,
                 old_agent,
@@ -326,20 +400,37 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> tuple[Agent, Runtime]:
         start_endpoint = f"{runtime.url}/controller/character/start"
 
     # Start the new agent
-    character_json = json.dumps(agent.character_json)
-    resp = requests.post(
-        start_endpoint,
-        json={"character_json": character_json, "envs": agent.env_file},
-    )
-    eliza_agent_id = resp.json().get("agent_id")
-    # Update the agent to have a runtime now
-    with Session() as session:
-        agent = crud.update_agent(
-            session,
-            agent,
-            AgentUpdate(eliza_agent_id=eliza_agent_id, runtime_id=runtime_id),
+    async def helper():
+        """
+        Polls the runtime to ensure the agent has started.
+        Allows for a faster response to the caller
+        """
+        character_json: str = json.dumps(agent_character_json)
+        env_file: str = agent_env_file
+        resp = requests.post(
+            start_endpoint,
+            json={"character_json": character_json, "envs": env_file},
         )
+        resp.raise_for_status()
+        # Update the agent once it has been confirmed to be started.
 
+        for _ in range(60):
+            resp = requests.get(f"{runtime.url}/controller/character/status")
+            if resp.status_code == 200:
+                eliza_agent_id: str = resp.json().get("agent_id")
+                with Session() as session:
+                    crud.update_agent(
+                        session,
+                        agent,
+                        AgentUpdate(
+                            eliza_agent_id=eliza_agent_id,
+                            runtime_id=runtime_id,
+                        ),
+                    )
+                return
+            await asyncio.sleep(10)
+
+    background_tasks.add_task(helper)
     return (agent, runtime)
 
 
