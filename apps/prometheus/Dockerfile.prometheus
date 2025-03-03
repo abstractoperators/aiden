@@ -1,7 +1,13 @@
 FROM prom/prometheus:v3.2.1
 
-COPY prometheus.yml /etc/prometheus/
-COPY prometheus.staging.yml /etc/prometheus/
 COPY prometheus.dev.yml /etc/prometheus/
+COPY web.dev.yml /etc/prometheus/
+
+COPY prometheus.staging.yml /etc/prometheus/
+COPY web.staging.yml /etc/prometheus/
+
+COPY prometheus.yml /etc/prometheus/
+COPY web.yml /etc/prometheus/
+
 COPY start.sh .
 ENTRYPOINT ["./start.sh"]

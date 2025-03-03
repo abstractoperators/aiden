@@ -1,0 +1,4 @@
+# 12 round bcrypt hash for user admin
+# Dev environment has password admin - staging and prod passwords in 1password
+basic_auth_users:
+  admin: $2a$12$JAXBloCQXbR/QdH5hpJvDe3/hbryWBpsZwYWO.7iASvKzFr7Hp/TW

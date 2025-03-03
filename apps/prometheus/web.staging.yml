@@ -1,0 +1,4 @@
+# Username: admin
+# Password: In 1password
+basic_auth_users:
+  admin: $2a$12$Oj6kNJRK5m5sfjog4IcdIu5.2cQiAdFq7DPC0xP/a.pIFYmKQeUSa
