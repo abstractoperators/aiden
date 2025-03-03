@@ -9,7 +9,7 @@ from uuid import UUID
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from pydantic import TypeAdapter
 
 from src import logger
@@ -83,7 +83,16 @@ async def auth_middleware(request: Request, call_next):
     return await call_next(request)
 
 
-Instrumentator().instrument(app).expose(app)
+instrumentator = Instrumentator(
+    excluded_handlers=["/metrics"],
+)
+
+# Handler and method included by default
+instrumentator.add(metrics.latency())
+instrumentator.add(metrics.request_size())
+instrumentator.add(metrics.response_size())
+
+instrumentator.instrument(app).expose(app)
 
 
 @app.get("/ping")
