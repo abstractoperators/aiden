@@ -8,6 +8,7 @@ dependencies = [
     "alembic==1.14.1",
     "eth-typing==5.1.0",
     "fastapi==0.115.8",
+    "prometheus-fastapi-instrumentator==7.0.2",
     "psycopg2==2.9.10",
     "pydantic==2.10.6",
     "python-dotenv==1.0.1",

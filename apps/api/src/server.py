@@ -1,12 +1,15 @@
 import asyncio
 import json
 import os
+from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from pydantic import TypeAdapter
 
 from src import logger
@@ -41,6 +44,55 @@ async def lifespan(app: FastAPI):  # noqa
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    if request.url.path == "/metrics":
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return JSONResponse(
+                status_code=401, content={"detail": "No authorization header"}
+            )
+
+        scheme_name, credentials_b64_encoded = auth_header.split(" ")
+        if scheme_name != "Basic":
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": f"Invalid authorization scheme {scheme_name}. Should be Basic."
+                },
+            )
+
+        credentials = b64decode(credentials_b64_encoded).decode("utf-8")
+        username, password = credentials.split(":")
+        if not username == "prometheus":
+            return JSONResponse(
+                status_code=401,
+                content={"detail": f"User {username} is not authorized"},
+            )
+        if not password == os.getenv("PROMETHEUS_BASIC_AUTH"):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": f"Incorrect password for user {username}"},
+            )
+
+        return await call_next(request)
+    else:
+        pass
+    return await call_next(request)
+
+
+instrumentator = Instrumentator(
+    excluded_handlers=["/metrics"],
+)
+
+# Handler and method included by default
+instrumentator.add(metrics.latency())
+instrumentator.add(metrics.request_size())
+instrumentator.add(metrics.response_size())
+
+instrumentator.instrument(app).expose(app)
 
 
 @app.get("/ping")
