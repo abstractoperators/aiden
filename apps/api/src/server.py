@@ -7,6 +7,7 @@ from uuid import UUID
 
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from pydantic import TypeAdapter
 
 from src import logger
 from src.db import Session, crud, init_db
@@ -23,7 +24,7 @@ from src.db.models import (
     UserBase,
     UserUpdate,
 )
-from src.models import TokenCreationRequest
+from src.models import AgentPublic, TokenCreationRequest
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -73,7 +74,7 @@ async def get_agents() -> Sequence[Agent]:
 
 
 @app.get("/agents/{agent_id}")
-async def get_agent(agent_id: UUID) -> Agent:
+async def get_agent(agent_id: UUID) -> AgentPublic:
     """
     Returns an agent by id.
     Raises a 404 if the agent is not found.
@@ -81,10 +82,14 @@ async def get_agent(agent_id: UUID) -> Agent:
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
 
-    return agent
+        # Prefetch the runtime
+        agent.runtime  # noqa
+        agent.token  # noqa
+
+        return TypeAdapter(AgentPublic).validate_python(agent)
 
 
 @app.patch("/agents/{agent_id}")
@@ -216,7 +221,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         runtime_count = len(runtimes)
     next_runtime_number = runtime_count + 1
     if os.getenv("ENV") == "staging":
-        url = f"https://staging.aiden-runtime-{next_runtime_number}-staging.aiden.space"
+        url = f"https://aiden-runtime-{next_runtime_number}.staigen.space"
         actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373/dispatches"
     elif os.getenv("ENV") == "prod":
         url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"

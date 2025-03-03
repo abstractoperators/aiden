@@ -48,7 +48,7 @@ jobs:
                     --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11 \
                     --conditions "[{
                         \"Field\": \"host-header\",
-                        \"Values\": [\"staging.aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
+                        \"Values\": [\"aiden-runtime-${{ inputs.service-no }}.staigen.space\"]
                         }]" \
                     --actions "[{
                         \"Type\": \"forward\",
@@ -61,7 +61,7 @@ jobs:
                     --listener-arn arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654 \
                     --conditions "[{
                       \"Field\": \"host-header\",
-                      \"Values\": [\"staging.aiden-runtime-${{ inputs.service-no }}.aiden.space\"]
+                      \"Values\": [\"aiden-runtime-${{ inputs.service-no }}.staigen.space\"]
                       }]" \
                     --actions "[{
                         \"Type\": \"forward\",
