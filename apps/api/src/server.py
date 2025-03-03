@@ -7,6 +7,7 @@ from uuid import UUID
 
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import TypeAdapter
 
@@ -53,7 +54,7 @@ async def metrics_auth_middleware(request: Request, call_next):
             or auth_header.split(" ")[0] != "Basic"
             or auth_header.split(" ")[1] != os.getenv("PROMETHEUS_BASIC_AUTH")
         ):
-            raise HTTPException(status_code=401, detail="Unauthorized")
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
 
     return await call_next(request)
 
