@@ -66,7 +66,6 @@ async def auth_middleware(request: Request, call_next):
 
         credentials = b64decode(credentials_b64_encoded).decode("utf-8")
         username, password = credentials.split(":")
-        print(credentials)
         if not username == "prometheus":
             return JSONResponse(
                 status_code=401,

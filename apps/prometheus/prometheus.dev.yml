@@ -12,6 +12,8 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: ["host.docker.internal:8003"]
-    authorization:
-      type: Basic
-      credentials: "$PROMETHEUS_BASIC_AUTH"
+    basic_auth:
+      username: "prometheus"
+      password: "$PROMETHEUS_BASIC_AUTH"
+      # Note: Env vars don't actually work in prometheus files.
+      # start.sh will sed these with env vars before starting prometheus
