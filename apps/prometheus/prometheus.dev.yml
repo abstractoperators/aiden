@@ -7,6 +7,9 @@ scrape_configs:
       - targets: ["localhost:9090"]
         labels:
           group: "prometheus"
+    basic_auth:
+      username: "admin"
+      password: "$PROMETHEUS_BASIC_AUTH"
 
   - job_name: "api"
     scrape_interval: 5s
