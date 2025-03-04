@@ -45,7 +45,6 @@ export const validateJWT = async (
             err: VerifyErrors | null,
             decoded: string | JwtPayload | undefined
           ) => {
-            console.log("decoded the jwt");
             if (err) {
               console.log("JWT verification error:", err);
               reject(err);
