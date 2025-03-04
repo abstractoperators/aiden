@@ -8,11 +8,11 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
+from boto3 import Session as Boto3Session
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
-from mypy_boto3_sts.client import STSClient
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from pydantic import TypeAdapter
 
@@ -274,15 +274,17 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
 @app.post("/runtimes")
 def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     """
-    Creates a new runtime via github actions.
-    Runtime will not truly be started until the github action is completed, and aws resources are up and running (~5min)
-    Raises a 500 if the github action fails to start.
-    Returns the runtime object.
+    Attempts to create a new runtime.
+    Returns a Runtime object immediately, with flag started=False.
+    The runtime will be polled for 10 min to verify that it is online.
+    If it is not, then the runtime will be deleted.
     """
     # Perhaps, the least performant code ever written
     # This is why *real* companies use leetcode
     with Session() as session:
-        runtimes = crud.get_runtimes(session)
+        runtimes = crud.get_runtimes(
+            session, limit=1000000
+        )  # lul better hope you don't run out of memory
         runtime_nums = []
         for runtime in runtimes:
             match = re.search(r"aiden-runtime-(\d+)", runtime.url)
@@ -298,21 +300,22 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
             detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
         )
 
+    url = f"{aws_config.host}.{aws_config.subdomain}"
     with Session() as session:
         runtime = crud.create_runtime(
             session,
             RuntimeBase(
-                url=f"{aws_config.host}.{aws_config.subdomain}",
+                url=url,
                 started=False,
             ),
         )
 
-    def create_service_atomic():
+    async def create_service_atomic() -> None:
         """
         Creates a service w/ a basic rollback strategy
         Creates a target group + listener rule + service, deleting them if health check at the end fails.
         """
-        sts_client: STSClient = get_role_session()
+        sts_client: Boto3Session = get_role_session()
         ecs_client: ECSClient = sts_client.client("ecs")
         elbv2_client: ELBv2Client = sts_client.client("elbv2")
 
@@ -328,6 +331,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
                 elbv2_client=elbv2_client,
                 http_listener_arn=aws_config.http_listener_arn,
                 https_listener_arn=aws_config.https_listener_arn,
+                host_header_pattern=url,
                 target_group_arn=target_group_arn,
                 priority=100 + 10 * next_runtime_number,
             )
@@ -344,7 +348,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
 
             # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
             for i in range(40):
-                asyncio.sleep(10)
+                await asyncio.sleep(10)
                 try:
                     resp = requests.get(
                         f"{aws_config.host}.{aws_config.subdomain}/ping", timeout=3
@@ -377,9 +381,11 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
             with Session() as session:
                 crud.delete_runtime(session, runtime)
 
+        return None
+
     background_tasks.add_task(create_service_atomic)
 
-    return None
+    return runtime
 
 
 @app.get("/runtimes")
@@ -451,7 +457,7 @@ def start_agent(
         start_endpoint = f"{runtime.url}/controller/character/start"
 
     # Start the new agent
-    async def helper():
+    async def helper() -> None:
         """
         Polls the runtime to ensure the agent has started.
         Allows for a faster response to the caller
@@ -480,6 +486,8 @@ def start_agent(
                     )
                 return
             await asyncio.sleep(10)
+
+        return None
 
     background_tasks.add_task(helper)
     return (agent, runtime)
