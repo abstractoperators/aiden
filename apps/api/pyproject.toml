@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic==1.14.1",
+    "boto3==1.37.5",
     "eth-typing==5.1.0",
     "fastapi==0.115.8",
     "prometheus-fastapi-instrumentator==7.0.2",
@@ -20,6 +21,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "boto3-stubs[ecs,elbv2]>=1.37.5",
     "ipykernel>=6.29.5",
     "mypy==1.15.0",
     "pre-commit==4.1.0",
