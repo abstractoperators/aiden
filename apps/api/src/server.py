@@ -285,7 +285,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         runtimes = crud.get_runtimes(session)
         runtime_nums = []
         for runtime in runtimes:
-            match = re.search("aiden-runtime-(\d+)", runtime.url)
+            match = re.search(r"aiden-runtime-(\d+)", runtime.url)
             if match:
                 runtime_nums.append(int(match.group(1)))
 
