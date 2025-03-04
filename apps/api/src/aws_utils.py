@@ -4,7 +4,6 @@ import boto3
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from mypy_boto3_sts.client import STSClient
-from pydantic import BaseModel
 
 from src import logger
 from src.models import AWSConfig
@@ -157,7 +156,7 @@ def validate_runtime_number(
     num: int,
 ) -> bool:
     """
-    Checks to make sure that there is no target group, listener rule, or service that will collide with the new runtime service.
+    Checks to make sure that there is no target group or service that will collide with the new runtime service.
     """
     config = get_aws_config(num)
     try:
@@ -166,21 +165,7 @@ def validate_runtime_number(
         # This is good, it should throw the error.
         pass
     else:
-        return False
-
-    try:
-        listener_rules = elbv2_client.describe_rules(
-            ListenerArn=config.http_listener_arn,
-        )
-        # If a rule with the same host header exists, return False
-        for rule in listener_rules["Rules"]:
-            if (
-                rule["Conditions"][0]["Values"][0]
-                == f"{config.subdomain}.{config.host}"
-            ):
-                return False
-    except Exception as e:
-        logger.error(e)
+        logger.info(f'Target group "{config.target_group_name}" already exists.')
         return False
 
     try:
@@ -195,9 +180,8 @@ def validate_runtime_number(
         return False
     else:
         if service["services"]:
+            logger.info(f'Service "{config.service_name}" already exists.')
             return False
-
-    return True
 
 
 def get_latest_task_definition_revision(
