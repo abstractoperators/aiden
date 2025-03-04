@@ -1,12 +1,12 @@
 import asyncio
 import json
 import os
+import re
 from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from uuid import UUID
 
-import boto3
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -279,13 +279,33 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     Raises a 500 if the github action fails to start.
     Returns the runtime object.
     """
-    # TODO: Improve this
+    # Perhaps, the least performant code ever written
+    # This is why *real* companies use leetcode
     with Session() as session:
         runtimes = crud.get_runtimes(session)
-        runtime_count = len(runtimes)
-    next_runtime_number = runtime_count + 1
+        runtime_nums = []
+        for runtime in runtimes:
+            match = re.search("aiden-runtime-(\d+)", runtime.url)
+            if match:
+                runtime_nums.append(int(match.group(1)))
 
-    # Probably something like - iterate over all target groups/listener rules/services to make sure that it doesn't overlap with anything, even if it _shouldn't_
+    next_runtime_number = max(runtime_nums) + 1 if runtime_nums else 1
+
+    aws_config: AWSConfig | None = get_aws_config()
+    if not aws_config:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
+        )
+
+    with Session() as session:
+        runtime = crud.create_runtime(
+            session,
+            RuntimeBase(
+                url=f"{aws_config.host}.{aws_config.subdomain}",
+                started=False,
+            ),
+        )
 
     def create_service_atomic():
         """
@@ -295,12 +315,6 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         sts_client: STSClient = get_role_session()
         ecs_client: ECSClient = sts_client.client("ecs")
         elbv2_client: ELBv2Client = sts_client.client("elbv2")
-        aws_config: AWSConfig | None = get_aws_config()
-        if not aws_config:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to get AWS config. Check ENV environment variable.",
-            )
 
         try:
             target_group_arn = http_rule_arn = https_rule_arn = service_arn = None
@@ -329,12 +343,24 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
             )
 
             # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
-            for _ in range(60):
+            for i in range(40):
                 asyncio.sleep(10)
-                requests.get(
-                    f"{aws_config.host}.{aws_config.subdomain}/ping", timeout=3
-                )
+                try:
+                    resp = requests.get(
+                        f"{aws_config.host}.{aws_config.subdomain}/ping", timeout=3
+                    )
+                    resp.raise_for_status()
 
+                    with Session() as session:
+                        crud.update_runtime(
+                            session, runtime, RuntimeUpdate(started=True)
+                        )
+                        return
+                except Exception as e:
+                    logger.info(f"Attempt {i}/{40}. Runtime not online yet. {e}")
+                    continue
+
+            raise Exception("Runtime did not come online in time. Rolling back.")
         except Exception as e:
             logger.error(e)
             if http_rule_arn:
@@ -348,36 +374,12 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
                     cluster=aws_config.cluster,
                     service=aws_config.service_name,
                 )
+            with Session() as session:
+                crud.delete_runtime(session, runtime)
 
     background_tasks.add_task(create_service_atomic)
 
     return
-
-    # # Assume that if the action didn't error, then all is good 🤡
-    # with Session() as session:
-    #     runtime = crud.create_runtime(
-    #         session,
-    #         RuntimeBase(url=url, started=False),
-    #     )
-
-    # async def helper():
-    #     # Poll the runtime for a couple of minutes to see if it stands up
-    #     for _ in range(60):
-    #         await asyncio.sleep(10)
-    #         resp = requests.get(f"{url}/ping")
-    #         if resp.status_code == 200:
-    #             with Session() as session:
-    #                 crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-    #             return
-
-    #     with Session() as session:
-    #         crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
-
-    # # TODO: Actually kill the runtime and delete if it doesn't start up instead of leaving on a potential aws crash loop
-    # # TODO: Heartbeat beyond the initial startup
-    # background_tasks.add_task(helper)
-
-    return None
 
 
 @app.get("/runtimes")
@@ -407,7 +409,9 @@ def get_runtime(runtime_id: UUID) -> Runtime:
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
-    agent_id: UUID, runtime_id: UUID, background_tasks: BackgroundTasks
+    agent_id: UUID,
+    runtime_id: UUID,
+    background_tasks: BackgroundTasks,
 ) -> tuple[Agent, Runtime]:
     """
     Starts an agent on a runtime.
@@ -428,8 +432,9 @@ def start_agent(
             raise HTTPException(status_code=404, detail="Runtime not found")
 
         ping_endpoint = f"{runtime.url}/ping"
-        resp = requests.get(ping_endpoint)
+        resp = requests.get(ping_endpoint, timeout=3)
         resp.raise_for_status()
+
         runtime.started = True
 
         old_agent = runtime.agent
