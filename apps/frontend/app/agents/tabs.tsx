@@ -1,37 +1,20 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
-import { Agent, columns } from "./columns"
-
-async function getLive(): Promise<Agent[]> {
-  // TODO: replace with API call
-  return [
-    {
-      name: "Kent",
-      ticker: "KENT",
-      marketCapitalization: 0,
-      holderCount: 0,
-    },
-  ]
-}
-
-async function getIncubating(): Promise<Agent[]> {
-  // TODO: replace with API call
-  return []
-}
+import { columns } from "./columns"
+import { getIncubating, getEnlightened } from "@/lib/agent";
 
 export default async function AgentsTabs() {
-  const live = await getLive()
-  const incubating = await getIncubating()
+  const enlightened = await getEnlightened();
+  const incubating = await getIncubating();
 
   return (
-    <Tabs defaultValue="live">
+    <Tabs defaultValue="enlightened">
       <TabsList>
-        <TabsTrigger value="live">Live</TabsTrigger>
+        <TabsTrigger value="enlightened">Enlightened</TabsTrigger>
         <TabsTrigger value="incubating">Incubating</TabsTrigger>
       </TabsList>
-      <TabsContent value="live">
-        <DataTable columns={columns} data={live} />
+      <TabsContent value="enlightened">
+        <DataTable columns={columns} data={enlightened} />
       </TabsContent>
       <TabsContent value="incubating">
         <DataTable columns={columns} data={incubating} />
