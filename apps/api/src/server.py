@@ -291,7 +291,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
 
     next_runtime_number = max(runtime_nums) + 1 if runtime_nums else 1
 
-    aws_config: AWSConfig | None = get_aws_config()
+    aws_config: AWSConfig | None = get_aws_config(next_runtime_number)
     if not aws_config:
         raise HTTPException(
             status_code=500,
@@ -379,7 +379,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
 
     background_tasks.add_task(create_service_atomic)
 
-    return
+    return None
 
 
 @app.get("/runtimes")

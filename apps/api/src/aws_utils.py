@@ -1,9 +1,10 @@
 import os
+from typing import cast
 
 import boto3
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
-from mypy_boto3_sts.client import STSClient
+from mypy_boto3_elbv2.type_defs import RuleConditionTypeDef
 
 from src import logger
 from src.models import AWSConfig
@@ -18,7 +19,7 @@ def get_aws_config(num: int) -> AWSConfig | None:
     if env == "dev":
         pass
     elif env == "staging":
-        config: AWSConfig = AWSConfig(
+        return AWSConfig(
             vpc_id="vpc-028f84ceaa7ceffdf",
             target_group_name=f"aiden-runtime-staging-{num}",
             http_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11",  # noqa
@@ -31,9 +32,8 @@ def get_aws_config(num: int) -> AWSConfig | None:
             subnets=["subnet-0c145d71e9bc921ce", "subnet-08a79f79b7375c569"],
             security_groups=["sg-0475538bebfc71f2e"],
         )
-        return config
     elif env == "prod":
-        config: AWSConfig = AWSConfig(
+        return AWSConfig(
             vpc_id="vpc-002b5682c46769515",
             target_group_name=f"aiden-runtime-{num}",
             http_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/0418e5a3323e20fc",  # noqa
@@ -48,11 +48,10 @@ def get_aws_config(num: int) -> AWSConfig | None:
             subnets=["subnet-03609df324958be8e", "subnet-0643691ae2f5f1e32"],
             security_groups=["sg-08dd9f6f9ecc9bfe9"],
         )
-        return config
     return None
 
 
-def get_role_session() -> STSClient:
+def get_role_session() -> boto3.Session:
     """
     Gets the AidenAPI role session.
     """
@@ -111,12 +110,15 @@ def create_listener_rules(
     HTTP Rule redirects to HTTPS
     HTTPS Rule forwards to the specified target group.
     """
-    conditions = [
-        {
-            "Field": "host-header",
-            "Values": [host_header_pattern],
-        }
-    ]
+    conditions = cast(
+        list[RuleConditionTypeDef],
+        [
+            {
+                "Field": "host-header",
+                "Values": [host_header_pattern],
+            }
+        ],
+    )  # Type hints appear to be off here. create_rule is not recognizing this as a list of RuleConditionTypeDef
     http_rule = elbv2_client.create_rule(
         ListenerArn=http_listener_arn,
         Conditions=conditions,
@@ -159,6 +161,8 @@ def validate_runtime_number(
     Checks to make sure that there is no target group or service that will collide with the new runtime service.
     """
     config = get_aws_config(num)
+    if config is None:
+        raise ValueError("AWS Config not set. Check get_aws_config")
     try:
         (elbv2_client.describe_target_groups(Names=[config.target_group_name]),)
     except elbv2_client.exceptions.TargetGroupNotFoundException:
@@ -182,6 +186,8 @@ def validate_runtime_number(
         if service["services"]:
             logger.info(f'Service "{config.service_name}" already exists.')
             return False
+
+    return True
 
 
 def get_latest_task_definition_revision(
