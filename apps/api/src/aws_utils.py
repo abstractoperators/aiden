@@ -3,9 +3,64 @@ import os
 import boto3
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
+from mypy_boto3_sts.client import STSClient
 
 
-def get_role_session():
+def get_env_vars():
+    """
+    Gets env vars like vpc id
+    """
+    env = os.getenv("ENV")
+    if env == "dev":
+        pass
+        # TODO: Figure out what do to do with local runtimes that aren't on AWS
+    elif env == "staging":
+        num = "TODO"  # TODO
+        vpc_id = "vpc-028f84ceaa7ceffdf"
+        target_group_name = f"aiden-runtime-staging-{num}"
+        http_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11"  # noqa
+        https_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654"  # noqa
+        service_name = f"aiden-runtime-staging-{num}"
+        host = "staigen.space"
+        subdomain = f"aiden-runtime-staging-{num}"
+        cluster = "AidenStaging"
+        task_definition_arn = "arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging"
+        subnets = ["subnet-0c145d71e9bc921ce", "subnet-08a79f79b7375c569"]
+        security_groups = ["sg-0475538bebfc71f2e"]
+    elif env == "prod":
+        num = "TODO"  # TODO
+        vpc_id = "vpc-002b5682c46769515"
+        target_group_name = f"aiden-runtime-{num}"
+        http_listener_arn = (
+            "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/0418e5a3323e20fc",
+        )  # noqa
+        https_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/5ccef0a9112d870c"  # noqa
+        service_name = f"aiden-runtime-{num}"
+        host = "aiden.space"
+        subdomain = f"aiden-runtime-{num}"
+        cluster = "Aiden"
+        task_definition_arn = (
+            "arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime"
+        )
+        subnets = ["subnet-03609df324958be8e", "subnet-0643691ae2f5f1e32"]
+        security_groups = ["sg-08dd9f6f9ecc9bfe9"]
+
+    return {
+        "vpc_id": vpc_id,
+        "target_group_name": target_group_name,
+        "http_listener_arn": http_listener_arn,
+        "https_listener_arn": https_listener_arn,
+        "service_name": service_name,
+        "host": host,
+        "subdomain": subdomain,
+        "cluster": cluster,
+        "task_definition_arn": task_definition_arn,
+        "subnets": subnets,
+        "security_groups": security_groups,
+    }
+
+
+def get_role_session() -> STSClient:
     """
     Gets the AidenAPI role session.
     """
