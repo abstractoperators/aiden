@@ -179,7 +179,7 @@ def validate_runtime_number(
         )
 
     except Exception as e:
-        # Also not expecting an error with this - it just returns a resp w/ no service if it doesn't exist.
+        # Not expecting an error with this - describe_services should return an empty list if the service doesn't exist
         logger.error(e)
         return False
     else:
