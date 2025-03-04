@@ -1,6 +1,6 @@
 // https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
 import Chat from "@/components/chat"
-import { getAgent, getRuntime } from "@/lib/agent"
+import { getAgent } from "@/lib/agent"
 
 export default async function AgentHome({
   params,
@@ -21,8 +21,10 @@ export default async function AgentHome({
         (agent.runtime && agent.eliza_agent_id) ?
         <Chat
           elizaId={agent.eliza_agent_id}
-          runtimeUrl={agent.runtime.url} /> :
-        <p>This agent has no chat.</p>
+          runtimeUrl={agent.runtime.url}
+        /> : <p>
+          This agent has no chat.
+        </p>
       }
     </main>
   )
