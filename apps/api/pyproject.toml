@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic==1.14.1",
+    "aws-cdk-lib>=2.181.1",
     "boto3==1.37.5",
     "eth-typing==5.1.0",
     "fastapi==0.115.8",

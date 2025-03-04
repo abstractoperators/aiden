@@ -4,60 +4,53 @@ import boto3
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from mypy_boto3_sts.client import STSClient
+from pydantic import BaseModel
+
+from src import logger
+from src.models import AWSConfig
 
 
-def get_env_vars():
+def get_aws_config(num: int) -> AWSConfig | None:
     """
     Gets env vars like vpc id
+    num: Runtime number, and target group number, and service number, and subdomain number. All the same.
     """
     env = os.getenv("ENV")
     if env == "dev":
         pass
-        # TODO: Figure out what do to do with local runtimes that aren't on AWS
     elif env == "staging":
-        num = "TODO"  # TODO
-        vpc_id = "vpc-028f84ceaa7ceffdf"
-        target_group_name = f"aiden-runtime-staging-{num}"
-        http_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11"  # noqa
-        https_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654"  # noqa
-        service_name = f"aiden-runtime-staging-{num}"
-        host = "staigen.space"
-        subdomain = f"aiden-runtime-staging-{num}"
-        cluster = "AidenStaging"
-        task_definition_arn = "arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging"
-        subnets = ["subnet-0c145d71e9bc921ce", "subnet-08a79f79b7375c569"]
-        security_groups = ["sg-0475538bebfc71f2e"]
-    elif env == "prod":
-        num = "TODO"  # TODO
-        vpc_id = "vpc-002b5682c46769515"
-        target_group_name = f"aiden-runtime-{num}"
-        http_listener_arn = (
-            "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/0418e5a3323e20fc",
-        )  # noqa
-        https_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/5ccef0a9112d870c"  # noqa
-        service_name = f"aiden-runtime-{num}"
-        host = "aiden.space"
-        subdomain = f"aiden-runtime-{num}"
-        cluster = "Aiden"
-        task_definition_arn = (
-            "arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime"
+        config: AWSConfig = AWSConfig(
+            vpc_id="vpc-028f84ceaa7ceffdf",
+            target_group_name=f"aiden-runtime-staging-{num}",
+            http_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/681e2c72542f3c11",  # noqa
+            https_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654",  # noqa
+            service_name=f"aiden-runtime-staging-{num}",
+            host="staigen.space",
+            subdomain=f"aiden-runtime-staging-{num}",
+            cluster="AidenStaging",
+            task_definition_arn="arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging",
+            subnets=["subnet-0c145d71e9bc921ce", "subnet-08a79f79b7375c569"],
+            security_groups=["sg-0475538bebfc71f2e"],
         )
-        subnets = ["subnet-03609df324958be8e", "subnet-0643691ae2f5f1e32"]
-        security_groups = ["sg-08dd9f6f9ecc9bfe9"]
-
-    return {
-        "vpc_id": vpc_id,
-        "target_group_name": target_group_name,
-        "http_listener_arn": http_listener_arn,
-        "https_listener_arn": https_listener_arn,
-        "service_name": service_name,
-        "host": host,
-        "subdomain": subdomain,
-        "cluster": cluster,
-        "task_definition_arn": task_definition_arn,
-        "subnets": subnets,
-        "security_groups": security_groups,
-    }
+        return config
+    elif env == "prod":
+        config: AWSConfig = AWSConfig(
+            vpc_id="vpc-002b5682c46769515",
+            target_group_name=f"aiden-runtime-{num}",
+            http_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/0418e5a3323e20fc",  # noqa
+            https_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/5ccef0a9112d870c",  # noqa
+            service_name=f"aiden-runtime-{num}",
+            host="aiden.space",
+            subdomain=f"aiden-runtime-{num}",
+            cluster="Aiden",
+            task_definition_arn=(
+                "arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime"
+            ),
+            subnets=["subnet-03609df324958be8e", "subnet-0643691ae2f5f1e32"],
+            security_groups=["sg-08dd9f6f9ecc9bfe9"],
+        )
+        return config
+    return None
 
 
 def get_role_session() -> STSClient:
@@ -83,7 +76,7 @@ def get_role_session() -> STSClient:
     return assumed_role_session
 
 
-def create_https_group(
+def create_http_target_group(
     elbv2_client: ELBv2Client,
     target_group_name: str,
     vpc_id: str,
@@ -95,8 +88,8 @@ def create_https_group(
     https_target_group = elbv2_client.create_target_group(
         Name=target_group_name,
         VpcId=vpc_id,
-        Protocol="HTTPS",
-        Port=443,
+        Protocol="HTTP",
+        Port=80,
         TargetType="ip",
         HealthCheckProtocol="HTTPS",
         HealthCheckPort="traffic-port",
@@ -158,6 +151,55 @@ def create_listener_rules(
     return http_rule_arn, https_rule_arn
 
 
+def validate_runtime_number(
+    elbv2_client: ELBv2Client,
+    ecs_client: ECSClient,
+    num: int,
+) -> bool:
+    """
+    Checks to make sure that there is no target group, listener rule, or service that will collide with the new runtime service.
+    """
+    config = get_aws_config(num)
+    try:
+        (elbv2_client.describe_target_groups(Names=[config.target_group_name]),)
+    except elbv2_client.exceptions.TargetGroupNotFoundException:
+        # This is good, it should throw the error.
+        pass
+    else:
+        return False
+
+    try:
+        listener_rules = elbv2_client.describe_rules(
+            ListenerArn=config.http_listener_arn,
+        )
+        # If a rule with the same host header exists, return False
+        for rule in listener_rules["Rules"]:
+            if (
+                rule["Conditions"][0]["Values"][0]
+                == f"{config.subdomain}.{config.host}"
+            ):
+                return False
+    except Exception as e:
+        logger.error(e)
+        return False
+
+    try:
+        service = ecs_client.describe_services(
+            cluster=config.cluster,
+            services=[config.service_name],
+        )
+
+    except Exception as e:
+        # Also not expecting an error with this - it just returns a resp w/ no service if it doesn't exist.
+        logger.error(e)
+        return False
+    else:
+        if service["services"]:
+            return False
+
+    return True
+
+
 def get_latest_task_definition_revision(
     ecs_client: ECSClient,
     task_definition_arn: str,
@@ -178,8 +220,8 @@ def create_runtime_service(
     task_definition_arn: str,
     security_groups: list[str],
     subnets: list[str],
-    https_target_group_arn: str,
-):
+    target_group_arn: str,
+) -> str:
     latest_task_revision = get_latest_task_definition_revision(
         ecs_client, task_definition_arn
     )
@@ -200,7 +242,7 @@ def create_runtime_service(
         },
         loadBalancers=[
             {
-                "targetGroupArn": https_target_group_arn,
+                "targetGroupArn": target_group_arn,
                 "containerName": "runtime",
                 "containerPort": 80,
             },

@@ -6,13 +6,24 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from uuid import UUID
 
+import boto3
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from mypy_boto3_ecs.client import ECSClient
+from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
+from mypy_boto3_sts.client import STSClient
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from pydantic import TypeAdapter
 
 from src import logger
+from src.aws_utils import (
+    create_http_target_group,
+    create_listener_rules,
+    create_runtime_service,
+    get_aws_config,
+    get_role_session,
+)
 from src.db import Session, crud, init_db
 from src.db.models import (
     Agent,
@@ -27,7 +38,7 @@ from src.db.models import (
     UserBase,
     UserUpdate,
 )
-from src.models import AgentPublic, TokenCreationRequest
+from src.models import AgentPublic, AWSConfig, TokenCreationRequest
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -268,70 +279,105 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     Raises a 500 if the github action fails to start.
     Returns the runtime object.
     """
+    # TODO: Improve this
     with Session() as session:
         runtimes = crud.get_runtimes(session)
         runtime_count = len(runtimes)
     next_runtime_number = runtime_count + 1
-    if os.getenv("ENV") == "staging":
-        url = f"https://aiden-runtime-{next_runtime_number}.staigen.space"
-        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373/dispatches"
-    elif os.getenv("ENV") == "prod":
-        url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
-        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches"
-    else:
-        # TODO: dev env w/ local runtime.
-        pass
 
-    # Store the runtime in the database
+    # Probably something like - iterate over all target groups/listener rules/services to make sure that it doesn't overlap with anything, even if it _shouldn't_
 
-    GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
-    next_runtime_number = runtime_count + 1
-    try:
-        resp = requests.post(
-            actions_url,
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-            json={
-                "ref": "main",
-                "inputs": {
-                    "service-no": str(next_runtime_number),
-                },
-            },
-            timeout=3,
-        )
-        resp.raise_for_status()
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(status_code=500, detail="Failed to start the runtime.")
+    def create_service_atomic():
+        """
+        Creates a service w/ a basic rollback strategy
+        Creates a target group + listener rule + service, deleting them if health check at the end fails.
+        """
+        sts_client: STSClient = get_role_session()
+        ecs_client: ECSClient = sts_client.client("ecs")
+        elbv2_client: ELBv2Client = sts_client.client("elbv2")
+        aws_config: AWSConfig | None = get_aws_config()
+        if not aws_config:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get AWS config. Check ENV environment variable.",
+            )
 
-    # Assume that if the action didn't error, then all is good 🤡
-    with Session() as session:
-        runtime = crud.create_runtime(
-            session,
-            RuntimeBase(url=url, started=False),
-        )
+        try:
+            target_group_arn = http_rule_arn = https_rule_arn = service_arn = None
+            target_group_arn = create_http_target_group(
+                elbv2_client=elbv2_client,
+                target_group_name=aws_config.target_group_name,
+                vpc_id=aws_config.vpc_id,
+            )
 
-    async def helper():
-        # Poll the runtime for a couple of minutes to see if it stands up
-        for _ in range(60):
-            await asyncio.sleep(10)
-            resp = requests.get(f"{url}/ping")
-            if resp.status_code == 200:
-                with Session() as session:
-                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-                return
+            http_rule_arn, https_rule_arn = create_listener_rules(
+                elbv2_client=elbv2_client,
+                http_listener_arn=aws_config.http_listener_arn,
+                https_listener_arn=aws_config.https_listener_arn,
+                target_group_arn=target_group_arn,
+                priority=100 + 10 * next_runtime_number,
+            )
 
-        with Session() as session:
-            crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+            service_arn = create_runtime_service(
+                ecs_client=ecs_client,
+                cluster=aws_config.cluster,
+                service_name=aws_config.service_name,
+                task_definition_arn=aws_config.task_definition_arn,
+                security_groups=aws_config.security_groups,
+                subnets=aws_config.subnets,
+                target_group_arn=target_group_arn,
+            )
 
-    # TODO: Actually kill the runtime and delete if it doesn't start up instead of leaving on a potential aws crash loop
-    # TODO: Heartbeat beyond the initial startup
-    background_tasks.add_task(helper)
+            # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
+            for _ in range(60):
+                asyncio.sleep(10)
+                requests.get(
+                    f"{aws_config.host}.{aws_config.subdomain}/ping", timeout=3
+                )
 
-    return runtime
+        except Exception as e:
+            logger.error(e)
+            if http_rule_arn:
+                elbv2_client.delete_rule(RuleArn=http_rule_arn)
+            if https_rule_arn:
+                elbv2_client.delete_rule(RuleArn=https_rule_arn)
+            if target_group_arn:
+                elbv2_client.delete_target_group(TargetGroupArn=target_group_arn)
+            if service_arn:
+                ecs_client.delete_service(
+                    cluster=aws_config.cluster,
+                    service=aws_config.service_name,
+                )
+
+    background_tasks.add_task(create_service_atomic)
+
+    return
+
+    # # Assume that if the action didn't error, then all is good 🤡
+    # with Session() as session:
+    #     runtime = crud.create_runtime(
+    #         session,
+    #         RuntimeBase(url=url, started=False),
+    #     )
+
+    # async def helper():
+    #     # Poll the runtime for a couple of minutes to see if it stands up
+    #     for _ in range(60):
+    #         await asyncio.sleep(10)
+    #         resp = requests.get(f"{url}/ping")
+    #         if resp.status_code == 200:
+    #             with Session() as session:
+    #                 crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+    #             return
+
+    #     with Session() as session:
+    #         crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+
+    # # TODO: Actually kill the runtime and delete if it doesn't start up instead of leaving on a potential aws crash loop
+    # # TODO: Heartbeat beyond the initial startup
+    # background_tasks.add_task(helper)
+
+    return None
 
 
 @app.get("/runtimes")
