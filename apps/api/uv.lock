@@ -129,7 +129,7 @@ dependencies = [
 
 [package.dependency-groups]
 dev = [
-    { name = "boto3-stubs", extra = ["ecs", "elbv2"] },
+    { name = "boto3-stubs", extra = ["ecs", "elbv2", "sts"] },
     { name = "ipykernel" },
     { name = "mypy" },
     { name = "pre-commit" },
@@ -156,7 +156,7 @@ requires-dist = [
 
 [package.metadata.dependency-groups]
 dev = [
-    { name = "boto3-stubs", extras = ["ecs", "elbv2"], specifier = ">=1.37.5" },
+    { name = "boto3-stubs", extras = ["ecs", "elbv2", "sts"], specifier = ">=1.37.5" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "mypy", specifier = "==1.15.0" },
     { name = "pre-commit", specifier = "==4.1.0" },
@@ -263,6 +263,9 @@ ecs = [
 ]
 elbv2 = [
     { name = "mypy-boto3-elbv2" },
+]
+sts = [
+    { name = "mypy-boto3-sts" },
 ]
 
 [[package]]
@@ -1026,6 +1029,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/85/de/9420bb775d8a779f051ac206d16cd3d494794b797651b5fddf8a365e8617/mypy_boto3_elbv2-1.37.0.tar.gz", hash = "sha256:6a79d64ce2d955268b90f2dfcc7c3cd09e3e29aeda2442c60b839a75e45d0846", size = 35863 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/64/16/52c6347cd7acd630226aaa299148f9cae1bdb5bdf776c99cbbc295a73967/mypy_boto3_elbv2-1.37.0-py3-none-any.whl", hash = "sha256:ef317b20aadb1948dab34dff413e81a98ef9a805dbc9612fe3e2727c802a1593", size = 41925 },
+]
+
+[[package]]
+name = "mypy-boto3-sts"
+version = "1.37.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/14/4c/32286da1a1e8bf0ca107cc6e4d23b32b249d5191591cbd9dc56753931340/mypy_boto3_sts-1.37.0.tar.gz", hash = "sha256:4a75e507045e64033ba71eb31227f5898fa7445b279eb58d45fd920d95becaa0", size = 16564 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a5/3c/86036a9f10a5f7f02d5ed60713b4dafb7e5301692cc84b8a16c886543eb1/mypy_boto3_sts-1.37.0-py3-none-any.whl", hash = "sha256:01f6ceb1beba2fc06fc9866d1ab8160a7695a9b568d1de309056dd0da7faff37", size = 20070 },
 ]
 
 [[package]]

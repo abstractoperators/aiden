@@ -21,7 +21,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "boto3-stubs[ecs,elbv2]>=1.37.5",
+    "boto3-stubs[ecs,elbv2,sts]>=1.37.5",
     "ipykernel>=6.29.5",
     "mypy==1.15.0",
     "pre-commit==4.1.0",
