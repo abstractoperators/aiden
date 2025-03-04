@@ -12,6 +12,7 @@ interface Agent {
 
 interface ApiAgent {
   id: string
+  eliza_agent_id: string | null
   runtime?: ApiRuntime | null
   runtime_id: string | null
   token?: ApiToken | null

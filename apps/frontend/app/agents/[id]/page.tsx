@@ -18,8 +18,10 @@ export default async function AgentHome({
         {agent.character_json.name}
       </h1>
       {
-        agent.runtime ?
-        <Chat runtimeUrl={agent.runtime.url} /> :
+        (agent.runtime && agent.eliza_agent_id) ?
+        <Chat
+          elizaId={agent.eliza_agent_id}
+          runtimeUrl={agent.runtime.url} /> :
         <p>This agent has no chat.</p>
       }
     </main>
