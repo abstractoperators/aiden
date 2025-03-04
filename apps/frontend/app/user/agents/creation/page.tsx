@@ -1,7 +1,12 @@
+import FileForm from "./file-form";
+
 export default function AgentCreation() {
   return (
     <div>
-      This is the Agent Creation Page!
+      <h1>
+        Create an Agent
+      </h1>
+      <FileForm />
     </div>
   )
 }
