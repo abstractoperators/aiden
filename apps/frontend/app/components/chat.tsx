@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -28,13 +28,11 @@ interface AgentMessage {
   action: string,
 }
 
-// const chatURL = `https://${getPrefix()}aiden-runtime-2.aiden.space/4f507cc0-f2c4-0155-87e7-11b624010eb7/message`
-
 const left = "m-4 flex flex-col justify-center items-start text-left"
 const right = "m-4 flex flex-col justify-center items-end text-right"
 
 export default function Chat({ runtimeUrl }: { runtimeUrl: string }) {
-  const chatUrl = `${runtimeUrl}/message` // TODO: get id of agent on runtime
+  const chatUrl = new URL('/message', runtimeUrl)
   const [chat, setChat] = useState<Message[]>([])
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,7 +53,7 @@ export default function Chat({ runtimeUrl }: { runtimeUrl: string }) {
 
       const response = await fetch(
         // TODO: properly routed chats ofc
-        chatURL,
+        chatUrl,
         {
           method: "POST",
           headers: {
