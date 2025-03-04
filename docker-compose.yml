@@ -46,7 +46,7 @@ services:
       - "9090:9090"
     env_file:
       - path: "./apps/prometheus/.env"
-        required: true
+        required: false
 
 volumes:
   eve-agent:
