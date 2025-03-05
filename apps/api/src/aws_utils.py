@@ -26,7 +26,7 @@ def get_aws_config(num: int) -> AWSConfig | None:
             https_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden-staging/cca8548986966f89/0e71c1863b9f0654",  # noqa
             service_name=f"aiden-runtime-staging-{num}",
             host="staigen.space",
-            subdomain=f"aiden-runtime-staging-{num}",
+            subdomain=f"aiden-runtime-{num}",
             cluster="AidenStaging",
             task_definition_arn="arn:aws:ecs:us-east-1:008971649127:task-definition/aiden-agent-runtime-staging",
             subnets=["subnet-0c145d71e9bc921ce", "subnet-08a79f79b7375c569"],
@@ -89,7 +89,7 @@ def create_http_target_group(
         Protocol="HTTP",
         Port=80,
         TargetType="ip",
-        HealthCheckProtocol="HTTPS",
+        HealthCheckProtocol="HTTP",
         HealthCheckPort="traffic-port",
         HealthCheckPath="/ping",
     )

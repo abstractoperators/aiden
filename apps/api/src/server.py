@@ -300,7 +300,8 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
             detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
         )
 
-    url = f"{aws_config.host}.{aws_config.subdomain}"
+    host = f"{aws_config.subdomain}.{aws_config.host}"
+    url = f"https://{host}"
     with Session() as session:
         runtime = crud.create_runtime(
             session,
@@ -321,21 +322,24 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
 
         try:
             target_group_arn = http_rule_arn = https_rule_arn = service_arn = None
+            logger.info(f'Creating target group "{aws_config.target_group_name}"')
             target_group_arn = create_http_target_group(
                 elbv2_client=elbv2_client,
                 target_group_name=aws_config.target_group_name,
                 vpc_id=aws_config.vpc_id,
             )
 
+            logger.info(f"Creating listener rules for {host}")
             http_rule_arn, https_rule_arn = create_listener_rules(
                 elbv2_client=elbv2_client,
                 http_listener_arn=aws_config.http_listener_arn,
                 https_listener_arn=aws_config.https_listener_arn,
-                host_header_pattern=url,
+                host_header_pattern=host,
                 target_group_arn=target_group_arn,
                 priority=100 + 10 * next_runtime_number,
             )
 
+            logger.info(f"Creating service {aws_config.service_name}")
             service_arn = create_runtime_service(
                 ecs_client=ecs_client,
                 cluster=aws_config.cluster,
@@ -347,14 +351,20 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
             )
 
             # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
+            logger.info(
+                f"Polling runtime {runtime.id} at {runtime.url} for health check"
+            )
             for i in range(40):
-                await asyncio.sleep(10)
+                await asyncio.sleep(15)
                 try:
+                    url = f"{runtime.url}/ping"
                     resp = requests.get(
-                        f"{aws_config.host}.{aws_config.subdomain}/ping", timeout=3
+                        url=url,
+                        timeout=3,
                     )
                     resp.raise_for_status()
 
+                    logger.info(f"Runtime {runtime.id} has started")
                     with Session() as session:
                         crud.update_runtime(
                             session, runtime, RuntimeUpdate(started=True)
@@ -368,16 +378,22 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
         except Exception as e:
             logger.error(e)
             if http_rule_arn:
+                logger.info(f"Deleting HTTP rule {http_rule_arn}")
                 elbv2_client.delete_rule(RuleArn=http_rule_arn)
             if https_rule_arn:
+                logger.info(f"Deleting HTTPS rule {https_rule_arn}")
                 elbv2_client.delete_rule(RuleArn=https_rule_arn)
             if target_group_arn:
+                logger.info(f"Deleting target group {target_group_arn}")
                 elbv2_client.delete_target_group(TargetGroupArn=target_group_arn)
             if service_arn:
+                logger.info(f"Deleting service {service_arn}")
                 ecs_client.delete_service(
                     cluster=aws_config.cluster,
                     service=aws_config.service_name,
+                    force=True,
                 )
+            logger.info(f"Deleting runtime {runtime.id}")
             with Session() as session:
                 crud.delete_runtime(session, runtime)
 
