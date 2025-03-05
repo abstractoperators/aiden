@@ -16,9 +16,6 @@ async function getResource<T>(
 
     const response = await fetch(url);
 
-    console.log("url:", url)
-    console.log(response)
-
     if (!response.ok)
       throw new Error(`Failed to retrieve ${url}`)
 

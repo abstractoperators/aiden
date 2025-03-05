@@ -22,22 +22,21 @@ async function getUser(publicKey: string): Promise<User> {
   )
 }
 
-async function createUser(userRequest: UserBase): Promise<User> {
+async function createUser(userPayload: UserBase): Promise<User> {
   try {
     const response = await fetch(
       baseUrl,
       {
         method: 'POST',
-        mode: "no-cors",
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userRequest),
+        body: JSON.stringify(userPayload),
       }
     )
 
     if (!response.ok)
-      throw new Error(`Failed to create agent: ${userRequest}`)
+      throw new Error(`Failed to create user: ${JSON.stringify(userPayload)}`)
 
     return (await response.json()) as User
   } catch (error) {
@@ -46,9 +45,9 @@ async function createUser(userRequest: UserBase): Promise<User> {
   throw new Error("Logic error, this should never be reached.")
 }
 
-async function getOrCreateUser(userRequest: UserBase): Promise<User> {
+async function getOrCreateUser(userPayload: UserBase): Promise<User> {
   try {
-    return getUser(userRequest.public_key).catch(() => createUser(userRequest))
+    return getUser(userPayload.public_key).catch(() => createUser(userPayload))
   } catch (error) {
     console.error(error)
   }
