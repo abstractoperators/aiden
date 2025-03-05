@@ -10,6 +10,7 @@ from uuid import UUID
 import requests
 from boto3 import Session as Boto3Session
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
@@ -104,6 +105,22 @@ instrumentator.add(metrics.request_size())
 instrumentator.add(metrics.response_size())
 
 instrumentator.instrument(app).expose(app)
+
+# TODO: Change this based on env
+if os.getenv("ENV") == "dev":
+    allowed_origins = ["http://localhost:8001"]
+elif os.getenv("ENV") == "staging":
+    allowed_origins = ["https://staigen.space"]
+elif os.getenv("ENV") == "prod":
+    allowed_origins = ["https://aiden.space"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/ping")
