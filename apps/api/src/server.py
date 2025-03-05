@@ -10,6 +10,7 @@ from uuid import UUID
 import requests
 from boto3 import Session as Boto3Session
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
@@ -104,6 +105,22 @@ instrumentator.add(metrics.request_size())
 instrumentator.add(metrics.response_size())
 
 instrumentator.instrument(app).expose(app)
+
+# TODO: Change this based on env
+if os.getenv("ENV") == "dev":
+    allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
+elif os.getenv("ENV") == "staging":
+    allowed_origins = ["https://staigen.space"]
+elif os.getenv("ENV") == "prod":
+    allowed_origins = ["https://aiden.space"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/ping")
@@ -521,43 +538,48 @@ async def create_user(user: UserBase) -> User:
 
 
 @app.get("/users")
-async def get_users() -> Sequence[User]:
+async def get_user(
+    user_id: UUID | None = None,
+    public_key: str | None = None,
+) -> User | Sequence[User]:
     """
-    Returns a list of users.
+    Returns all users if neither user_id nor public_key are passed
+    Returns a user by id if user_id is passed
+    Returns a user by public key if public_key is passed
+    Raises a 404 if the user is not found
+    Raises a 400 if both user_id and public_key are passed
     """
-    with Session() as session:
-        users = crud.get_users(session)
-    return users
+    if user_id and public_key:
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Only one of user_id or public_key can be provided"},
+        )
 
+    if not user_id and not public_key:
+        with Session() as session:
+            users = crud.get_users(session)
+        return users
 
-@app.get("/users")
-async def get_user(user_id: UUID) -> User:
-    """
-    Returns a user by id.
-    Raises a 404 if the user is not found.
-    """
-    with Session() as session:
-        user: User | None = crud.get_user(session, user_id)
+    if user_id:
+        with Session() as session:
+            user: User | None = crud.get_user(session, user_id)
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+            if user is None:
+                return JSONResponse(
+                    status_code=404, content={"detail": "User not found"}
+                )
 
-    return user
+            return user
+    else:
+        with Session() as session:
+            user: User | None = crud.get_user_by_public_key(session, public_key)
 
+            if user is None:
+                return JSONResponse(
+                    status_code=404, content={"detail": "User not found"}
+                )
 
-@app.get("/users")
-async def get_user_by_public_key(public_key: str) -> User:
-    """
-    Returns a user by public key.
-    Raises a 404 if the user is not found.
-    """
-    with Session() as session:
-        user: User | None = crud.get_user_by_public_key(session, public_key)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
+            return user
 
 
 @app.patch("/users/{user_id}")
