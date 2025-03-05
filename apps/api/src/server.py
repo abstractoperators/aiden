@@ -530,7 +530,7 @@ async def get_users() -> Sequence[User]:
     return users
 
 
-@app.get("/users/{user_id}")
+@app.get("/users")
 async def get_user(user_id: UUID) -> User:
     """
     Returns a user by id.
@@ -545,7 +545,7 @@ async def get_user(user_id: UUID) -> User:
     return user
 
 
-@app.get("/users/{public_key}")
+@app.get("/users")
 async def get_user_by_public_key(public_key: str) -> User:
     """
     Returns a user by public key.
