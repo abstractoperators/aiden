@@ -108,7 +108,7 @@ instrumentator.instrument(app).expose(app)
 
 # TODO: Change this based on env
 if os.getenv("ENV") == "dev":
-    allowed_origins = ["http://localhost:8001"]
+    allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
 elif os.getenv("ENV") == "staging":
     allowed_origins = ["https://staigen.space"]
 elif os.getenv("ENV") == "prod":
@@ -541,7 +541,7 @@ async def create_user(user: UserBase) -> User:
 async def get_user(
     user_id: UUID | None = None,
     public_key: str | None = None,
-) -> User:
+) -> User | Sequence[User]:
     """
     Returns all users if neither user_id nor public_key are passed
     Returns a user by id if user_id is passed
