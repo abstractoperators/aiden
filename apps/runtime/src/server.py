@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, SecretStr
 @asynccontextmanager
 async def lifespan(app: fastapi.FastAPI):
     yield
-    stop_character()
+    print(stop_character())
 
 
 app = fastapi.FastAPI(lifespan=lifespan)
@@ -89,8 +89,8 @@ def start_character(character: Character) -> CharacterStatus:
 
     if get_character_status().running:
         raise HTTPException(
-            "There is already a character running. Please stop it first.",
             status_code=400,
+            detail="There is already a character running. Please stop it first.",
         )
 
     # Start eliza server
@@ -143,10 +143,6 @@ def read_character() -> CharacterPublic:
         for k, v in env_values.items()
     ]
 
-    # TODO: Remove this
-    for env in envs:
-        print(env.key, env.value.get_secret_value())
-
     return CharacterPublic(character_json=character_json_dict, envs=envs)
 
 
@@ -155,6 +151,7 @@ def stop_character():
     """
     Attempts to stop the currently running character
     """
+    print("Stopping character")
     global agent_runtime_subprocess
     if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
         os.killpg(os.getpgid(agent_runtime_subprocess.pid), signal.SIGINT)
@@ -168,8 +165,12 @@ def write_character(character: Character) -> None:
     """
     Writes the character json and envs to the eliza directory so that the character can be started.
     """
+
     with open("../../eliza/characters/character.json", "w") as f:
         f.write(json.dumps(character.character_json))
+
+    # Don't need to write braintrust config into env file.
+    # process.env respects gloabl env variables, which are set already in task definition.
 
     with open("../../eliza/.env", "w") as f:
         f.write(character.envs)
