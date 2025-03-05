@@ -75,6 +75,7 @@ aws-ecr-push-prometheus: aws-ecr-login
 
 mypy:
 	cd apps/api && uv run mypy src || true
+	cd apps/runtime && uv run mypy src || true
 
 pytest:
 	cd apps/api && uv run pytest src
