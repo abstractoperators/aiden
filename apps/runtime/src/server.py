@@ -1,3 +1,4 @@
+import json
 import os
 import signal
 import subprocess
@@ -6,8 +7,9 @@ from contextlib import asynccontextmanager
 
 import fastapi
 import requests
+from dotenv import dotenv_values
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 
 @asynccontextmanager
@@ -30,13 +32,15 @@ app.add_middleware(
 agent_runtime_subprocess = None
 
 
+class Env(BaseModel):
+    key: str
+    value: SecretStr
+
+
 class Character(BaseModel):
-    character_json: str = Field(
-        "{}",
-        description="Escaped character json for an eliza agent",
-    )
-    envs: str = Field(
-        "",
+    character_json: dict = Field({}, description="Character json for an eliza agent")
+    envs: list[Env] = Field(
+        [],
         description="A string representing an env file containing environment variables for the eliza agent",
     )
 
@@ -73,6 +77,8 @@ def start_character(character: Character) -> CharacterStatus:
     # TODO: Respond immediately, and add figure out another way for the caller to know when the character is ready
     global agent_runtime_subprocess
     write_character(character)
+
+    stop_character()
 
     # Start eliza server
     agent_runtime_subprocess = subprocess.Popen(
@@ -114,12 +120,17 @@ def read_character() -> Character:
     Returns the configuration for the current character
     """
     with open("../../eliza/characters/character.json", "r") as f:
-        character_json = f.read()
+        character_json_str: str = f.read()
+        character_json_dict: dict = json.loads(character_json_str)
 
-    with open("../../eliza/.env", "r") as f:
-        envs = f.read()
+    env_full_path = os.path.abspath("../../eliza/.env")
+    env_values = dotenv_values(env_full_path)
+    envs = [
+        Env(key=k, value=SecretStr(v)) if v else Env(key=k, value=SecretStr(""))
+        for k, v in env_values.items()
+    ]
 
-    return Character(character_json=character_json, envs=envs)
+    return Character(character_json=character_json_dict, envs=envs)
 
 
 @router.post("/character/stop")
@@ -136,16 +147,20 @@ def stop_character():
         return {"status": "not running"}
 
 
-def write_character(character: Character):
+def write_character(character: Character) -> None:
     """
     Writes the character json and envs to the eliza directory so that the character can be started.
     """
-    # TODO check if json and envs are valid
     with open("../../eliza/characters/character.json", "w") as f:
-        f.write(character.character_json)
+        f.write(json.dumps(character.character_json))
 
     with open("../../eliza/.env", "w") as f:
-        f.write(character.envs)
+        f.write(
+            "\n".join(
+                [f"{env.key}={env.value.get_secret_value()}" for env in character.envs]
+            )
+        )
+    return None
 
 
 app.include_router(router, prefix="/controller")
