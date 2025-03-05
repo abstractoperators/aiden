@@ -478,7 +478,7 @@ def start_agent(
         Polls the runtime to ensure the agent has started.
         Allows for a faster response to the caller
         """
-        character_json: str = json.dumps(agent_character_json)
+        character_json: dict = agent_character_json
         env_file: str = agent_env_file
         resp = requests.post(
             start_endpoint,

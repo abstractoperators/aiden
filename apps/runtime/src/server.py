@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 import fastapi
 import requests
 from dotenv import dotenv_values
+from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, SecretStr
 
@@ -34,14 +35,22 @@ agent_runtime_subprocess = None
 
 class Env(BaseModel):
     key: str
-    value: SecretStr
+    value: SecretStr | None
 
 
 class Character(BaseModel):
     character_json: dict = Field({}, description="Character json for an eliza agent")
+    envs: str = Field(
+        "",
+        description="A string representing an env file containing environment variables for the eliza agent",
+    )
+
+
+class CharacterPublic(BaseModel):
+    character_json: dict = Field({}, description="Character json for an eliza agent")
     envs: list[Env] = Field(
         [],
-        description="A string representing an env file containing environment variables for the eliza agent",
+        description="A list of environment variables for the eliza agent with password redacted",
     )
 
 
@@ -78,7 +87,11 @@ def start_character(character: Character) -> CharacterStatus:
     global agent_runtime_subprocess
     write_character(character)
 
-    stop_character()
+    if get_character_status().running:
+        raise HTTPException(
+            "There is already a character running. Please stop it first.",
+            status_code=400,
+        )
 
     # Start eliza server
     agent_runtime_subprocess = subprocess.Popen(
@@ -115,7 +128,7 @@ def start_character(character: Character) -> CharacterStatus:
 
 
 @router.get("/character/read")
-def read_character() -> Character:
+def read_character() -> CharacterPublic:
     """
     Returns the configuration for the current character
     """
@@ -126,11 +139,15 @@ def read_character() -> Character:
     env_full_path = os.path.abspath("../../eliza/.env")
     env_values = dotenv_values(env_full_path)
     envs = [
-        Env(key=k, value=SecretStr(v)) if v else Env(key=k, value=SecretStr(""))
+        Env(key=k, value=SecretStr(v)) if v else Env(key=k, value=None)
         for k, v in env_values.items()
     ]
 
-    return Character(character_json=character_json_dict, envs=envs)
+    # TODO: Remove this
+    for env in envs:
+        print(env.key, env.value.get_secret_value())
+
+    return CharacterPublic(character_json=character_json_dict, envs=envs)
 
 
 @router.post("/character/stop")
@@ -155,11 +172,8 @@ def write_character(character: Character) -> None:
         f.write(json.dumps(character.character_json))
 
     with open("../../eliza/.env", "w") as f:
-        f.write(
-            "\n".join(
-                [f"{env.key}={env.value.get_secret_value()}" for env in character.envs]
-            )
-        )
+        f.write(character.envs)
+
     return None
 
 
