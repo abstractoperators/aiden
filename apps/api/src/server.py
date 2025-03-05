@@ -538,7 +538,10 @@ async def create_user(user: UserBase) -> User:
 
 
 @app.get("/users")
-async def get_user(user_id: UUID | None, public_key: str | None) -> User:
+async def get_user(
+    user_id: UUID | None = None,
+    public_key: str | None = None,
+) -> User:
     """
     Returns all users if neither user_id nor public_key are passed
     Returns a user by id if user_id is passed
@@ -547,8 +550,9 @@ async def get_user(user_id: UUID | None, public_key: str | None) -> User:
     Raises a 400 if both user_id and public_key are passed
     """
     if user_id and public_key:
-        raise HTTPException(
-            status_code=400, detail="Only one of user_id or public_key can be provided"
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Only one of user_id or public_key can be provided"},
         )
 
     if not user_id and not public_key:
@@ -559,16 +563,23 @@ async def get_user(user_id: UUID | None, public_key: str | None) -> User:
     if user_id:
         with Session() as session:
             user: User | None = crud.get_user(session, user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+
+            if user is None:
+                return JSONResponse(
+                    status_code=404, content={"detail": "User not found"}
+                )
+
+            return user
     else:
         with Session() as session:
             user: User | None = crud.get_user_by_public_key(session, public_key)
 
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            if user is None:
+                return JSONResponse(
+                    status_code=404, content={"detail": "User not found"}
+                )
 
-        return user
+            return user
 
 
 @app.patch("/users/{user_id}")
