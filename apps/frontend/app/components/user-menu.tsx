@@ -33,18 +33,16 @@ export default function UserMenu({
         <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href="/user/agents/create">
+          <Link href="/user">
             <DropdownMenuItem>
               Control Center
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-         <Link href="/">
           <DropdownMenuItem onClick={logout}>
             Log out
           </DropdownMenuItem>
-         </Link>
       </DropdownMenuContent>
     </DropdownMenu>
   )
