@@ -121,9 +121,9 @@ def test_create_user(user_factory):
     assert user.username == "larrypage"
 
 
-def test_create_agent(user_factory, token_factory, agent_factory):
+def test_create_agent(user_factory, token_factory, agent_factory) -> None:
     runtime_id = None
-    character_json = {}
+    character_json: dict = {}
     env_file = ""
     owner: User = user_factory(
         public_key="0x123",
