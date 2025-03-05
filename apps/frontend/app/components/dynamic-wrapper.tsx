@@ -5,6 +5,7 @@ import { CosmosWalletConnectors } from "@dynamic-labs/cosmos";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { getCsrfToken } from "next-auth/react";
 import { handleLogout } from "@/lib/authHelpers";
+// import { createUser, dynamicToApiUser } from "@/lib/api/user";
 
 export default function DynamicProviderWrapper({ children }: React.PropsWithChildren) {
   return (
@@ -16,7 +17,14 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
           EthereumWalletConnectors,
         ],
         events: {
-          onAuthSuccess: async () => {
+          onAuthSuccess: async (args) => {
+            if (args.user.newUser) {
+              // await createUser(dynamicToApiUser(
+              //   args.primaryWallet,
+              //   args.primaryWallet, // TODO get a sei address
+              //   args.user,
+              // );
+            }
             const authToken = getAuthToken();
 
             if (!authToken) {
