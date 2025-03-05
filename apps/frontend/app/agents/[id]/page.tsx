@@ -1,6 +1,6 @@
 // https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
 import Chat from "@/components/chat"
-import { getAgent } from "@/lib/agent"
+import { getAgent } from "@/lib/api/agent"
 
 export default async function AgentHome({
   params,

@@ -6,7 +6,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Star } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
-import type { Agent } from "@/lib/agent"
+import type { Agent } from "@/lib/api/agent"
 
 export const columns: ColumnDef<Agent>[] = [
   {

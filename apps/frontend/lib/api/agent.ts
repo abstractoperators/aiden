@@ -1,3 +1,7 @@
+import { fromApiEndpoint, getResource } from "./common"
+
+const baseUrl = fromApiEndpoint('agents/')
+
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 // TODO: use Zod schema here
@@ -30,40 +34,26 @@ interface ApiRuntime {
   url: string
 }
 
-async function getResource<T>(
-  route: string,
-  resource_id?: string,
-): Promise<T> {
-  try {
-    const routeAndBase = new URL(route, process.env.API_ENDPOINT)
-    const url = resource_id ? new URL(resource_id, routeAndBase) : routeAndBase
-
-    const response = await fetch(url);
-
-    if (!response.ok)
-      throw new Error(`Failed to retrieve ${url}`)
-
-    return await response.json()
-  } catch (error) {
-    console.error(error)
-  }
-  throw new Error("Logic error, this should never be reached.")
-}
-
-async function getAgent(agent_id: string): Promise<ApiAgent> {
-  return await getResource<ApiAgent>('agents/', agent_id)
+async function getAgent(agentId: string): Promise<ApiAgent> {
+  return await getResource<ApiAgent>(baseUrl, { resourceId: agentId })
 }
 
 async function getAgents(): Promise<ApiAgent[]> {
-  return await getResource<ApiAgent[]>('agents')
+  return await getResource<ApiAgent[]>(baseUrl)
 }
 
-async function getToken(token_id: string): Promise<ApiToken> {
-  return await getResource<ApiToken>('tokens/', token_id)
+async function getToken(tokenId: string): Promise<ApiToken> {
+  return await getResource<ApiToken>(
+    fromApiEndpoint('tokens/'),
+    { resourceId: tokenId },
+  )
 }
 
-async function getRuntime(runtime_id: string): Promise<ApiRuntime> {
-  return await getResource<ApiRuntime>('runtimes/', runtime_id)
+async function getRuntime(runtimeId: string): Promise<ApiRuntime> {
+  return await getResource<ApiRuntime>(
+    fromApiEndpoint('runtimes/'),
+    { resourceId: runtimeId },
+  )
 }
 
 async function getEnlightened(): Promise<Agent[]> {
@@ -99,6 +89,7 @@ async function getIncubating(): Promise<Agent[]> {
 }
 
 export {
+  baseUrl,
   getAgent,
   getEnlightened,
   getIncubating,
