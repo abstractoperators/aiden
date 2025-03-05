@@ -521,43 +521,37 @@ async def create_user(user: UserBase) -> User:
 
 
 @app.get("/users")
-async def get_users() -> Sequence[User]:
+async def get_user(user_id: UUID | None, public_key: str | None) -> User:
     """
-    Returns a list of users.
+    Returns all users if neither user_id nor public_key are passed
+    Returns a user by id if user_id is passed
+    Returns a user by public key if public_key is passed
+    Raises a 404 if the user is not found
+    Raises a 400 if both user_id and public_key are passed
     """
-    with Session() as session:
-        users = crud.get_users(session)
-    return users
+    if user_id and public_key:
+        raise HTTPException(
+            status_code=400, detail="Only one of user_id or public_key can be provided"
+        )
 
+    if not user_id and not public_key:
+        with Session() as session:
+            users = crud.get_users(session)
+        return users
 
-@app.get("/users")
-async def get_user(user_id: UUID) -> User:
-    """
-    Returns a user by id.
-    Raises a 404 if the user is not found.
-    """
-    with Session() as session:
-        user: User | None = crud.get_user(session, user_id)
+    if user_id:
+        with Session() as session:
+            user: User | None = crud.get_user(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    else:
+        with Session() as session:
+            user: User | None = crud.get_user_by_public_key(session, public_key)
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-    return user
-
-
-@app.get("/users")
-async def get_user_by_public_key(public_key: str) -> User:
-    """
-    Returns a user by public key.
-    Raises a 404 if the user is not found.
-    """
-    with Session() as session:
-        user: User | None = crud.get_user_by_public_key(session, public_key)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
+        return user
 
 
 @app.patch("/users/{user_id}")
