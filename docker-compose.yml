@@ -34,6 +34,9 @@ services:
     image: agent-runtime:latest
     ports:
       - "8002:80"
+    env_file:
+      - path: "./apps/runtime/.env"
+        required: false
 
   prometheus:
     build:

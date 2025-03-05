@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 import fastapi
 import requests
-from dotenv import dotenv_values
+from dotenv import dotenv_values, load_dotenv
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, SecretStr
@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, SecretStr
 
 @asynccontextmanager
 async def lifespan(app: fastapi.FastAPI):
+    load_dotenv()
     yield
     print(stop_character())
 
@@ -93,6 +94,9 @@ def start_character(character: Character) -> CharacterStatus:
             detail="There is already a character running. Please stop it first.",
         )
 
+    env = os.environ.copy()
+
+    print(env)
     # Start eliza server
     agent_runtime_subprocess = subprocess.Popen(
         [
@@ -103,6 +107,7 @@ def start_character(character: Character) -> CharacterStatus:
         cwd="../../eliza",
         preexec_fn=os.setsid,  # start the process in a new session (from chatgpt)
         stderr=subprocess.PIPE,
+        env=env,
     )
 
     # Poll server for a while until it starts
