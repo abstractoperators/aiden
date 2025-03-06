@@ -606,7 +606,7 @@ async def delete_user(user_id: UUID) -> None:
 
 
 @app.patch("/runtimes/{runtime_id}")
-def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> None:
+def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> Runtime:
     """
     Updates runtime to latest task definition.
     Restarts the agent running on it (if any).
@@ -622,31 +622,37 @@ def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> None:
             raise HTTPException(status_code=404, detail="Runtime not found")
         runtime_url = runtime.url
 
-    runtime_service_num = re.search(r"aiden-runtime-(\d+)", runtime_url).group(1)
-    ecs_client = get_role_session().client("ecs")
-    aws_config = get_aws_config(runtime_service_num)
-    if not aws_config:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
+        runtime_service_num_match = re.search(r"aiden-runtime-(\d+)", runtime_url)
+        if not runtime_service_num_match or not (
+            runtime_service_num := runtime_service_num_match.group(1)
+        ):
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to parse runtime number from runtime URL",
+            )
+        runtime_service_num = int(runtime_service_num)
+        ecs_client = get_role_session().client("ecs")
+        aws_config = get_aws_config(runtime_service_num)
+        if not aws_config:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
+            )
+        runtime_task_definition_arn: str = aws_config.task_definition_arn
+        latest_revision: int = get_latest_task_definition_revision(
+            ecs_client, runtime_task_definition_arn
         )
-    runtime_task_definition_arn: str = aws_config.task_definition_arn
-    latest_revision: int = get_latest_task_definition_revision(
-        ecs_client, runtime_task_definition_arn
-    )
-    service = ecs_client.describe_services(
-        cluster=aws_config.cluster,
-        services=[aws_config.service_name],
-    )["services"][0]
-    service_arn = service["serviceArn"]
-    logger.info(
-        f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
-    )
+        service = ecs_client.describe_services(
+            cluster=aws_config.cluster,
+            services=[aws_config.service_name],
+        )["services"][0]
+        service_arn = service["serviceArn"]
+        logger.info(
+            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
+        )
 
-    # Force redeployment w/ latest definition
-    # 1. Update Agent in DB to not have a runtime
-    with Session() as session:
-        runtime = crud.get_runtime(session, runtime_id)
+        # Force redeployment w/ latest definition
+        # 1. Update Agent in DB to not have a runtime
         agent = runtime.agent
         if agent is not None:
             agent_id = agent.id
@@ -661,6 +667,7 @@ def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> None:
         forceNewDeployment=True,
     )["service"]
 
+    # 3. Make sure that the service is stable, then restart the running agent.
     async def helper():
         """
         Helper polls service until deployment is stable.
