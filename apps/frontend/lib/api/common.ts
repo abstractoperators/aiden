@@ -1,59 +1,59 @@
 function fromApiEndpoint(url: string): URL {
-  return new URL(url, process.env.NEXT_PUBLIC_API_ENDPOINT)
+  return new URL(url, process.env.NEXT_PUBLIC_API_ENDPOINT);
+}
+
+function getApiAuthHeader(): object {
+  return { "X-API-Key": process.env.AIDEN_API_ACCESS_KEY };
 }
 
 async function getResource<T>(
   baseUrl: URL,
   options: {
-    resourceId?: string,
-    query?: URLSearchParams,
-  } = {},
+    resourceId?: string;
+    query?: URLSearchParams;
+  } = {}
 ): Promise<T> {
   try {
-    const { resourceId, query } = options
-    const resourceUrl = resourceId ? new URL(resourceId, baseUrl) : baseUrl
-    const url = query ? new URL(`${resourceUrl.href}?${query.toString()}`) : resourceUrl
+    const { resourceId, query } = options;
+    const resourceUrl = resourceId ? new URL(resourceId, baseUrl) : baseUrl;
+    const url = query
+      ? new URL(`${resourceUrl.href}?${query.toString()}`)
+      : resourceUrl;
 
     const response = await fetch(url);
 
     if (!response.ok)
-      throw new Error(`Failed to retrieve ${url} with response ${JSON.stringify(response)}`)
+      throw new Error(
+        `Failed to retrieve ${url} with response ${JSON.stringify(response)}`
+      );
 
-    return response.json()
+    return response.json();
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
-  throw new Error("Logic error, this should never be reached.")
+  throw new Error("Logic error, this should never be reached.");
 }
 
-async function createResource<T, P = undefined>(
-  baseUrl: URL,
-  body?: P,
-) {
+async function createResource<T, P = undefined>(baseUrl: URL, body?: P) {
   try {
-    const response = await fetch(
-      baseUrl,
-      {
-        method: 'POST',
-        headers: (body) ? {
-          'Content-Type': 'application/json',
-        } : undefined,
-        body: JSON.stringify(body),
-      }
-    )
+    const response = await fetch(baseUrl, {
+      method: "POST",
+      headers: body
+        ? {
+            "Content-Type": "application/json",
+          }
+        : undefined,
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok)
-      throw new Error(`Failed to create at ${baseUrl} with body ${body}`)
+      throw new Error(`Failed to create at ${baseUrl} with body ${body}`);
 
-    return response.json()
+    return response.json();
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
-  throw new Error("Logic error, this should never be reached.")
+  throw new Error("Logic error, this should never be reached.");
 }
 
-export {
-  createResource,
-  fromApiEndpoint,
-  getResource,
-}
+export { createResource, fromApiEndpoint, getResource };
