@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from pydantic import TypeAdapter
 
 from src import logger
 from src.aws_utils import (
@@ -137,14 +138,15 @@ def agent_to_agentpublic(agent: Agent) -> AgentPublic:
     """
     Converts an Agent to an AgentPublic.
     """
-    agent_dict = agent.model_dump()
-    env_file: str = agent_dict["env_file"]
-    env_dict: dict = dotenv_values(stream=StringIO(env_file))
-
-    agent_dict["env_file"] = [
+    old_env_file: str = agent.env_file
+    env_dict: dict = dotenv_values(stream=StringIO(old_env_file))
+    list_of_envs: list[Env] = [
         Env(key=key, value=value) for key, value in env_dict.items()
     ]
-    return AgentPublic(**agent_dict)
+
+    agent.env_file = list_of_envs  # type: ignore
+
+    return TypeAdapter(AgentPublic).validate_python(agent)
 
 
 @app.post("/agents")
@@ -166,6 +168,7 @@ async def get_agents() -> Sequence[AgentPublic]:
     """
     with Session() as session:
         agents = crud.get_agents(session)
+
         return [agent_to_agentpublic(agent) for agent in agents]
 
 
@@ -180,6 +183,9 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
 
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
+
+        agent.runtime  # noqa
+        agent.token  # noqa
         return agent_to_agentpublic(agent)
 
 
@@ -577,9 +583,9 @@ async def get_user(
     Raises a 400 if both user_id and public_key are passed
     """
     if user_id and public_key:
-        return JSONResponse(
+        raise HTTPException(
             status_code=400,
-            content={"detail": "Only one of user_id or public_key can be provided"},
+            detail="Both user_id and public_key cannot be passed",
         )
 
     if not user_id and not public_key:
@@ -592,9 +598,7 @@ async def get_user(
             user: User | None = crud.get_user(session, user_id)
 
             if user is None:
-                return JSONResponse(
-                    status_code=404, content={"detail": "User not found"}
-                )
+                raise HTTPException(status_code=404, detail="User not found")
 
             return user
     else:
@@ -602,9 +606,7 @@ async def get_user(
             user: User | None = crud.get_user_by_public_key(session, public_key)
 
             if user is None:
-                return JSONResponse(
-                    status_code=404, content={"detail": "User not found"}
-                )
+                raise HTTPException(status_code=404, detail="User not found")
 
             return user
 
