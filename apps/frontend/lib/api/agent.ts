@@ -41,6 +41,12 @@ async function createAgent(agentPayload: AgentBase): Promise<Agent> {
   return createResource<Agent, AgentBase>(baseUrl, agentPayload)
 }
 
+async function startAgent(agentId: string, runtimeId: string): Promise<[ Agent, Runtime ]> {
+  return createResource<[ Agent, Runtime ]>(new URL(
+    `${baseUrl.href}${agentId}/start/${runtimeId}`
+  ))
+}
+
 async function getAgents(): Promise<Agent[]> {
   return getResource<Agent[]>(baseUrl)
 }
@@ -82,6 +88,7 @@ export {
   getAgent,
   getEnlightened,
   getIncubating,
+  startAgent,
 }
 
 export type {

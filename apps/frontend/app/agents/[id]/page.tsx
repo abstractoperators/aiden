@@ -10,7 +10,7 @@ export default async function AgentHome({
   const id = (await params).id
   const agent = await getAgent(id)
   if (!agent.runtime)
-    console.log(`Agent ${agent.character_json.name} has no runtime!`)
+    console.log("Agent", agent, "has no runtime!")
 
   return (
     <main className="flex-1 flex flex-col w-5/6 justify-start items-center gap-8 m-8 sm:m-4 md:m-8 lg:m-16">

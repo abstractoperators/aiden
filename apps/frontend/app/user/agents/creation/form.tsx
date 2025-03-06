@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core"
 import { dynamicToApiUser, getOrCreateUser } from "@/lib/api/user";
 import { getEthSeiAddresses } from "@/lib/dynamic";
-import { createAgent } from "@/lib/api/agent";
+import { createAgent, startAgent } from "@/lib/api/agent";
+import { createRuntime } from "@/lib/api/runtime";
 
 const MAX_FILE_SIZE = 5000000;
 const formSchema = z.object({
@@ -61,7 +62,9 @@ export default function CreationForm() {
         env_file: env,
       }
 
-      const agentResponse = await createAgent(agentPayload)
+      const agent = await createAgent(agentPayload)
+      const runtime = await createRuntime()
+      await startAgent(agent.id, runtime.id)
 
       toast({
         title: "Success!",
