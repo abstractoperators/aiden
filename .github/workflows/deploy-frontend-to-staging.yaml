@@ -26,9 +26,8 @@ jobs:
             - name: Create apps/frontend/.env.local
               run: |
                 touch apps/frontend/.env.local
-                echo API_ENDPOINT=https://api.staigen.space >> apps/frontend/.env.local
                 echo NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=08b64418-c698-4620-8ea2-d0e1a31ff10f >> apps/frontend/.env.local
-                echo NEXT_DYNAMIC_BEARER_TOKEN=${{ secrets.NEXT_DYNAMIC_BEARER_TOKEN }} >> apps/frontend/.env.local
+                echo API_ENDPOINT=https://api.staiden.space >> apps/frontend/.env.local
 
             - name: Build and tag frontend
               run: |
