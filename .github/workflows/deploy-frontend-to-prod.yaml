@@ -23,7 +23,7 @@ jobs:
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
                 
-            - name: Create .env.local
+            - name: Create .env.local (which Dockerfile will copy to .env.production)
               run: |
                 touch .env.local
                 echo API_ENDPOINT=https://api.aiden.space >> .env.local
