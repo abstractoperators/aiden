@@ -1,5 +1,6 @@
 import { createResource, fromApiEndpoint, getResource } from "./common"
 import { Runtime } from "./runtime"
+import { getToken, Token } from "./token"
 
 const baseUrl = fromApiEndpoint('agents/')
 
@@ -32,10 +33,6 @@ interface Agent extends AgentBase {
   token?: Token | null
 }
 
-interface Token {
-  ticker: string
-}
-
 async function getAgent(agentId: string): Promise<Agent> {
   return getResource<Agent>(baseUrl, { resourceId: agentId })
 }
@@ -46,13 +43,6 @@ async function createAgent(agentPayload: AgentBase): Promise<Agent> {
 
 async function getAgents(): Promise<Agent[]> {
   return getResource<Agent[]>(baseUrl)
-}
-
-async function getToken(tokenId: string): Promise<Token> {
-  return getResource<Token>(
-    fromApiEndpoint('tokens/'),
-    { resourceId: tokenId },
-  )
 }
 
 async function getEnlightened(): Promise<ClientAgent[]> {
