@@ -63,8 +63,10 @@ export default function CreationForm() {
       }
 
       const agent = await createAgent(agentPayload)
-      const runtime = await createRuntime()
-      await startAgent(agent.id, runtime.id)
+      // const runtime = await createRuntime()
+      const RUNTIME_5_ID = "77343e55-c36c-4bcf-83f3-2841096007ae"
+      await startAgent(agent.id, RUNTIME_5_ID)
+      // await startAgent(agent.id, runtime.id)
 
       toast({
         title: "Success!",
