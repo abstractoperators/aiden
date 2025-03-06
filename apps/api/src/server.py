@@ -22,6 +22,7 @@ from src.aws_utils import (
     create_listener_rules,
     create_runtime_service,
     get_aws_config,
+    get_latest_task_definition_revision,
     get_role_session,
 )
 from src.db import Session, crud, init_db
@@ -453,17 +454,20 @@ def start_agent(
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
+        logger.info(f"Checking if runtime {runtime_id} is online")
         ping_endpoint = f"{runtime.url}/ping"
         resp = requests.get(ping_endpoint, timeout=3)
         resp.raise_for_status()
 
+        logger.info(f"Runtime {runtime_id} is online")
         runtime.started = True
 
+        logger.info("Stopping old agent if it exists")
         old_agent = runtime.agent
+        stop_endpoint = f"{runtime.url}/controller/character/stop"
+        resp = requests.post(stop_endpoint)
+        resp.raise_for_status()
         if old_agent:
-            stop_endpoint = f"{runtime.url}/controller/character/stop"
-            resp = requests.post(stop_endpoint)
-            resp.raise_for_status()
             crud.update_agent(
                 session,
                 old_agent,
@@ -478,18 +482,24 @@ def start_agent(
         Polls the runtime to ensure the agent has started.
         Allows for a faster response to the caller
         """
+        logger.info(f"Starting agent {agent_id} on runtime {runtime_id}")
         character_json: dict = agent_character_json
         env_file: str = agent_env_file
         resp = requests.post(
             start_endpoint,
             json={"character_json": character_json, "envs": env_file},
+            timeout=3,
         )
+        logger.info(resp.text)
+        print(resp.text)
         resp.raise_for_status()
         # Update the agent once it has been confirmed to be started.
 
+        logger.info(f"Polling runtime {runtime_id} for agent status")
         for _ in range(60):
             resp = requests.get(f"{runtime.url}/controller/character/status")
-            if resp.status_code == 200:
+            if resp.status_code == 200 and resp.json().get("running"):
+                logger.info(f"Agent {agent_id} has started")
                 eliza_agent_id: str = resp.json().get("agent_id")
                 with Session() as session:
                     crud.update_agent(
@@ -502,6 +512,8 @@ def start_agent(
                     )
                 return
             await asyncio.sleep(10)
+
+        logger.info(f"Agent {agent_id} did not start in time.")
 
         return None
 
@@ -587,3 +599,105 @@ async def delete_user(user_id: UUID) -> None:
             raise HTTPException(status_code=404, detail="User not found")
         crud.delete_user(session, user)
     return None
+
+
+@app.patch("/runtimes/{runtime_id}")
+def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> None:
+    """
+    Updates runtime to latest task definition.
+    Restarts the agent running on it (if any).
+    """
+    # Get the session, and use it's URL to find the service
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            return JSONResponse(
+                status_code=404,
+                detail="Runtime not found",
+            )
+        runtime_url = runtime.url
+
+    runtime_service_num = re.search(r"aiden-runtime-(\d+)", runtime_url).group(1)
+    ecs_client = get_role_session().client("ecs")
+    aws_config = get_aws_config(runtime_service_num)
+    if not aws_config:
+        return JSONResponse(
+            status_code=500,
+            detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
+        )
+    runtime_task_definition_arn = aws_config.task_definition_arn
+    latest_revision: int = get_latest_task_definition_revision(
+        ecs_client, runtime_task_definition_arn
+    )
+
+    # Force redeployment w/ latest definition
+    # Update Agent in DB to not have a runtime
+    with Session() as session:
+        runtime = crud.get_runtime(session, runtime_id)
+        agent = runtime.agent
+        if agent is not None:
+            crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+        crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+        agent_id = agent.id
+
+    # Get the service ARN using service name
+    # TODO: Just track the service ARN in the DB so we don't have to do this shenanigans.
+    service = ecs_client.describe_services(
+        cluster=aws_config.cluster,
+        services=[aws_config.service_name],
+    )["services"]
+    service_arn = service["serviceArn"]
+    logger.info(
+        f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
+    )
+
+    # # Force redeployment
+    service = ecs_client.update_service(
+        cluster=aws_config.cluster,
+        service=aws_config.service_name,
+        taskDefinition=f"{runtime_task_definition_arn}:{latest_revision}",
+        forceNewDeployment=True,
+    )["service"]
+
+    async def helper():
+        # Poll until service is stable
+        for _ in range(40):
+            service = ecs_client.describe_services(
+                cluster=aws_config.cluster,
+                services=[aws_config.service_name],
+            )["services"][0]
+            active_deployment_id = None
+            for deployment in service["deployments"]:
+                if deployment["status"] == "ACTIVE":
+                    active_deployment_id = deployment["id"]
+                    break
+            if active_deployment_id is None:
+                logger.info("Service is stable")
+                break
+            await asyncio.sleep(15)
+
+        # Poll until server on the service is up
+        for _ in range(40):
+            try:
+                resp = requests.get(f"{runtime_url}/ping", timeout=3)
+                resp.raise_for_status()
+                logger.info("Runtime is online")
+                with Session() as session:
+                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+                break
+            except Exception as e:
+                logger.info(f"Runtime is not online yet. {e}")
+                await asyncio.sleep(15)
+
+        # Restart the agent (if any)
+        if agent is not None:
+            logger.info(f"Restarting agent {agent_id}")
+            start_agent(
+                agent_id=agent_id,
+                runtime_id=runtime_id,
+                background_tasks=background_tasks,
+            )
+
+    background_tasks.add_task(helper)
+
+    return runtime
