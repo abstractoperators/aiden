@@ -1,6 +1,7 @@
 import jwt, { JwtPayload, Secret, VerifyErrors } from "jsonwebtoken";
+import { signOut } from "next-auth/react";
 
-export const getKey = (
+const getKey = (
   headers,
   callback: (err: Error | null, key?: Secret) => void
 ): void => {
@@ -31,7 +32,7 @@ export const getKey = (
   });
 };
 
-export const validateJWT = async (
+const validateJWT = async (
   token: string
 ): Promise<JwtPayload | null> => {
   try {
@@ -45,7 +46,6 @@ export const validateJWT = async (
             err: VerifyErrors | null,
             decoded: string | JwtPayload | undefined
           ) => {
-            console.log("decoded the jwt");
             if (err) {
               console.log("JWT verification error:", err);
               reject(err);
@@ -68,3 +68,12 @@ export const validateJWT = async (
     return null;
   }
 };
+
+async function handleLogout() {
+  await signOut({ redirectTo: '/' });
+}
+
+export {
+  handleLogout,
+  validateJWT,
+}

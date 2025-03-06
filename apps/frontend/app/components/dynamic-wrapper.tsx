@@ -1,17 +1,30 @@
-"use client"
+'use client'
 
 import { DynamicContextProvider, getAuthToken } from "@dynamic-labs/sdk-react-core";
+import { CosmosWalletConnectors } from "@dynamic-labs/cosmos";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { getCsrfToken } from "next-auth/react";
+import { handleLogout } from "@/lib/authHelpers";
+// import { createUser, dynamicToApiUser } from "@/lib/api/user";
 
 export default function DynamicProviderWrapper({ children }: React.PropsWithChildren) {
   return (
     <DynamicContextProvider
       settings={{
         environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID ?? "",
-        walletConnectors: [EthereumWalletConnectors],
+        walletConnectors: [
+          CosmosWalletConnectors,
+          EthereumWalletConnectors,
+        ],
         events: {
-          onAuthSuccess: async () => {
+          onAuthSuccess: async (args) => {
+            if (args.user.newUser) {
+              // await createUser(dynamicToApiUser(
+              //   args.primaryWallet,
+              //   args.primaryWallet, // TODO get a sei address
+              //   args.user,
+              // );
+            }
             const authToken = getAuthToken();
 
             if (!authToken) {
@@ -48,6 +61,9 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
               // Handle any exceptions
               console.error("Error logging in", error);
             });
+          },
+          onLogout: async () => {
+            await handleLogout();
           },
         },
       }}

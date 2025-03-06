@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/ui/data-table"
@@ -6,19 +6,9 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Star } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
+import type { ClientAgent } from "@/lib/api/agent"
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
-// TODO: use Zod schema here
-// TODO: generalize agent type and create an additional AgentDraft type
-export type Agent = {
-  name: string
-  ticker: string
-  marketCapitalization: number
-  holderCount: number
-}
-
-export const columns: ColumnDef<Agent>[] = [
+export const columns: ColumnDef<ClientAgent>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -47,11 +37,12 @@ export const columns: ColumnDef<Agent>[] = [
       <DataTableColumnHeader column={column} title="Name" />
     ),
     cell: ({ row }) => (
-      // TODO: replace with dynamic route
-      <Link href={`/agents/${row.getValue("name")}`}>
+      <Link
+        href={`/agents/${row.original.id}`}
+      >
         <hgroup>
           <h2>{row.getValue("name")}</h2>
-          <h3>${row.original.ticker}</h3>
+          { row.original.ticker && <h3>${row.original.ticker}</h3> }
         </hgroup>
       </Link>
     )

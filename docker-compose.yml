@@ -49,5 +49,4 @@ services:
         required: false
 
 volumes:
-  eve-agent:
   agent-runtime:
