@@ -78,7 +78,7 @@ class AgentBase(Base):
         nullable=True,
         default=None,
     )
-    token_id: UUID = Field(
+    token_id: UUID | None = Field(
         foreign_key="token.id",
         description="UUID of the token the agent uses.",
         nullable=True,

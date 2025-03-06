@@ -66,3 +66,17 @@ class ElizaCharacterJson(BaseModel):
 class AgentPublic(AgentBase):
     token: TokenBase | None = None
     runtime: RuntimeBase | None = None
+
+
+class AWSConfig(BaseModel):
+    vpc_id: str
+    target_group_name: str
+    http_listener_arn: str
+    https_listener_arn: str
+    service_name: str
+    host: str
+    subdomain: str
+    cluster: str
+    task_definition_arn: str
+    subnets: list[str]
+    security_groups: list[str]
