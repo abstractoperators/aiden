@@ -124,6 +124,10 @@ def update_runtime(
     return update_generic(session, runtime, runtime_update)
 
 
+def delete_runtime(session: Session, runtime: Runtime) -> None:
+    return delete_generic(session, runtime)
+
+
 # endregion Runtimes
 # region Tokens
 def create_token(session: Session, token: TokenBase) -> Token:

@@ -1,18 +1,30 @@
 import asyncio
 import json
 import os
+import re
 from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
+from boto3 import Session as Boto3Session
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from mypy_boto3_ecs.client import ECSClient
+from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from pydantic import TypeAdapter
 
 from src import logger
+from src.aws_utils import (
+    create_http_target_group,
+    create_listener_rules,
+    create_runtime_service,
+    get_aws_config,
+    get_role_session,
+)
 from src.db import Session, crud, init_db
 from src.db.models import (
     Agent,
@@ -27,7 +39,7 @@ from src.db.models import (
     UserBase,
     UserUpdate,
 )
-from src.models import AgentPublic, TokenCreationRequest
+from src.models import AgentPublic, AWSConfig, TokenCreationRequest
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -93,6 +105,22 @@ instrumentator.add(metrics.request_size())
 instrumentator.add(metrics.response_size())
 
 instrumentator.instrument(app).expose(app)
+
+# TODO: Change this based on env
+if os.getenv("ENV") == "dev":
+    allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
+elif os.getenv("ENV") == "staging":
+    allowed_origins = ["https://staigen.space"]
+elif os.getenv("ENV") == "prod":
+    allowed_origins = ["https://aiden.space"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/ping")
@@ -263,73 +291,132 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
 @app.post("/runtimes")
 def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     """
-    Creates a new runtime via github actions.
-    Runtime will not truly be started until the github action is completed, and aws resources are up and running (~5min)
-    Raises a 500 if the github action fails to start.
-    Returns the runtime object.
+    Attempts to create a new runtime.
+    Returns a Runtime object immediately, with flag started=False.
+    The runtime will be polled for 10 min to verify that it is online.
+    If it is not, then the runtime will be deleted.
     """
+    # Perhaps, the least performant code ever written
+    # This is why *real* companies use leetcode
     with Session() as session:
-        runtimes = crud.get_runtimes(session)
-        runtime_count = len(runtimes)
-    next_runtime_number = runtime_count + 1
-    if os.getenv("ENV") == "staging":
-        url = f"https://aiden-runtime-{next_runtime_number}.staigen.space"
-        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/145628373/dispatches"
-    elif os.getenv("ENV") == "prod":
-        url = f"https://aiden-runtime-{next_runtime_number}.aiden.space"
-        actions_url = "https://api.github.com/repos/abstractoperators/aiden/actions/workflows/144070661/dispatches"
-    else:
-        # TODO: dev env w/ local runtime.
-        pass
+        runtimes = crud.get_runtimes(
+            session, limit=1000000
+        )  # lul better hope you don't run out of memory
+        runtime_nums = []
+        for runtime in runtimes:
+            match = re.search(r"aiden-runtime-(\d+)", runtime.url)
+            if match:
+                runtime_nums.append(int(match.group(1)))
 
-    # Store the runtime in the database
+    next_runtime_number = max(runtime_nums) + 1 if runtime_nums else 1
 
-    GITHUB_WORKFLOW_DISPATCH_PAT = os.getenv("GITHUB_WORKFLOW_DISPATCH_PAT")
-    next_runtime_number = runtime_count + 1
-    try:
-        resp = requests.post(
-            actions_url,
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {GITHUB_WORKFLOW_DISPATCH_PAT}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-            json={
-                "ref": "main",
-                "inputs": {
-                    "service-no": str(next_runtime_number),
-                },
-            },
-            timeout=3,
+    aws_config: AWSConfig | None = get_aws_config(next_runtime_number)
+    if not aws_config:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
         )
-        resp.raise_for_status()
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(status_code=500, detail="Failed to start the runtime.")
 
-    # Assume that if the action didn't error, then all is good 🤡
+    host = f"{aws_config.subdomain}.{aws_config.host}"
+    url = f"https://{host}"
     with Session() as session:
         runtime = crud.create_runtime(
             session,
-            RuntimeBase(url=url, started=False),
+            RuntimeBase(
+                url=url,
+                started=False,
+            ),
         )
 
-    async def helper():
-        # Poll the runtime for a couple of minutes to see if it stands up
-        for _ in range(60):
-            await asyncio.sleep(10)
-            resp = requests.get(f"{url}/ping")
-            if resp.status_code == 200:
-                with Session() as session:
-                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-                return
+    async def create_service_atomic() -> None:
+        """
+        Creates a service w/ a basic rollback strategy
+        Creates a target group + listener rule + service, deleting them if health check at the end fails.
+        """
+        sts_client: Boto3Session = get_role_session()
+        ecs_client: ECSClient = sts_client.client("ecs")
+        elbv2_client: ELBv2Client = sts_client.client("elbv2")
 
-        with Session() as session:
-            crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+        try:
+            target_group_arn = http_rule_arn = https_rule_arn = service_arn = None
+            logger.info(f'Creating target group "{aws_config.target_group_name}"')
+            target_group_arn = create_http_target_group(
+                elbv2_client=elbv2_client,
+                target_group_name=aws_config.target_group_name,
+                vpc_id=aws_config.vpc_id,
+            )
 
-    # TODO: Actually kill the runtime and delete if it doesn't start up instead of leaving on a potential aws crash loop
-    # TODO: Heartbeat beyond the initial startup
-    background_tasks.add_task(helper)
+            logger.info(f"Creating listener rules for {host}")
+            http_rule_arn, https_rule_arn = create_listener_rules(
+                elbv2_client=elbv2_client,
+                http_listener_arn=aws_config.http_listener_arn,
+                https_listener_arn=aws_config.https_listener_arn,
+                host_header_pattern=host,
+                target_group_arn=target_group_arn,
+                priority=100 + 10 * next_runtime_number,
+            )
+
+            logger.info(f"Creating service {aws_config.service_name}")
+            service_arn = create_runtime_service(
+                ecs_client=ecs_client,
+                cluster=aws_config.cluster,
+                service_name=aws_config.service_name,
+                task_definition_arn=aws_config.task_definition_arn,
+                security_groups=aws_config.security_groups,
+                subnets=aws_config.subnets,
+                target_group_arn=target_group_arn,
+            )
+
+            # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
+            logger.info(
+                f"Polling runtime {runtime.id} at {runtime.url} for health check"
+            )
+            for i in range(40):
+                await asyncio.sleep(15)
+                try:
+                    url = f"{runtime.url}/ping"
+                    resp = requests.get(
+                        url=url,
+                        timeout=3,
+                    )
+                    resp.raise_for_status()
+
+                    logger.info(f"Runtime {runtime.id} has started")
+                    with Session() as session:
+                        crud.update_runtime(
+                            session, runtime, RuntimeUpdate(started=True)
+                        )
+                        return
+                except Exception as e:
+                    logger.info(f"Attempt {i}/{40}. Runtime not online yet. {e}")
+                    continue
+
+            raise Exception("Runtime did not come online in time. Rolling back.")
+        except Exception as e:
+            logger.error(e)
+            if http_rule_arn:
+                logger.info(f"Deleting HTTP rule {http_rule_arn}")
+                elbv2_client.delete_rule(RuleArn=http_rule_arn)
+            if https_rule_arn:
+                logger.info(f"Deleting HTTPS rule {https_rule_arn}")
+                elbv2_client.delete_rule(RuleArn=https_rule_arn)
+            if target_group_arn:
+                logger.info(f"Deleting target group {target_group_arn}")
+                elbv2_client.delete_target_group(TargetGroupArn=target_group_arn)
+            if service_arn:
+                logger.info(f"Deleting service {service_arn}")
+                ecs_client.delete_service(
+                    cluster=aws_config.cluster,
+                    service=aws_config.service_name,
+                    force=True,
+                )
+            logger.info(f"Deleting runtime {runtime.id}")
+            with Session() as session:
+                crud.delete_runtime(session, runtime)
+
+        return None
+
+    background_tasks.add_task(create_service_atomic)
 
     return runtime
 
@@ -361,7 +448,9 @@ def get_runtime(runtime_id: UUID) -> Runtime:
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
-    agent_id: UUID, runtime_id: UUID, background_tasks: BackgroundTasks
+    agent_id: UUID,
+    runtime_id: UUID,
+    background_tasks: BackgroundTasks,
 ) -> tuple[Agent, Runtime]:
     """
     Starts an agent on a runtime.
@@ -382,8 +471,9 @@ def start_agent(
             raise HTTPException(status_code=404, detail="Runtime not found")
 
         ping_endpoint = f"{runtime.url}/ping"
-        resp = requests.get(ping_endpoint)
+        resp = requests.get(ping_endpoint, timeout=3)
         resp.raise_for_status()
+
         runtime.started = True
 
         old_agent = runtime.agent
@@ -400,7 +490,7 @@ def start_agent(
         start_endpoint = f"{runtime.url}/controller/character/start"
 
     # Start the new agent
-    async def helper():
+    async def helper() -> None:
         """
         Polls the runtime to ensure the agent has started.
         Allows for a faster response to the caller
@@ -430,6 +520,8 @@ def start_agent(
                 return
             await asyncio.sleep(10)
 
+        return None
+
     background_tasks.add_task(helper)
     return (agent, runtime)
 
@@ -446,43 +538,48 @@ async def create_user(user: UserBase) -> User:
 
 
 @app.get("/users")
-async def get_users() -> Sequence[User]:
+async def get_user(
+    user_id: UUID | None = None,
+    public_key: str | None = None,
+) -> User | Sequence[User]:
     """
-    Returns a list of users.
+    Returns all users if neither user_id nor public_key are passed
+    Returns a user by id if user_id is passed
+    Returns a user by public key if public_key is passed
+    Raises a 404 if the user is not found
+    Raises a 400 if both user_id and public_key are passed
     """
-    with Session() as session:
-        users = crud.get_users(session)
-    return users
+    if user_id and public_key:
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Only one of user_id or public_key can be provided"},
+        )
 
+    if not user_id and not public_key:
+        with Session() as session:
+            users = crud.get_users(session)
+        return users
 
-@app.get("/users/{user_id}")
-async def get_user(user_id: UUID) -> User:
-    """
-    Returns a user by id.
-    Raises a 404 if the user is not found.
-    """
-    with Session() as session:
-        user: User | None = crud.get_user(session, user_id)
+    if user_id:
+        with Session() as session:
+            user: User | None = crud.get_user(session, user_id)
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+            if user is None:
+                return JSONResponse(
+                    status_code=404, content={"detail": "User not found"}
+                )
 
-    return user
+            return user
+    else:
+        with Session() as session:
+            user: User | None = crud.get_user_by_public_key(session, public_key)
 
+            if user is None:
+                return JSONResponse(
+                    status_code=404, content={"detail": "User not found"}
+                )
 
-@app.get("/users/{public_key}")
-async def get_user_by_public_key(public_key: str) -> User:
-    """
-    Returns a user by public key.
-    Raises a 404 if the user is not found.
-    """
-    with Session() as session:
-        user: User | None = crud.get_user_by_public_key(session, public_key)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
+            return user
 
 
 @app.patch("/users/{user_id}")
