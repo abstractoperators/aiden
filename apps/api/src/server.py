@@ -406,13 +406,16 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
 
 
 @app.get("/runtimes")
-def get_runtimes() -> Sequence[Runtime]:
+def get_runtimes(unused: bool = False) -> Sequence[Runtime]:
     """
     Returns a list of up to 100 runtimes.
     """
     with Session() as session:
         runtimes = crud.get_runtimes(session)
-    return runtimes
+
+        if unused:
+            runtimes = [runtime for runtime in runtimes if not runtime.agent]
+        return runtimes
 
 
 @app.get("/runtimes/{runtime_id}")
@@ -496,7 +499,7 @@ def start_agent(
         # Update the agent once it has been confirmed to be started.
 
         logger.info(f"Polling runtime {runtime_id} for agent status")
-        for _ in range(60):
+        for i in range(60):
             resp = requests.get(f"{runtime.url}/controller/character/status")
             if resp.status_code == 200 and resp.json().get("running"):
                 logger.info(f"Agent {agent_id} has started")
@@ -511,6 +514,7 @@ def start_agent(
                         ),
                     )
                 return
+            logger.info(f"{i}/{40}: Agent {agent_id} has not started yet")
             await asyncio.sleep(10)
 
         logger.info(f"Agent {agent_id} did not start in time.")
