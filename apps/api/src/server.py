@@ -64,7 +64,7 @@ async def auth_middleware(request: Request, call_next):
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             return JSONResponse(
-                status_code=401, content={"detail": "No authorization header"}
+                status_code=401, content={"detail": "No authorization header provided"}
             )
 
         scheme_name, credentials_b64_encoded = auth_header.split(" ")
@@ -619,17 +619,14 @@ def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> None:
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
-            return JSONResponse(
-                status_code=404,
-                detail="Runtime not found",
-            )
+            raise HTTPException(status_code=404, detail="Runtime not found")
         runtime_url = runtime.url
 
     runtime_service_num = re.search(r"aiden-runtime-(\d+)", runtime_url).group(1)
     ecs_client = get_role_session().client("ecs")
     aws_config = get_aws_config(runtime_service_num)
     if not aws_config:
-        return JSONResponse(
+        raise HTTPException(
             status_code=500,
             detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
         )
