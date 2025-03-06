@@ -7,6 +7,7 @@ on:
 jobs:
     build-and-push-frontend:
         runs-on: ubuntu-latest
+        environment: staging/frontend
         steps:
             - name: Checkout code
               uses: actions/checkout@v4.2.2
@@ -21,6 +22,13 @@ jobs:
 
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Create .env.local (which Dockerfile will copy to .env.production)
+              run: |
+                touch .env.local
+                echo API_ENDPOINT >> https://api.staigen.space
+                echo NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID >> 08b64418-c698-4620-8ea2-d0e1a31ff10f
+                echo NEXT_DYNAMIC_BEARER_TOKEN >> $ {{ secrets.NEXT_DYNAMIC_BEARER_TOKEN }}
 
             - name: Build and tag frontend
               run: |
