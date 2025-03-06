@@ -90,8 +90,19 @@ async def auth_middleware(request: Request, call_next):
             )
 
         return await call_next(request)
-    else:
+    elif request.url.path == "/ping":
         pass
+    else:
+        x_api_key = request.headers.get("x-api-key")
+        if not x_api_key:
+            return JSONResponse(
+                status_code=401, content={"detail": "No x-api-key header"}
+            )
+        if x_api_key != os.getenv("AIDEN_API_ACCESS_KEY"):
+            return JSONResponse(
+                status_code=401, content={"detail": "Invalid x-api-key header"}
+            )
+
     return await call_next(request)
 
 
