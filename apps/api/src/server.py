@@ -537,7 +537,6 @@ def start_agent(
             timeout=3,
         )
         logger.info(resp.text)
-        print(resp.text)
         resp.raise_for_status()
         # Update the agent once it has been confirmed to be started.
 
