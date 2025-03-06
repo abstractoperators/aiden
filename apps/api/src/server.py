@@ -306,6 +306,15 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
     )
 
 
+def create_runtime_local():
+    """
+    'Creates' a runtime locally.
+    Expects that runtime docker image is already running with make run-runtime
+    Just creates an entry in sqlite db.
+    """
+    pass
+
+
 @app.post("/runtimes")
 def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
     """
