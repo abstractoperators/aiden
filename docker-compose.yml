@@ -1,8 +1,8 @@
 services:
   frontend:
-    env_file:
-      - path: ./apps/frontend/.env.local
-        required: false
+    # env_file:
+    #   - path: ./apps/frontend/.env.local
+    #     required: false
     build:
       context: ./apps/frontend
       dockerfile: ./Dockerfile.frontend
