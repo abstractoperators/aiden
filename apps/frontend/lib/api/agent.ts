@@ -1,4 +1,5 @@
 import { fromApiEndpoint, getResource } from "./common"
+import { Runtime } from "./runtime"
 
 const baseUrl = fromApiEndpoint('agents/')
 
@@ -17,7 +18,8 @@ interface Agent {
 interface ApiAgent {
   id: string
   eliza_agent_id: string | null
-  runtime?: ApiRuntime | null
+  owner_id: string
+  runtime?: Runtime | null
   runtime_id: string | null
   token?: ApiToken | null
   token_id: string | null
@@ -28,10 +30,6 @@ interface ApiAgent {
 
 interface ApiToken {
   ticker: string
-}
-
-interface ApiRuntime {
-  url: string
 }
 
 async function getAgent(agentId: string): Promise<ApiAgent> {
@@ -46,13 +44,6 @@ async function getToken(tokenId: string): Promise<ApiToken> {
   return await getResource<ApiToken>(
     fromApiEndpoint('tokens/'),
     { resourceId: tokenId },
-  )
-}
-
-async function getRuntime(runtimeId: string): Promise<ApiRuntime> {
-  return await getResource<ApiRuntime>(
-    fromApiEndpoint('runtimes/'),
-    { resourceId: runtimeId },
   )
 }
 
@@ -93,12 +84,10 @@ export {
   getAgent,
   getEnlightened,
   getIncubating,
-  getRuntime,
 }
 
 export type {
   Agent,
   ApiAgent,
   ApiToken,
-  ApiRuntime,
 }
