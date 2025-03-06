@@ -1,4 +1,4 @@
-import { fromApiEndpoint, getResource } from "./common"
+import { createResource, fromApiEndpoint, getResource } from "./common"
 import { Runtime } from "./runtime"
 
 const baseUrl = fromApiEndpoint('agents/')
@@ -34,6 +34,10 @@ interface ApiToken {
 
 async function getAgent(agentId: string): Promise<ApiAgent> {
   return await getResource<ApiAgent>(baseUrl, { resourceId: agentId })
+}
+
+async function createAgent(agentPayload: Object): Promise<ApiAgent> {
+  return createResource<ApiAgent, Object>(baseUrl, agentPayload)
 }
 
 async function getAgents(): Promise<ApiAgent[]> {
@@ -80,7 +84,7 @@ async function getIncubating(): Promise<Agent[]> {
 }
 
 export {
-  baseUrl,
+  createAgent,
   getAgent,
   getEnlightened,
   getIncubating,

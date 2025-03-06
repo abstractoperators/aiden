@@ -1,4 +1,4 @@
-import { fromApiEndpoint, getResource } from "./common"
+import { createResource, fromApiEndpoint, getResource } from "./common"
 
 interface RuntimeBase {
   url: string
@@ -19,20 +19,7 @@ async function getRuntime(runtimeId: string): Promise<Runtime> {
 }
 
 async function createRuntime(): Promise<Runtime> {
-  try {
-    const response = await fetch(
-      baseUrl,
-      { method: 'POST', },
-    )
-
-    if (!response.ok)
-      throw new Error("Failed to create runtime")
-
-    return await response.json()
-  } catch (error) {
-    console.error(error)
-  }
-  throw new Error("Logic error, this should never be reached.")
+  return await createResource<Runtime>(baseUrl)
 }
 
 export {

@@ -26,7 +26,34 @@ async function getResource<T>(
   throw new Error("Logic error, this should never be reached.")
 }
 
+async function createResource<T, P = undefined>(
+  baseUrl: URL,
+  body?: P,
+) {
+  try {
+    const response = await fetch(
+      baseUrl,
+      {
+        method: 'POST',
+        headers: (body) ? {
+          'Content-Type': 'application/json',
+        } : undefined,
+        body: JSON.stringify(body),
+      }
+    )
+
+    if (!response.ok)
+      throw new Error(`Failed to create at ${baseUrl} with body ${body}`)
+
+    return response.json()
+  } catch (error) {
+    console.error(error)
+  }
+  throw new Error("Logic error, this should never be reached.")
+}
+
 export {
+  createResource,
   fromApiEndpoint,
   getResource,
 }

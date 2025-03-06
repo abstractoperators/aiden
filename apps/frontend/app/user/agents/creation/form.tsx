@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core"
 import { dynamicToApiUser, getOrCreateUser } from "@/lib/api/user";
 import { getEthSeiAddresses } from "@/lib/dynamic";
-import { baseUrl as agentUrl } from "@/lib/api/agent";
+import { createAgent } from "@/lib/api/agent";
 
 const MAX_FILE_SIZE = 5000000;
 const formSchema = z.object({
@@ -61,19 +61,7 @@ export default function CreationForm() {
         env_file: env,
       }
 
-      const response = await fetch(
-        agentUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(agentPayload),
-        }
-      )
-
-      if (!response.ok)
-        throw new Error(`Failed to create agent: ${agentPayload}`)
+      const agentResponse = await createAgent(agentPayload)
 
       toast({
         title: "Success!",
