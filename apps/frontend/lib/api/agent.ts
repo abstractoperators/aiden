@@ -7,7 +7,7 @@ const baseUrl = fromApiEndpoint('agents/')
 // You can use a Zod schema here if you want.
 // TODO: use Zod schema here
 // TODO: generalize agent type and create an additional AgentDraft type
-interface Agent {
+interface ClientAgent {
   id: string
   name: string
   ticker?: string
@@ -15,59 +15,63 @@ interface Agent {
   holderCount: number
 }
 
-interface ApiAgent {
-  id: string
-  eliza_agent_id: string | null
+interface AgentBase {
+  eliza_agent_id?: string | null
   owner_id: string
-  runtime?: Runtime | null
-  runtime_id: string | null
-  token?: ApiToken | null
-  token_id: string | null
+  runtime_id?: string | null
+  token_id?: string | null
   character_json: {
     name: string
   }
+  env_file: string
 }
 
-interface ApiToken {
+interface Agent extends AgentBase {
+  id: string
+  runtime?: Runtime | null
+  token?: Token | null
+}
+
+interface Token {
   ticker: string
 }
 
-async function getAgent(agentId: string): Promise<ApiAgent> {
-  return getResource<ApiAgent>(baseUrl, { resourceId: agentId })
+async function getAgent(agentId: string): Promise<Agent> {
+  return getResource<Agent>(baseUrl, { resourceId: agentId })
 }
 
-async function createAgent(agentPayload: Object): Promise<ApiAgent> {
-  return createResource<ApiAgent, Object>(baseUrl, agentPayload)
+async function createAgent(agentPayload: AgentBase): Promise<Agent> {
+  return createResource<Agent, AgentBase>(baseUrl, agentPayload)
 }
 
-async function getAgents(): Promise<ApiAgent[]> {
-  return getResource<ApiAgent[]>(baseUrl)
+async function getAgents(): Promise<Agent[]> {
+  return getResource<Agent[]>(baseUrl)
 }
 
-async function getToken(tokenId: string): Promise<ApiToken> {
-  return getResource<ApiToken>(
+async function getToken(tokenId: string): Promise<Token> {
+  return getResource<Token>(
     fromApiEndpoint('tokens/'),
     { resourceId: tokenId },
   )
 }
 
-async function getEnlightened(): Promise<Agent[]> {
+async function getEnlightened(): Promise<ClientAgent[]> {
   try {
     return Promise.all(
       (await getAgents())
-      .map(async apiAgent => {
-        const agent = {
-          id: apiAgent.id,
-          name: apiAgent.character_json.name,
+      .map(async agent => {
+        const clientAgent = {
+          id: agent.id,
+          name: agent.character_json.name,
           // TODO: retrieve financial stats via API
           marketCapitalization: 0,
           holderCount: 0,
         }
 
-        return (apiAgent.token_id) ? {
-          ticker: (await getToken(apiAgent.token_id)).ticker,
-          ...agent,
-        } : agent
+        return (agent.token_id) ? {
+          ticker: (await getToken(agent.token_id)).ticker,
+          ...clientAgent,
+        } : clientAgent
       })
     )
   } catch (error) {
@@ -78,7 +82,7 @@ async function getEnlightened(): Promise<Agent[]> {
   throw new Error("Logic error, this should never be reached.")
 }
 
-async function getIncubating(): Promise<Agent[]> {
+async function getIncubating(): Promise<ClientAgent[]> {
   // TODO: replace with API call
   return getEnlightened()
 }
@@ -91,7 +95,7 @@ export {
 }
 
 export type {
+  ClientAgent,
   Agent,
-  ApiAgent,
-  ApiToken,
+  Token,
 }
