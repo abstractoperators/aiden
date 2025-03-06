@@ -161,6 +161,8 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
         return agent_to_agentpublic(agent)
 
 

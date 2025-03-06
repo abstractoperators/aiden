@@ -73,7 +73,7 @@ class AgentPublic(AgentBase):
     id: UUID
     token: TokenBase | None = None
     runtime: RuntimeBase | None = None
-    env_file: list[Env]
+    env_file: list[Env] = []  # type: ignore
 
 
 class AWSConfig(BaseModel):
