@@ -2,7 +2,6 @@ import json
 import os
 import signal
 import subprocess
-import time
 from contextlib import asynccontextmanager
 
 import fastapi
@@ -86,17 +85,16 @@ def start_character(character: Character) -> CharacterStatus:
     """
     # TODO: Respond immediately, and add figure out another way for the caller to know when the character is ready
     global agent_runtime_subprocess
-    write_character(character)
-
-    if get_character_status().running:
+    status = get_character_status()
+    if status.running:
         raise HTTPException(
             status_code=400,
-            detail="There is already a character running. Please stop it first.",
+            detail=f"There is already a character running. Please stop it first. id {status.agent_id}",
         )
 
+    write_character(character)
     env = os.environ.copy()
 
-    print(env)
     # Start eliza server
     agent_runtime_subprocess = subprocess.Popen(
         [
@@ -110,24 +108,10 @@ def start_character(character: Character) -> CharacterStatus:
         env=env,
     )
 
-    # Poll server for a while until it starts
-    for _ in range(10):
-        character_status: CharacterStatus = get_character_status()
-        if character_status.running:
-            return character_status
-        time.sleep(10)
-
-    # Failed to start the character (in time)
     return CharacterStatus(
         running=False,
         msg=(
-            "Failed to start the agent runtime"
-            + "\n"
-            + str(
-                agent_runtime_subprocess.stderr.read()
-                if agent_runtime_subprocess.stderr is not None
-                else ""
-            )
+            "Successfully queued the agent to start. Please poll /character/status to check if it has started."
         ),
     )
 
