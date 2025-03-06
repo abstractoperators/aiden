@@ -5,16 +5,17 @@ import re
 from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
+from io import StringIO
 from uuid import UUID
 
 import requests
 from boto3 import Session as Boto3Session
+from dotenv import dotenv_values
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from pydantic import TypeAdapter
 
 from src import logger
 from src.aws_utils import (
@@ -39,7 +40,7 @@ from src.db.models import (
     UserBase,
     UserUpdate,
 )
-from src.models import AgentPublic, AWSConfig, TokenCreationRequest
+from src.models import AgentPublic, AWSConfig, Env, TokenCreationRequest
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -115,8 +116,22 @@ async def ping():
     return "pong"
 
 
+def agent_to_agentpublic(agent: Agent) -> AgentPublic:
+    """
+    Converts an Agent to an AgentPublic.
+    """
+    agent_dict = agent.model_dump()
+    env_file: str = agent_dict["env_file"]
+    env_dict: dict = dotenv_values(stream=StringIO(env_file))
+
+    agent_dict["env_file"] = [
+        Env(key=key, value=value) for key, value in env_dict.items()
+    ]
+    return AgentPublic(**agent_dict)
+
+
 @app.post("/agents")
-def create_agent(agent: AgentBase) -> Agent:
+def create_agent(agent: AgentBase) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
     Only stores it in db.
@@ -124,17 +139,17 @@ def create_agent(agent: AgentBase) -> Agent:
     with Session() as session:
         agent = crud.create_agent(session, agent)
 
-    return agent
+        return agent_to_agentpublic(agent)
 
 
 @app.get("/agents")
-async def get_agents() -> Sequence[Agent]:
+async def get_agents() -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
     """
     with Session() as session:
         agents = crud.get_agents(session)
-    return agents
+        return [agent_to_agentpublic(agent) for agent in agents]
 
 
 @app.get("/agents/{agent_id}")
@@ -146,18 +161,11 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-
-        # Prefetch the runtime
-        agent.runtime  # noqa
-        agent.token  # noqa
-
-        return TypeAdapter(AgentPublic).validate_python(agent)
+        return agent_to_agentpublic(agent)
 
 
 @app.patch("/agents/{agent_id}")
-async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> Agent:
+async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> AgentPublic:
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
@@ -170,7 +178,8 @@ async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> Agent:
 
     with Session() as session:
         agent = crud.update_agent(session, agent, agent_update)
-    return agent
+
+        return agent_to_agentpublic(agent)
 
 
 @app.post("/tokens")
