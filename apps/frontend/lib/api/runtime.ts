@@ -12,14 +12,14 @@ interface Runtime extends RuntimeBase {
 const baseUrl = fromApiEndpoint('runtimes/')
 
 async function getRuntime(runtimeId: string): Promise<Runtime> {
-  return await getResource<Runtime>(
+  return getResource<Runtime>(
     baseUrl,
     { resourceId: runtimeId },
   )
 }
 
 async function createRuntime(): Promise<Runtime> {
-  return await createResource<Runtime>(baseUrl)
+  return createResource<Runtime>(baseUrl)
 }
 
 export {

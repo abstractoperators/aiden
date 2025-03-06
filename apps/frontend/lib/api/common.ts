@@ -19,7 +19,7 @@ async function getResource<T>(
     if (!response.ok)
       throw new Error(`Failed to retrieve ${url} with response ${response}`)
 
-    return await response.json()
+    return response.json()
   } catch (error) {
     console.error(error)
   }

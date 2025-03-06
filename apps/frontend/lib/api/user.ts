@@ -16,14 +16,14 @@ interface User extends UserBase {
 const baseUrl = fromApiEndpoint('users')
 
 async function getUser(publicKey: string): Promise<User> {
-  return await getResource<User>(
+  return getResource<User>(
     baseUrl,
     { query: new URLSearchParams({ public_key: publicKey }) },
   )
 }
 
 async function createUser(userPayload: UserBase): Promise<User> {
-  return await createResource<User, UserBase>(baseUrl, userPayload)
+  return createResource<User, UserBase>(baseUrl, userPayload)
 }
 
 async function getOrCreateUser(userPayload: UserBase): Promise<User> {

@@ -33,7 +33,7 @@ interface ApiToken {
 }
 
 async function getAgent(agentId: string): Promise<ApiAgent> {
-  return await getResource<ApiAgent>(baseUrl, { resourceId: agentId })
+  return getResource<ApiAgent>(baseUrl, { resourceId: agentId })
 }
 
 async function createAgent(agentPayload: Object): Promise<ApiAgent> {
@@ -41,11 +41,11 @@ async function createAgent(agentPayload: Object): Promise<ApiAgent> {
 }
 
 async function getAgents(): Promise<ApiAgent[]> {
-  return await getResource<ApiAgent[]>(baseUrl)
+  return getResource<ApiAgent[]>(baseUrl)
 }
 
 async function getToken(tokenId: string): Promise<ApiToken> {
-  return await getResource<ApiToken>(
+  return getResource<ApiToken>(
     fromApiEndpoint('tokens/'),
     { resourceId: tokenId },
   )
