@@ -13,6 +13,8 @@ services:
     env_file: 
       - path: "apps/api/src/.env.api"
         required: false
+    environment:
+      - inside_docker=true
     build:
       context: apps/api
       dockerfile: ./Dockerfile.api

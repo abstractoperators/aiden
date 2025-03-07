@@ -314,7 +314,21 @@ def create_runtime_local():
     Expects that runtime docker image is already running with make run-runtime
     Just creates an entry in sqlite db.
     """
-    pass
+    if os.getenv("inside_docker") and os.getenv("ENV") == "dev":
+        url = "http://host.docker.internal:8000"
+    else:
+        url = "http://localhost:8000"
+
+    with Session() as session:
+        runtime = crud.create_runtime(
+            session,
+            RuntimeBase(
+                url=url,
+                started=True,
+            ),
+        )
+
+    return runtime
 
 
 @app.post("/runtimes")
