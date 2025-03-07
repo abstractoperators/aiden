@@ -70,4 +70,4 @@ mypy:
 	cd apps/runtime && uv run mypy src || true
 
 pytest:
-	cd apps/api && uv run pytest src
+	(cd apps/api && uv run pytest src --capture=no --log-cli-level=INFO)
