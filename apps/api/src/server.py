@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import re
 from base64 import b64decode
@@ -229,7 +228,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
                 name=name,
                 ticker=ticker,
                 evm_contract_address=contract_address,
-                abi=json.dumps(contract_abi),
+                abi=contract_abi,
             ),
         )
 

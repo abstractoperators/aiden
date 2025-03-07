@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any, Mapping, Optional, cast
 from uuid import UUID, uuid4
 
-from pydantic import Json
 from sqlalchemy import JSON, DateTime, func
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -120,7 +119,7 @@ class TokenBase(Base):
     ticker: str = Field(description="Token ticker")
     name: str = Field(description="Token name")
     evm_contract_address: str = Field(description="EVM contract address")
-    abi: Json = Field(description="EVM contract ABI", sa_type=JSON)
+    abi: list[dict] = Field(description="EVM contract ABI", sa_type=JSON)
 
 
 class RuntimeBase(Base):
