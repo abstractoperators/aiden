@@ -109,11 +109,12 @@ instrumentator.add(metrics.response_size())
 instrumentator.instrument(app).expose(app)
 
 # TODO: Change this based on env
-if os.getenv("ENV") == "dev":
+env = os.getenv("ENV")
+if env == "dev" or env == "test":
     allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
-elif os.getenv("ENV") == "staging":
+elif env == "staging":
     allowed_origins = ["https://staigen.space"]
-elif os.getenv("ENV") == "prod":
+elif env == "prod":
     allowed_origins = ["https://aiden.space"]
 
 app.add_middleware(
