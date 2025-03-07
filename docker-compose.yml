@@ -55,6 +55,7 @@ services:
     env_file:
       - path: "./apps/runtime/.env"
         required: false
+
   agent-runtime3:
     build: 
       # Needs to be in root folder to access the eliza directory
