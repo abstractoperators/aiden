@@ -6,13 +6,12 @@ from sqlalchemy import URL
 from sqlmodel import Session as SQLModelSession
 from sqlmodel import SQLModel, create_engine
 
-# Don't need to import models because alembic will populate metadata
-# from .models import *  # noqa
+from src import logger
 
 db_password = os.getenv("POSTGRES_DB_PASSWORD")
 db_host = os.getenv("POSTGRES_DB_HOST")
-is_test = os.getenv("ENV") == "test"
-if not is_test and (db_password and db_host):
+env = os.getenv("ENV")
+if (db_password and db_host) and (env == "staging" or env == "prod"):
     SQLALCHEMY_DATABASE_URL = URL.create(
         drivername="postgresql+psycopg2",
         username="postgres",
@@ -21,10 +20,14 @@ if not is_test and (db_password and db_host):
         database="postgres",
     )
     connect_args = {}
-else:
-    SQLALCHEMY_DATABASE_URL = URL.create(drivername="sqlite", database="./test.db")
-
+elif env == "dev":
+    SQLALCHEMY_DATABASE_URL = URL.create(drivername="sqlite", database="./dev.db")
     connect_args = {"check_same_thread": False}
+elif env == "test":
+    SQLALCHEMY_DATABASE_URL = URL.create(drivername="sqlite", database="./test.db")
+    connect_args = {"check_same_thread": False}
+else:
+    raise ValueError("Unknown environment for db. See db/setup.py")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 
@@ -44,8 +47,10 @@ def init_db():
     If sqlite, then it drops and creates tables
     If postgres, then it runs alembic migrations
     """
+    logger.info("Initializing database")
     if SQLALCHEMY_DATABASE_URL.drivername == "sqlite":
         with Session() as session:
+            logger.info(f"Dropping and creating tables for sqlite. {SQLModel.metadata}")
             SQLModel.metadata.drop_all(session.get_bind())
             SQLModel.metadata.create_all(session.get_bind())
     else:
