@@ -1,5 +1,4 @@
 # from unittest.mock import MagicMock
-import json
 
 import pytest
 from sqlalchemy import inspect
@@ -92,7 +91,7 @@ def test_create_token(token_factory):
         ticker="AIDEN",
         name="The greatest token ever",
         evm_contract_address="0x123",
-        abi=json.dumps({"key": "value"}),
+        abi=[{"key": "value"}],
     )
 
     assert token is not None
@@ -100,7 +99,7 @@ def test_create_token(token_factory):
     assert token.ticker == "AIDEN"
     assert token.name == "The greatest token ever"
     assert token.evm_contract_address == "0x123"
-    assert token.abi == {"key": "value"}
+    assert token.abi == [{"key": "value"}]
 
 
 def test_create_user(user_factory):
@@ -133,7 +132,7 @@ def test_create_agent(user_factory, token_factory, agent_factory) -> None:
         ticker="AIDEN",
         name="The greatest token ever",
         evm_contract_address="0x123",
-        abi=json.dumps({"key": "value"}),
+        abi=[{"key": "value"}],
     )
     agent: Agent = agent_factory(
         eliza_agent_id="123",

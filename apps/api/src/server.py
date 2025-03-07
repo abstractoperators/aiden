@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import re
 from base64 import b64decode
@@ -17,8 +16,8 @@ from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from pydantic import TypeAdapter
 
+# from pydantic import TypeAdapter
 from src import logger
 from src.aws_utils import (
     create_http_target_group,
@@ -144,9 +143,13 @@ def agent_to_agentpublic(agent: Agent) -> AgentPublic:
         Env(key=key, value=value) for key, value in env_dict.items()
     ]
 
-    agent.env_file = list_of_envs  # type: ignore
+    agent_dump = agent.model_dump()
+    agent_dump["env_file"] = list_of_envs
+    agent_public = AgentPublic(**agent_dump)
+    agent_public.runtime = agent.runtime
+    agent_public.token = agent.token
 
-    return TypeAdapter(AgentPublic).validate_python(agent)
+    return agent_public
 
 
 @app.post("/agents")
@@ -184,8 +187,6 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
-        agent.runtime  # noqa
-        agent.token  # noqa
         return agent_to_agentpublic(agent)
 
 
@@ -227,7 +228,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
                 name=name,
                 ticker=ticker,
                 evm_contract_address=contract_address,
-                abi=json.dumps(contract_abi),
+                abi=contract_abi,
             ),
         )
 
@@ -763,4 +764,5 @@ def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> Runti
 
     background_tasks.add_task(helper)
 
+    return runtime
     return runtime
