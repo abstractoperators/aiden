@@ -1,113 +1,174 @@
-from uuid import UUID, uuid4
+import pytest
 
-from fastapi.testclient import TestClient
-
-from src.db.models import Runtime, Token, User
+from src.db import crud
+from src.db.models import (
+    AgentBase,
+    Runtime,
+    RuntimeBase,
+    Token,
+    TokenBase,
+    User,
+    UserBase,
+)
 from src.models import AgentPublic
-from src.server import app
-
-# from src.db.test_db import session
-
-client = TestClient(app)
+from src.server import Session
 
 
-def test_ping():
+def test_ping(client):
     response = client.get("/ping")
     assert response.status_code == 200
 
 
-def test_get_user():
-    # real user hardcoded to AbopDev
-    user_id: UUID = "292392de-ddfd-48a8-81fc-b61b0212c391"
-    public_key: str = "0xe98493C9943097f1127dD1C55257fbA8eD2E3211"
-    fake_user_id: UUID = uuid4()
-    fake_public_key: str = "0xfoobarbaz"
+@pytest.fixture()
+def user_factory():
+    def factory(client, **kwargs) -> User:
+        public_key = kwargs.get("public_key", "public_key_01")
+        public_key_sei = kwargs.get("public_key_sei", "public_key_sei_01")
+        email = kwargs.get("email", "email@email.com")
+        phone_number = kwargs.get("phone_number", "1234567890")
+        username = kwargs.get("username", "username_01")
+        user_base = UserBase(
+            public_key=public_key,
+            public_key_sei=public_key_sei,
+            email=email,
+            phone_number=phone_number,
+            username=username,
+        )
+        response = client.post("/users", json=user_base.model_dump())
+        assert response.status_code == 200
+        return User.model_validate(response.json())
 
-    response = client.get("/users")
-    assert response.status_code == 200
+    return factory
 
-    response = client.get(f"/users?public_key={public_key}&user_id={user_id}")
-    assert response.status_code == 400
 
-    response = client.get(f"/users?public_key={fake_public_key}")
-    assert response.status_code == 404
+# TODO: Use the actual endpoint instead of directly through crud
+@pytest.fixture()
+def token_factory():
+    def factory(client, **kwargs) -> Token:
+        ticker = kwargs.get("ticker", "testticker")
+        name = kwargs.get("name", "testtokenname")
+        evm_contract_address = kwargs.get("evm_contract_address", "0x12345")
+        abi = kwargs.get("abi", [{"key": "value"}])
+        token_base = TokenBase(
+            ticker=ticker,
+            name=name,
+            evm_contract_address=evm_contract_address,
+            abi=abi,
+        )
+        with Session() as session:
+            token = crud.create_token(session, token_base)
 
-    response = client.get(f"/users?user_id={fake_user_id}")
-    assert response.status_code == 404
+            return token
 
-    response = client.get(f"/users?public_key={public_key}")
+    return factory
+
+
+# TODO: Use the actual endpoint instead of directly through crud
+@pytest.fixture()
+def runtime_factory():
+    def factory(client, **kwargs) -> Runtime:
+        url = kwargs.get("url", "testurl")
+        started = kwargs.get("started", False)
+        runtime_base = RuntimeBase(url=url, started=started)
+        with Session() as session:
+            return crud.create_runtime(session, runtime_base)
+
+    return factory
+
+
+@pytest.fixture()
+def agent_factory(user_factory, token_factory, runtime_factory):
+    def factory(client, **kwargs) -> AgentPublic:
+        if (owner_id := kwargs.get("owner_id")) is None:
+            owner = user_factory(client)
+            owner_id = owner.id
+        eliza_agent_id = kwargs.get("eliza_agent_id", "eliza_agent_id_01")
+        if (token_id := kwargs.get("token_id")) is None:
+            token = token_factory(client)
+            token_id = token.id
+        if (runtime_id := kwargs.get("runtime_id")) is None:
+            runtime = runtime_factory(client)
+            runtime_id = runtime.id
+        character_json = kwargs.get("character_json", {})
+        env_file = kwargs.get("env_file", "env_var=env_val")
+
+        agent_base = AgentBase(
+            eliza_agent_id=eliza_agent_id,
+            owner_id=owner_id,
+            runtime_id=runtime_id,
+            token_id=token_id,
+            character_json=character_json,
+            env_file=env_file,
+        )
+        response = client.post("/agents", json=agent_base.model_dump(mode="json"))
+        assert response.status_code == 200
+        return AgentPublic.model_validate(response.json())
+
+    return factory
+
+
+def test_users(client, user_factory):
+    user: User = user_factory(
+        client,
+    )
+    assert user is not None
+
+    response = client.get(f"/users?user_id={user.id}")
     assert response.status_code == 200
     User.model_validate(response.json())
 
-
-def test_get_agents():
-    response = client.get("/agents")
+    response = client.get(f"/users?public_key={user.public_key}")
     assert response.status_code == 200
-    for agent in response.json():
-        try:
-            agent_public = AgentPublic.model_validate(agent)
-            if agent_public.runtime_id:
-                assert agent_public.runtime
-                Runtime.model_validate(agent_public.runtime)
-            if agent_public.token_id:
-                assert agent_public.token
-                Token.model_validate(agent_public.token)
-        except Exception as e:
-            assert False, f"{e} {agent}"
+    User.model_validate(response.json())
 
+    response = client.get(f"/users?public_key={user.public_key_sei}&user_id={user.id}")
+    assert response.status_code == 400
 
-def test_get_agent():
-    # hardcoded to kent gang
-    id: UUID = "01493ea3-f672-4fb7-a32e-aa1d1b507f80"
-    response = client.get(f"/agents/{id}")
+    response = client.get("/users")
     assert response.status_code == 200
-    try:
-        agent_public = AgentPublic.model_validate(response.json())
-        if agent_public.runtime_id:
-            assert agent_public.runtime
-        if agent_public.token_id:
-            assert agent_public.token
-    except Exception as e:
-        assert False, e
+    User.model_validate(response.json()[0])
 
 
-def test_get_tokens():
+def test_tokens(client, token_factory):
+    token: Token = token_factory(
+        client,
+    )
+    assert token is not None
+
+    response = client.get(f"/tokens/{token.id}")
+    assert response.status_code == 200
+    Token.model_validate(response.json())
+
     response = client.get("/tokens")
     assert response.status_code == 200
-    for token in response.json():
-        try:
-            Token.model_validate(token)
-        except Exception as e:
-            assert False, e
+    Token.model_validate(response.json()[0])
 
 
-def test_get_token():
-    # Hardcoded to kentbottest $kbt
-    id: UUID = "1bdcf274-1a16-400a-bf50-94cbf5188483"
-    response = client.get(f"/tokens/{id}")
+def test_runtimes(client, runtime_factory):
+    runtime: Runtime = runtime_factory(
+        client,
+    )
+    assert runtime is not None
+
+    response = client.get(f"/runtimes/{runtime.id}")
     assert response.status_code == 200
-    try:
-        Token.model_validate(response.json())
-    except Exception as e:
-        assert False, e
+    Runtime.model_validate(response.json())
 
-
-def test_get_runtimes():
     response = client.get("/runtimes")
     assert response.status_code == 200
-    for runtime in response.json():
-        try:
-            Runtime.model_validate(runtime)
-        except Exception as e:
-            assert False, e
+    Runtime.model_validate(response.json()[0])
 
 
-def test_get_runtime():
-    # Hardcoded to runtime 2
-    id: UUID = "c9053b67-5e7a-4f55-af83-7438dc8777e2"
-    response = client.get(f"/runtimes/{id}")
+def test_agents(client, agent_factory):
+    agent: AgentPublic = agent_factory(
+        client,
+    )
+    assert agent is not None
+
+    response = client.get(f"/agents/{agent.id}")
     assert response.status_code == 200
-    try:
-        Runtime.model_validate(response.json())
-    except Exception as e:
-        assert False, e
+    AgentPublic.model_validate(response.json())
+
+    response = client.get("/agents")
+    assert response.status_code == 200
+    AgentPublic.model_validate(response.json()[0])
