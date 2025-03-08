@@ -113,6 +113,8 @@ elif os.getenv("ENV") == "staging":
     allowed_origins = ["https://staigen.space"]
 elif os.getenv("ENV") == "prod":
     allowed_origins = ["https://aiden.space"]
+else:
+    allowed_origins = []
 
 app.add_middleware(
     CORSMiddleware,
