@@ -11,7 +11,8 @@ import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core"
 import { dynamicToApiUser, getOrCreateUser } from "@/lib/api/user";
 import { getEthSeiAddresses } from "@/lib/dynamic";
 import { createAgent, startAgent } from "@/lib/api/agent";
-import { createRuntime } from "@/lib/api/runtime"; // eslint-disable-line
+import { createRuntime, getRuntime } from "@/lib/api/runtime";
+
 
 const MAX_FILE_SIZE = 5000000;
 const formSchema = z.object({
@@ -63,10 +64,35 @@ export default function CreationForm() {
       }
 
       const agent = await createAgent(agentPayload)
-      // const runtime = await createRuntime()
-      const RUNTIME_5_ID = "77343e55-c36c-4bcf-83f3-2841096007ae"
-      await startAgent(agent.id, RUNTIME_5_ID)
-      // await startAgent(agent.id, runtime.id)
+      const runtime = await createRuntime()
+      toast({
+        title: "Agent Created!",
+        description: "Agent has been created, but is still waiting for the runtime to start.",
+      })
+      // wait for runtime to be up to start agent
+      while (!runtime.started) {
+        console.log(
+          "Waiting for runtime",
+          runtime.id,
+          "at",
+          runtime.url,
+          "to instantiate",
+        )
+        const updatedRuntime = await getRuntime(
+          runtime.id,
+          30000, // 30 second delay
+        )
+        if (updatedRuntime.started) {
+          console.log(runtime.id, "has successfully started!")
+          break
+        }
+        toast({
+          title: "Still waiting for runtime..."
+        })
+      }
+
+      console.log("Attempting to start agent", agent.id, "on runtime", runtime.id)
+      await startAgent(agent.id, runtime.id)
 
       toast({
         title: "Success!",
