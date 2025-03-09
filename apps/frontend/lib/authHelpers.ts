@@ -1,8 +1,8 @@
-import jwt, { JwtPayload, Secret, VerifyErrors } from "jsonwebtoken";
+import jwt, { JwtHeader, JwtPayload, Secret, VerifyErrors } from "jsonwebtoken";
 import { signOut } from "next-auth/react";
 
-const getKey = (
-  headers,
+export const getKey = (
+  _: JwtHeader,
   callback: (err: Error | null, key?: Secret) => void
 ): void => {
   // Define the options for the fetch request

@@ -14,6 +14,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN npx auth secret
 
 RUN corepack enable pnpm && pnpm build
 
@@ -30,6 +31,7 @@ RUN apt-get update && \
     setcap cap_net_bind_service=+ep `readlink -f \`which node\``
 
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/.env.local ./.env.local
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing

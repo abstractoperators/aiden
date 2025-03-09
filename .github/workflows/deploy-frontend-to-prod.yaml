@@ -5,6 +5,39 @@ on:
     workflow_dispatch:
 
 jobs:
+    build-and-push-frontend:
+        runs-on: ubuntu-latest
+        environment: prod/frontend
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4.2.2
+              with:
+                  submodules: "true"
+
+            - name: Configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECR
+                  aws-region: us-east-1
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+                
+            - name: Create apps/frontend/.env.local
+              run: |
+                touch apps/frontend/.env.local
+                echo NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=08b64418-c698-4620-8ea2-d0e1a31ff10f >> apps/frontend/.env.local
+                echo API_ENDPOINT=https://api.aiden.space >> apps/frontend/.env.local
+                echo AUTH_URL=https://aiden.space >> apps/frontend/.env.local
+
+            - name: Build and tag frontend
+              run: |
+                  make build-frontend
+
+            - name: Push frontend to ECR
+              run: |
+                  make aws-ecr-push-frontend-prod
+
     force-redeployment:
         runs-on: ubuntu-latest
         steps:
