@@ -3,9 +3,10 @@ import { useState, FormEventHandler, FC, useEffect } from "react";
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { parseEther, formatEther } from "viem";
-import { ApiToken } from "@/lib/agent";
+// import { ApiToken } from "@/lib/agent";
+import { Token } from "@/lib/api/token";
 
-const BuyTokenSection: FC<{ token: ApiToken }> = ({ token }) => {
+const BuyTokenSection: FC<{ token: Token }> = ({ token }) => {
   const { primaryWallet } = useDynamicContext();
   const [txnHash, setTxnHash] = useState("");
 
@@ -19,9 +20,9 @@ const BuyTokenSection: FC<{ token: ApiToken }> = ({ token }) => {
     const amount = formData.get("amount") as string;
     const publicClient = await primaryWallet.getPublicClient();
     const walletClient = await primaryWallet.getWalletClient();
-    console.log(token.contract_address);
+    console.log(token.evm_contract_address);
     const transaction = {
-      to: token.contract_address,
+      to: token.evm_contract_address,
       value: amount ? parseEther(amount) : undefined,
     };
     const chainId = await walletClient.getChainId();
@@ -49,7 +50,7 @@ const BuyTokenSection: FC<{ token: ApiToken }> = ({ token }) => {
   );
 };
 
-const SellTokenSection: FC<{ token: ApiToken }> = ({ token }) => {
+const SellTokenSection: FC<{ token: Token }> = ({ token }) => {
   const { primaryWallet } = useDynamicContext();
   const [txnHash, setTxnHash] = useState("");
 
@@ -66,8 +67,8 @@ const SellTokenSection: FC<{ token: ApiToken }> = ({ token }) => {
 
     // Call sellTokens function
     const hash = await walletClient.writeContract({
-      address: token.contract_address,
-      abi: token.contract_abi,
+      address: token.evm_contract_address,
+      abi: token.evm_contract_abi,
       functionName: "sellTokens",
       args: [parseEther(amount)],
     });
@@ -86,7 +87,7 @@ const SellTokenSection: FC<{ token: ApiToken }> = ({ token }) => {
   );
 };
 
-const GetTokenBalanceSection: FC<{ token: ApiToken }> = ({ token }) => {
+const GetTokenBalanceSection: FC<{ token: Token }> = ({ token }) => {
   const { primaryWallet } = useDynamicContext();
   const [balance, setBalance] = useState("");
 
@@ -94,17 +95,12 @@ const GetTokenBalanceSection: FC<{ token: ApiToken }> = ({ token }) => {
     const fetchBalance = async () => {
       if (!primaryWallet || !isEthereumWallet(primaryWallet)) return;
 
-      if (!token || !token.contract_address || !token.contract_abi) {
-        console.error("Token data is incomplete:", token);
-        setError("Token data is missing");
-        return;
-      }
       const publicClient = await primaryWallet.getPublicClient();
       const address = primaryWallet.address;
 
       const tokenBalance = await publicClient.readContract({
-        address: token.contract_address,
-        abi: token.contract_abi,
+        address: token.evm_contract_address,
+        abi: token.abi,
         functionName: "balanceOf",
         args: [address],
       });
