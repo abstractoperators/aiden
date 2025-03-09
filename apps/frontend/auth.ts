@@ -20,9 +20,7 @@ export const config = {
       credentials: {
         token: { label: "Token", type: "text" },
       },
-      authorize: async (
-        credentials: Partial<Record<"token", unknown>>,
-      ) => {
+      authorize: async (credentials: Partial<Record<"token", unknown>>) => {
         const token = credentials.token as string; // Safely cast to string; ensure to handle undefined case
         if (typeof token !== "string" || !token) {
           throw new Error("Token is required");
@@ -49,16 +47,16 @@ export const config = {
   callbacks: {
     authorized: ({ request, auth }) => {
       const { pathname } = request.nextUrl;
-      console.log(`pathname: ${pathname}`)
-      console.log("auth:", auth)
+      console.log(`pathname: ${pathname}`);
+      console.log("auth:", auth);
       if (!auth) {
-        console.log("unauthorized attempt to access path, returning to origin")
+        console.log("unauthorized attempt to access path, returning to origin");
         return NextResponse.redirect(request.nextUrl.origin);
       }
       return !!auth;
     },
   },
   trustHost: true,
-} satisfies NextAuthConfig
+} satisfies NextAuthConfig;
 
-export const { handlers, auth, signIn, signOut } = NextAuth(config)
+export const { handlers, auth, signIn, signOut } = NextAuth(config);

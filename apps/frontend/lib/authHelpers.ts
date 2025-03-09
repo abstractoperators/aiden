@@ -16,25 +16,23 @@ export const getKey = (
   // Perform the fetch request asynchronously
   fetch(
     `https://app.dynamicauth.com/api/v0/environments/${process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID}/keys`,
-    options,
+    options
   )
-  .then((response) => {
-    return response.json();
-  })
-  .then((json) => {
-    const publicKey = json.key.publicKey;
-    const pemPublicKey = Buffer.from(publicKey, "base64").toString("ascii");
-    callback(null, pemPublicKey); // Pass the public key to the callback
-  })
-  .catch((err) => {
-    console.error("Error fetching public key:", err);
-    callback(err); // Pass the error to the callback
-  });
+    .then((response) => {
+      return response.json();
+    })
+    .then((json) => {
+      const publicKey = json.key.publicKey;
+      const pemPublicKey = Buffer.from(publicKey, "base64").toString("ascii");
+      callback(null, pemPublicKey); // Pass the public key to the callback
+    })
+    .catch((err) => {
+      console.error("Error fetching public key:", err);
+      callback(err); // Pass the error to the callback
+    });
 };
 
-const validateJWT = async (
-  token: string
-): Promise<JwtPayload | null> => {
+const validateJWT = async (token: string): Promise<JwtPayload | null> => {
   try {
     const decodedToken = await new Promise<JwtPayload | null>(
       (resolve, reject) => {
@@ -59,9 +57,9 @@ const validateJWT = async (
               }
             }
           }
-        )
+        );
       }
-    )
+    );
     return decodedToken;
   } catch (error) {
     console.error("Invalid token:", error);
@@ -70,10 +68,7 @@ const validateJWT = async (
 };
 
 async function handleLogout() {
-  await signOut({ redirectTo: '/' });
+  await signOut({ redirectTo: "/" });
 }
 
-export {
-  handleLogout,
-  validateJWT,
-}
+export { handleLogout, validateJWT };
