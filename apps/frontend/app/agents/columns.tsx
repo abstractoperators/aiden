@@ -42,7 +42,7 @@ export const columns: ColumnDef<Agent>[] = [
       >
         <hgroup>
           <h2>{row.getValue("name")}</h2>
-          { row.original.ticker && <h3>${row.original.ticker}</h3> }
+          {row.original.ticker && <h3>${row.original.ticker}</h3>}
         </hgroup>
       </Link>
     )
