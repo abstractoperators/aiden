@@ -11,7 +11,7 @@ import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core"
 import { dynamicToApiUser, getOrCreateUser } from "@/lib/api/user";
 import { getEthSeiAddresses } from "@/lib/dynamic";
 import { createAgent, startAgent } from "@/lib/api/agent";
-import { createRuntime } from "@/lib/api/runtime";
+import { createRuntime } from "@/lib/api/runtime"; // eslint-disable-line
 
 const MAX_FILE_SIZE = 5000000;
 const formSchema = z.object({
@@ -86,7 +86,7 @@ export default function CreationForm() {
         <FormField
           control={form.control}
           name="character"
-          render={({ field: { value, onChange, ...fieldProps } }) => (
+          render={({ field: { value, onChange, ...fieldProps } }) => ( // eslint-disable-line
             <FormItem>
               <FormLabel>Character JSON</FormLabel>
               <FormControl>

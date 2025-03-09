@@ -4,7 +4,7 @@ interface TokenBase {
   ticker: string
   name: string
   evm_contract_address: string
-  abi: any
+  abi: object[]
 }
 
 interface Token extends TokenBase {
