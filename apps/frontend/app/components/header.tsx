@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import Link from "next/link"
-import { DarkModeToggle } from "./dark-mode-toggle";
-import LightGhost from "@/public/brand_assets/light-ghost.svg"
-import DarkGhost from "@/public/brand_assets/dark-ghost.svg"
-import ThemeImage from "@/components/ui/theme-image";
-import DynamicWaitlistButton from "./dynamic-waitlist-button";
-import Image from "next/image";
-import { ReactElement } from "react";
+import Link from 'next/link'
+import { DarkModeToggle } from './dark-mode-toggle'
+import LightGhost from '@/public/brand_assets/light-ghost.svg'
+import DarkGhost from '@/public/brand_assets/dark-ghost.svg'
+import ThemeImage from '@/components/ui/theme-image'
+import DynamicWaitlistButton from './dynamic-waitlist-button'
+import Image from 'next/image'
+import { ReactElement } from 'react'
 
 const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full {}"
 enum headerStyles {
@@ -65,9 +65,9 @@ export default function Header({ variant }: variantProp) {
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link
               className="transition duration-300 hover:invert-[.5]"
-              href="/agents/Kent"
+              href='/agents'
             >
-              Chat with an Agent
+              Agents
             </Link>
           </nav>
         </div>
