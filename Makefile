@@ -12,9 +12,15 @@ run-frontend-nodocker:
 	cd apps/frontend && \
 	pnpm i && \
 	pnpm dev
+# Staging image
 aws-ecr-push-frontend: aws-ecr-login
 	docker tag frontend:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:latest
+# Prod image
+aws-ecr-push-frontend-prod: aws-ecr-login
+	docker tag frontend:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:prod
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/frontend:prod
+
 
 ############ API #############
 down-api:

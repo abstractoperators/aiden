@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -31,8 +31,16 @@ interface AgentMessage {
 const left = "m-4 flex flex-col justify-center items-start text-left"
 const right = "m-4 flex flex-col justify-center items-end text-right"
 
-export default function Chat() {
+export default function Chat({
+  elizaId,
+  runtimeUrl,
+}: {
+  elizaId: string,
+  runtimeUrl: string,
+}) {
+  const chatUrl = new URL(`${elizaId}/message`, runtimeUrl)
   const [chat, setChat] = useState<Message[]>([])
+  const senderName = 'You'
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,12 +55,12 @@ export default function Chat() {
       setChat(msgs => msgs.concat({
         id: (msgs.length > 0) ? msgs[msgs.length - 1].id + 1: 1,
         text: formData.message,
-        sender: "me",
+        sender: senderName, // TODO: get user name here if applicable
       }))
 
+      // TODO: better wait indicator/feedback
       const response = await fetch(
-        // TODO: properly routed chats ofc
-        "https://aiden-runtime-2.aiden.space/4f507cc0-f2c4-0155-87e7-11b624010eb7/message",
+        chatUrl,
         {
           method: "POST",
           headers: {
@@ -93,7 +101,7 @@ export default function Chat() {
           {chat.map(message => (
             <li
               key={message.id}
-              className={(message.sender === "me") ? right : left}
+              className={(message.sender === senderName) ? right : left}
             >
               <Card className="max-w-96 break-words">
                 <CardHeader>

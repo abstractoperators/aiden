@@ -7,6 +7,7 @@ on:
 jobs:
     build-and-push-frontend:
         runs-on: ubuntu-latest
+        environment: staging/frontend
         steps:
             - name: Checkout code
               uses: actions/checkout@v4.2.2
@@ -21,6 +22,13 @@ jobs:
 
             - name: Login to Amazon ECR
               uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Create apps/frontend/.env.local
+              run: |
+                touch apps/frontend/.env.local
+                echo NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=08b64418-c698-4620-8ea2-d0e1a31ff10f >> apps/frontend/.env.local
+                echo API_ENDPOINT=https://api.staigen.space >> apps/frontend/.env.local
+                echo AUTH_URL=https://staigen.space >> apps/frontend/.env.local
 
             - name: Build and tag frontend
               run: |
