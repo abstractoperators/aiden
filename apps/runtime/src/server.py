@@ -1,19 +1,22 @@
+import json
 import os
 import signal
 import subprocess
-import time
 from contextlib import asynccontextmanager
 
 import fastapi
 import requests
+from dotenv import dotenv_values, load_dotenv
+from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 
 @asynccontextmanager
 async def lifespan(app: fastapi.FastAPI):
+    load_dotenv()
     yield
-    stop_character()
+    print(stop_character())
 
 
 app = fastapi.FastAPI(lifespan=lifespan)
@@ -30,14 +33,24 @@ app.add_middleware(
 agent_runtime_subprocess = None
 
 
+class Env(BaseModel):
+    key: str
+    value: SecretStr | None
+
+
 class Character(BaseModel):
-    character_json: str = Field(
-        "{}",
-        description="Escaped character json for an eliza agent",
-    )
+    character_json: dict = Field({}, description="Character json for an eliza agent")
     envs: str = Field(
         "",
         description="A string representing an env file containing environment variables for the eliza agent",
+    )
+
+
+class CharacterPublic(BaseModel):
+    character_json: dict = Field({}, description="Character json for an eliza agent")
+    envs: list[Env] = Field(
+        [],
+        description="A list of environment variables for the eliza agent with password redacted",
     )
 
 
@@ -72,7 +85,15 @@ def start_character(character: Character) -> CharacterStatus:
     """
     # TODO: Respond immediately, and add figure out another way for the caller to know when the character is ready
     global agent_runtime_subprocess
+    status = get_character_status()
+    if status.running:
+        raise HTTPException(
+            status_code=400,
+            detail=f"There is already a character running. Please stop it first. id {status.agent_id}",
+        )
+
     write_character(character)
+    env = os.environ.copy()
 
     # Start eliza server
     agent_runtime_subprocess = subprocess.Popen(
@@ -84,42 +105,34 @@ def start_character(character: Character) -> CharacterStatus:
         cwd="../../eliza",
         preexec_fn=os.setsid,  # start the process in a new session (from chatgpt)
         stderr=subprocess.PIPE,
+        env=env,
     )
 
-    # Poll server for a while until it starts
-    for _ in range(10):
-        character_status: CharacterStatus = get_character_status()
-        if character_status.running:
-            return character_status
-        time.sleep(10)
-
-    # Failed to start the character (in time)
     return CharacterStatus(
         running=False,
         msg=(
-            "Failed to start the agent runtime"
-            + "\n"
-            + str(
-                agent_runtime_subprocess.stderr.read()
-                if agent_runtime_subprocess.stderr is not None
-                else ""
-            )
+            "Successfully queued the agent to start. Please poll /character/status to check if it has started."
         ),
     )
 
 
 @router.get("/character/read")
-def read_character() -> Character:
+def read_character() -> CharacterPublic:
     """
     Returns the configuration for the current character
     """
     with open("../../eliza/characters/character.json", "r") as f:
-        character_json = f.read()
+        character_json_str: str = f.read()
+        character_json_dict: dict = json.loads(character_json_str)
 
-    with open("../../eliza/.env", "r") as f:
-        envs = f.read()
+    env_full_path = os.path.abspath("../../eliza/.env")
+    env_values = dotenv_values(env_full_path)
+    envs = [
+        Env(key=k, value=SecretStr(v)) if v else Env(key=k, value=None)
+        for k, v in env_values.items()
+    ]
 
-    return Character(character_json=character_json, envs=envs)
+    return CharacterPublic(character_json=character_json_dict, envs=envs)
 
 
 @router.post("/character/stop")
@@ -127,6 +140,7 @@ def stop_character():
     """
     Attempts to stop the currently running character
     """
+    print("Stopping character")
     global agent_runtime_subprocess
     if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
         os.killpg(os.getpgid(agent_runtime_subprocess.pid), signal.SIGINT)
@@ -136,16 +150,21 @@ def stop_character():
         return {"status": "not running"}
 
 
-def write_character(character: Character):
+def write_character(character: Character) -> None:
     """
     Writes the character json and envs to the eliza directory so that the character can be started.
     """
-    # TODO check if json and envs are valid
+
     with open("../../eliza/characters/character.json", "w") as f:
-        f.write(character.character_json)
+        f.write(json.dumps(character.character_json))
+
+    # Don't need to write braintrust config into env file.
+    # process.env respects gloabl env variables, which are set already in task definition.
 
     with open("../../eliza/.env", "w") as f:
         f.write(character.envs)
+
+    return None
 
 
 app.include_router(router, prefix="/controller")

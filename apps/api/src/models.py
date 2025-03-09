@@ -1,6 +1,7 @@
 from typing import Any
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 from .db.models import AgentBase, RuntimeBase, TokenBase
 
@@ -63,9 +64,16 @@ class ElizaCharacterJson(BaseModel):
 
 # Mirror of Agent model in db.models, but with base model for runtime and token instead of their table types.
 # https://sqlmodel.tiangolo.com/tutorial/fastapi/relationships/#update-the-path-operations
+class Env(BaseModel):
+    key: str
+    value: SecretStr | None
+
+
 class AgentPublic(AgentBase):
+    id: UUID
     token: TokenBase | None = None
     runtime: RuntimeBase | None = None
+    env_file: list[Env] = []  # type: ignore
 
 
 class AWSConfig(BaseModel):
