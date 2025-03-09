@@ -1,8 +1,15 @@
+'use server'
+
+import { revalidatePath } from "next/cache"
 import { createResource, fromApiEndpoint, getResource } from "./common"
 import { Runtime } from "./runtime"
 import { getToken, Token } from "./token"
 
-const baseUrl = fromApiEndpoint('agents/')
+const AGENT_PATH = '/agents'
+const AGENT_SEGMENT = '/agents/'
+
+const baseUrlSegment = fromApiEndpoint(AGENT_SEGMENT)
+const baseUrlPath = fromApiEndpoint(AGENT_PATH)
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -34,21 +41,23 @@ interface Agent extends AgentBase {
 }
 
 async function getAgent(agentId: string): Promise<Agent> {
-  return getResource<Agent>(baseUrl, { resourceId: agentId })
+  return getResource<Agent>(baseUrlSegment, { resourceId: agentId })
 }
 
 async function createAgent(agentPayload: AgentBase): Promise<Agent> {
-  return createResource<Agent, AgentBase>(baseUrl, agentPayload)
+  const ret = createResource<Agent, AgentBase>(baseUrlPath, agentPayload)
+  revalidatePath(AGENT_PATH)
+  return ret
 }
 
 async function startAgent(agentId: string, runtimeId: string): Promise<[ Agent, Runtime ]> {
   return createResource<[ Agent, Runtime ]>(new URL(
-    `${baseUrl.href}${agentId}/start/${runtimeId}`
+    `${baseUrlPath.href}/${agentId}/start/${runtimeId}`
   ))
 }
 
 async function getAgents(): Promise<Agent[]> {
-  return getResource<Agent[]>(baseUrl)
+  return getResource<Agent[]>(baseUrlSegment)
 }
 
 async function getEnlightened(): Promise<ClientAgent[]> {
