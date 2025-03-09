@@ -109,11 +109,12 @@ instrumentator.add(metrics.response_size())
 instrumentator.instrument(app).expose(app)
 
 # TODO: Change this based on env
-if os.getenv("ENV") == "dev":
+env = os.getenv("ENV")
+if env == "dev" or env == "test":
     allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
-elif os.getenv("ENV") == "staging":
+elif env == "staging":
     allowed_origins = ["https://staigen.space"]
-elif os.getenv("ENV") == "prod":
+elif env == "prod":
     allowed_origins = ["https://aiden.space"]
 
 app.add_middleware(
@@ -305,6 +306,29 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
         contract_address,
         user_address,
     )
+
+
+def create_runtime_local():
+    """
+    'Creates' a runtime locally.
+    Expects that runtime docker image is already running with make run-runtime
+    Just creates an entry in sqlite db.
+    """
+    if os.getenv("inside_docker") and os.getenv("ENV") == "dev":
+        url = "http://host.docker.internal:8000"
+    else:
+        url = "http://localhost:8000"
+
+    with Session() as session:
+        runtime = crud.create_runtime(
+            session,
+            RuntimeBase(
+                url=url,
+                started=True,
+            ),
+        )
+
+    return runtime
 
 
 @app.post("/runtimes")
