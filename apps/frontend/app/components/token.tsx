@@ -1,4 +1,5 @@
 "use client";
+import { formatUnits } from "viem";
 import { useState, FormEventHandler, FC, useEffect } from "react";
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
@@ -57,20 +58,25 @@ const SellTokenSection: FC<{ token: Token }> = ({ token }) => {
   const onSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const amount = formData.get("amount") as string;
-
+    const amountWei = formData.get("amount") as string;
+    console.log(amountWei);
+    const amountWeiBigInt = BigInt(amountWei);
+    console.log(amountWeiBigInt);
+    const amountEth = amountWeiBigInt / BigInt(10 ** 18);
+    console.log(amountEth);
     if (!primaryWallet || !isEthereumWallet(primaryWallet)) return;
 
     const walletClient = await primaryWallet.getWalletClient();
-    console.log(walletClient);
+    const publicClient = await primaryWallet.getPublicClient();
     if (!walletClient) return;
 
-    // Call sellTokens function
+    console.log(amountEth);
+
     const hash = await walletClient.writeContract({
       address: token.evm_contract_address,
-      abi: token.evm_contract_abi,
+      abi: token.abi,
       functionName: "sellTokens",
-      args: [parseEther(amount)],
+      args: [BigInt("1")],
     });
 
     setTxnHash(hash);
@@ -105,7 +111,7 @@ const GetTokenBalanceSection: FC<{ token: Token }> = ({ token }) => {
         args: [address],
       });
 
-      setBalance(formatEther(tokenBalance));
+      setBalance(tokenBalance);
     };
 
     fetchBalance();
@@ -115,8 +121,59 @@ const GetTokenBalanceSection: FC<{ token: Token }> = ({ token }) => {
 
   return (
     <div>
-      <p>Token Balance: {balance}</p>
+      <p>Token Balance (wei): {balance}</p>
     </div>
   );
 };
-export { BuyTokenSection, SellTokenSection, GetTokenBalanceSection };
+
+/**
+ * This section shows the current price of the token.
+ * It shows 1 SEI = x Token, as well as 1 Token = x SEI.
+ */
+const GetTokenPriceSection: FC<{ token: Token }> = ({ token }) => {
+  const { primaryWallet } = useDynamicContext();
+  const [price, setPrice] = useState("");
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      if (!primaryWallet || !isEthereumWallet(primaryWallet)) return;
+
+      const publicClient = await primaryWallet.getPublicClient();
+      const address = primaryWallet.address;
+
+      const tokenSupply = await publicClient.readContract({
+        address: token.evm_contract_address,
+        abi: token.abi,
+        functionName: "totalSupply",
+      });
+
+      const one_sei = parseEther("1");
+
+      const tokenPrice = await publicClient.readContract({
+        address: token.evm_contract_address,
+        abi: token.abi,
+        functionName: "calculateTokensForSEI",
+        args: [one_sei, tokenSupply],
+      });
+
+      setPrice(tokenPrice);
+    };
+
+    fetchPrice();
+  }, [primaryWallet, token]);
+
+  if (!primaryWallet || !isEthereumWallet(primaryWallet)) return null;
+
+  return (
+    <div>
+      <p>Token Price (1 SEI : Wei ){price}</p>
+    </div>
+  );
+};
+
+export {
+  BuyTokenSection,
+  SellTokenSection,
+  GetTokenBalanceSection,
+  GetTokenPriceSection,
+};

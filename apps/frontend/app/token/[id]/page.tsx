@@ -1,6 +1,7 @@
 import { BuyTokenSection } from "@/components/token";
 import { SellTokenSection } from "@/components/token";
 import { GetTokenBalanceSection } from "@/components/token";
+import { GetTokenPriceSection } from "@/components/token";
 import { getToken } from "@/lib/api/token";
 
 export default async function TokenPage({
@@ -18,6 +19,8 @@ export default async function TokenPage({
       <SellTokenSection token={token}></SellTokenSection>
       <br />
       <GetTokenBalanceSection token={token}></GetTokenBalanceSection>
+      <br />
+      <GetTokenPriceSection token={token}></GetTokenPriceSection>
     </div>
   );
 }
