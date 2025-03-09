@@ -1,4 +1,5 @@
 import jwt, { JwtHeader, JwtPayload, Secret, VerifyErrors } from "jsonwebtoken";
+import { signOut } from "next-auth/react";
 
 export const getKey = (
   _: JwtHeader,
@@ -15,25 +16,23 @@ export const getKey = (
   // Perform the fetch request asynchronously
   fetch(
     `https://app.dynamicauth.com/api/v0/environments/${process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID}/keys`,
-    options,
+    options
   )
-  .then((response) => {
-    return response.json();
-  })
-  .then((json) => {
-    const publicKey = json.key.publicKey;
-    const pemPublicKey = Buffer.from(publicKey, "base64").toString("ascii");
-    callback(null, pemPublicKey); // Pass the public key to the callback
-  })
-  .catch((err) => {
-    console.error("Error fetching public key:", err);
-    callback(err); // Pass the error to the callback
-  });
+    .then((response) => {
+      return response.json();
+    })
+    .then((json) => {
+      const publicKey = json.key.publicKey;
+      const pemPublicKey = Buffer.from(publicKey, "base64").toString("ascii");
+      callback(null, pemPublicKey); // Pass the public key to the callback
+    })
+    .catch((err) => {
+      console.error("Error fetching public key:", err);
+      callback(err); // Pass the error to the callback
+    });
 };
 
-export const validateJWT = async (
-  token: string
-): Promise<JwtPayload | null> => {
+const validateJWT = async (token: string): Promise<JwtPayload | null> => {
   try {
     const decodedToken = await new Promise<JwtPayload | null>(
       (resolve, reject) => {
@@ -45,7 +44,6 @@ export const validateJWT = async (
             err: VerifyErrors | null,
             decoded: string | JwtPayload | undefined
           ) => {
-            console.log("decoded the jwt");
             if (err) {
               console.log("JWT verification error:", err);
               reject(err);
@@ -59,12 +57,18 @@ export const validateJWT = async (
               }
             }
           }
-        )
+        );
       }
-    )
+    );
     return decodedToken;
   } catch (error) {
     console.error("Invalid token:", error);
     return null;
   }
 };
+
+async function handleLogout() {
+  await signOut({ redirectTo: "/" });
+}
+
+export { handleLogout, validateJWT };
