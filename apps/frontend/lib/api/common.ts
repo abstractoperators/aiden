@@ -1,5 +1,3 @@
-const API_ENDPOINT = process.env.API_ENDPOINT
-
 function fromApiEndpoint(url: string): URL {
   return new URL(url, process.env.NEXT_PUBLIC_API_ENDPOINT)
 }
