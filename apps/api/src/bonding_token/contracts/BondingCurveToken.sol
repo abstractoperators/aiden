@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract BondingCurveToken is ERC20, ReentrancyGuard {
     uint256 public reserveBalance; // SEI held in contract
-    uint256 public constant k = 0.001 ether; // Price coefficient
+    uint256 public constant k = 0.001 ether; // Price coefficient - 1 SEI = 0.001
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
     function buyTokens() external payable nonReentrant {
         _buyTokens();
     }
-
+    
     function _buyTokens() internal {
         require(msg.value > 0, "Send SEI to buy tokens");
 
@@ -53,6 +53,8 @@ contract BondingCurveToken is ERC20, ReentrancyGuard {
         return (k / 2) * (supply * supply - newSupply * newSupply);
     }
 
+    // Babylonian method to calculate square root.
+    // https://ethereum.stackexchange.com/questions/2910/can-i-square-root-in-solidity/2913#2913
     function sqrt(uint256 x) internal pure returns (uint256) {
         if (x == 0) return 0;
         uint256 z = (x + 1) / 2;

@@ -32,8 +32,6 @@ const BuyTokenSection: FC<{ token: Token }> = ({ token }) => {
     setTxnHash(hash);
     const receipt = await publicClient.waitForTransactionReceipt(hash);
   };
-
-  // Conditional rendering in the return statement
   if (!primaryWallet || !isEthereumWallet(primaryWallet)) {
     return null;
   }
@@ -62,21 +60,25 @@ const SellTokenSection: FC<{ token: Token }> = ({ token }) => {
     console.log(amountWei);
     const amountWeiBigInt = BigInt(amountWei);
     console.log(amountWeiBigInt);
-    const amountEth = amountWeiBigInt / BigInt(10 ** 18);
-    console.log(amountEth);
+    // const amountEth = amountWeiBigInt / BigInt(10 ** 18);
+    // console.log(amountEth);
     if (!primaryWallet || !isEthereumWallet(primaryWallet)) return;
 
     const walletClient = await primaryWallet.getWalletClient();
     const publicClient = await primaryWallet.getPublicClient();
     if (!walletClient) return;
 
-    console.log(amountEth);
-
+    // console.log(amountEth);
+    const one_bigint_one = BigInt(1);
+    console.log(one_bigint_one);
+    const one_bigint_one_str = BigInt("1");
+    console.log(one_bigint_one_str);
+    // console.log(`weird shit ${BigInt("0.00001")}`);
     const hash = await walletClient.writeContract({
       address: token.evm_contract_address,
       abi: token.abi,
       functionName: "sellTokens",
-      args: [BigInt("1")],
+      args: ["0.0000000000000316"],
     });
 
     setTxnHash(hash);
