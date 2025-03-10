@@ -37,6 +37,8 @@ from src.db.models import (
     User,
     UserBase,
     UserUpdate,
+    Wallet,
+    WalletBase,
 )
 from src.models import (
     AgentPublic,
@@ -566,6 +568,31 @@ def start_agent(
 
     background_tasks.add_task(helper)
     return (agent, runtime)
+
+
+@app.post("/wallets")
+async def create_wallet(wallet: WalletBase) -> Wallet:
+    """
+    Creates a new wallet.
+    Returns the wallet address and private key.
+    """
+    with Session() as session:
+        wallet = crud.create_wallet(session, wallet)
+        return wallet
+
+
+@app.delete("/wallets/{wallet_id}")
+async def delete_wallet(wallet_id: UUID) -> None:
+    """
+    Deletes a wallet.
+    Returns a 404 if the wallet is not found.
+    """
+    with Session() as session:
+        wallet = crud.get_wallet(session, wallet_id)
+        if not wallet:
+            raise HTTPException(status_code=404, detail="Wallet not found")
+        crud.delete_wallet(session, wallet)
+    return None
 
 
 @app.post("/users")

@@ -18,6 +18,7 @@ from .models import (
     UserBase,
     UserUpdate,
     Wallet,
+    WalletBase,
 )
 
 M = TypeVar("M", bound=Base)
@@ -104,6 +105,21 @@ def get_agents(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Ag
 
 def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     stmt = select(Agent).where(Agent.id == agent_id)
+    return session.exec(stmt).first()
+
+
+def create_wallet(session: Session, wallet: WalletBase) -> Wallet:
+    return create_generic(session, Wallet(**wallet.model_dump()))
+
+
+def update_wallet(
+    session: Session, wallet: Wallet, wallet_update: WalletBase
+) -> Wallet:
+    return update_generic(session, wallet, wallet_update)
+
+
+def get_wallet(session: Session, wallet_id: UUID) -> Wallet | None:
+    stmt = select(Wallet).where(Wallet.id == wallet_id)
     return session.exec(stmt).first()
 
 
