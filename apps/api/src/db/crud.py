@@ -17,6 +17,7 @@ from .models import (
     User,
     UserBase,
     UserUpdate,
+    Wallet,
 )
 
 M = TypeVar("M", bound=Base)
@@ -68,9 +69,17 @@ def get_user(session: Session, user_id: UUID) -> User | None:
     return session.exec(stmt).first()
 
 
-def get_user_by_public_key(session: Session, public_key: str) -> User | None:
-    stmt = select(User).where(User.public_key == public_key)
+def get_user_by_dynamic_id(session: Session, dynamic_id: UUID) -> User | None:
+    stmt = select(User).where(User.dynamic_id == dynamic_id)
     return session.exec(stmt).first()
+
+
+def get_user_by_public_key(session: Session, public_key: str) -> User | None:
+    stmt = select(Wallet).where(Wallet.public_key == public_key)
+    wallet = session.exec(stmt).first()
+    if wallet:
+        return get_user(session, wallet.owner_id)
+    return None
 
 
 def get_users(session: Session, skip: int = 0, limit: int = 100) -> Sequence[User]:
