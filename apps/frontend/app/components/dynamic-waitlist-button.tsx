@@ -13,7 +13,7 @@ export default function DynamicWaitlistButton({ cta }: { cta: string }) {
       <DynamicUserProfile />
     </div>
   ) : (
-    <DynamicConnectButton buttonClassName={buttonVariants({ variant: "secondary" })}>
+    <DynamicConnectButton buttonClassName={buttonVariants({ variant: "default" })}>
       {cta}
     </DynamicConnectButton>
   )

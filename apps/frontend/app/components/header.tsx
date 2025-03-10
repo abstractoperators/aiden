@@ -51,31 +51,24 @@ export default function Header({ variant }: variantProp) {
   const { headerStyle, aidenImage, } = getVariantOutputs(variant)
 
   return (
-    <header
-      className={headerStyle}
-    >
+    <header className={headerStyle}>
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
-          <Link
-            href="/"
-            className="mr-6 flex items-center space-x-2"
-          >
-            {aidenImage}
+        <Link href="/" className="mr-6 flex items-center space-x-2">
+              {aidenImage}
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link
-              className="transition duration-300 hover:invert-[.5]"
-              href='/agents'
-            >
-              Agents
-            </Link>
-          </nav>
-        </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <DynamicWaitlistButton cta="Join the Waitlist" />
-          <DarkModeToggle />
-        </div>
-      </div>
-    </header>
-  )
+            </div>
+          <div className="flex flex-1 items-center justify-between space-x-8 md:justify-end">
+               <Link href="/about" className="transition duration-300 hover:invert-[.5]">
+                  About Us
+               </Link>
+               <Link className="transition duration-300 hover:invert-[.5]" href="/agents">
+                  Agent Chat
+               </Link>
+               {/* <DynamicWaitlistButton cta="Join the Waitlist" /> */}
+               <DarkModeToggle />
+            </div>
+         </div>
+      </header>
+   );
 }
