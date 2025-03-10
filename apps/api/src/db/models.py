@@ -29,10 +29,22 @@ class MetadataMixin(SQLModel):
     )
 
 
-# TODO: Allow multiple wallets.
+class Wallet(Base):
+    public_key: str | None = Field(
+        description="Ethereum public key", unique=True, nullable=True, default=None
+    )
+    public_key_sei: str | None = Field(
+        "SEI public key", unique=True, nullable=True, default=None
+    )
+
+
 class UserBase(Base):
-    public_key: str = Field(unique=True, description="Ethereum public key")
-    public_key_sei: str = Field(unique=True, description="SEI public key")
+    dynamic_id: UUID = Field(
+        description="Dynamic generated UUID for the user.",
+        nullable=False,
+        index=True,
+        unique=True,
+    )
     email: str | None = Field(
         description="Email of the user.", nullable=True, default=None
     )
@@ -45,12 +57,12 @@ class UserBase(Base):
 
 
 class UserUpdate(Base):
-    public_key: str | None = Field(
-        description="Ethereum public key", nullable=True, default=None
-    )
-    public_key_sei: str | None = Field(
-        description="SEI public key", nullable=True, default=None
-    )
+    # public_key: str | None = Field(
+    #     description="Ethereum public key", nullable=True, default=None
+    # )
+    # public_key_sei: str | None = Field(
+    #     description="SEI public key", nullable=True, default=None
+    # )
     email: str | None = Field(
         description="Email of the user.", nullable=True, default=None
     )
@@ -150,6 +162,7 @@ class RuntimeUpdate(Base):
 
 class User(UserBase, MetadataMixin, table=True):
     agents: list["Agent"] = Relationship(back_populates="owner")
+    wallets: list["Wallet"] = Relationship(back_populates="owner")
 
 
 class Agent(AgentBase, MetadataMixin, table=True):
