@@ -4,12 +4,10 @@ import re
 from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
-from io import StringIO
 from uuid import UUID
 
 import requests
 from boto3 import Session as Boto3Session
-from dotenv import dotenv_values
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -41,7 +39,14 @@ from src.db.models import (
     UserBase,
     UserUpdate,
 )
-from src.models import AgentPublic, AWSConfig, Env, TokenCreationRequest
+from src.models import (
+    AgentPublic,
+    AWSConfig,
+    TokenCreationRequest,
+    UserPublic,
+    agent_to_agent_public,
+    user_to_user_public,
+)
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -134,25 +139,6 @@ async def ping():
     return "pong"
 
 
-def agent_to_agentpublic(agent: Agent) -> AgentPublic:
-    """
-    Converts an Agent to an AgentPublic.
-    """
-    old_env_file: str = agent.env_file
-    env_dict: dict = dotenv_values(stream=StringIO(old_env_file))
-    list_of_envs: list[Env] = [
-        Env(key=key, value=value) for key, value in env_dict.items()
-    ]
-
-    agent_dump = agent.model_dump()
-    agent_dump["env_file"] = list_of_envs
-    agent_public = AgentPublic(**agent_dump)
-    agent_public.runtime = agent.runtime
-    agent_public.token = agent.token
-
-    return agent_public
-
-
 @app.post("/agents")
 def create_agent(agent: AgentBase) -> AgentPublic:
     """
@@ -162,7 +148,7 @@ def create_agent(agent: AgentBase) -> AgentPublic:
     with Session() as session:
         agent = crud.create_agent(session, agent)
 
-        return agent_to_agentpublic(agent)
+        return agent_to_agent_public(agent)
 
 
 @app.get("/agents")
@@ -173,7 +159,7 @@ async def get_agents() -> Sequence[AgentPublic]:
     with Session() as session:
         agents = crud.get_agents(session)
 
-        return [agent_to_agentpublic(agent) for agent in agents]
+        return [agent_to_agent_public(agent) for agent in agents]
 
 
 @app.get("/agents/{agent_id}")
@@ -188,7 +174,7 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
-        return agent_to_agentpublic(agent)
+        return agent_to_agent_public(agent)
 
 
 @app.patch("/agents/{agent_id}")
@@ -206,7 +192,7 @@ async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> AgentPublic
     with Session() as session:
         agent = crud.update_agent(session, agent, agent_update)
 
-        return agent_to_agentpublic(agent)
+        return agent_to_agent_public(agent)
 
 
 @app.post("/tokens")
@@ -598,41 +584,33 @@ async def create_user(user: UserBase) -> User:
 async def get_user(
     user_id: UUID | None = None,
     public_key: str | None = None,
-) -> User | Sequence[User]:
+    dynamic_id: UUID | None = None,
+) -> UserPublic:
     """
-    Returns all users if neither user_id nor public_key are passed
-    Returns a user by id if user_id is passed
-    Returns a user by public key if public_key is passed
-    Raises a 404 if the user is not found
-    Raises a 400 if both user_id and public_key are passed
+    Raises a 400 if more than one parameter is passed.
+    Raises a 404 if the user is not found.
+    Otherwise, returns the user by query parameter.
     """
-    if user_id and public_key:
+    num_params = sum([bool(user_id), bool(public_key), bool(dynamic_id)])
+    if num_params != 1:
         raise HTTPException(
             status_code=400,
-            detail="Both user_id and public_key cannot be passed",
+            detail="Exactly one of user_id, public_key, or dynamic_id can be passed",
         )
 
-    if not user_id and not public_key:
-        with Session() as session:
-            users = crud.get_users(session)
-        return users
+    with Session() as session:
+        user: User | None = None
+        if user_id:
+            user = crud.get_user(session, user_id)
+        elif public_key:
+            user = crud.get_user_by_public_key(session, public_key)  # no-redef
+        elif dynamic_id:
+            user = crud.get_user_by_dynamic_id(session, dynamic_id)  # no-redef
 
-    if user_id:
-        with Session() as session:
-            user: User | None = crud.get_user(session, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
 
-            if user is None:
-                raise HTTPException(status_code=404, detail="User not found")
-
-            return user
-    else:
-        with Session() as session:
-            user: User | None = crud.get_user_by_public_key(session, public_key)
-
-            if user is None:
-                raise HTTPException(status_code=404, detail="User not found")
-
-            return user
+        return user_to_user_public(user)
 
 
 @app.patch("/users/{user_id}")
