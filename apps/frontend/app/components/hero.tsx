@@ -1,9 +1,11 @@
 import LightGhost from "@/public/brand_assets/light-ghost.svg"
 import Image from "next/image"
+import { SocialLinks } from "./SocialLinks"
+
 
 export default function Hero() {
   return (
-    <section className="container flex flex-col items-center justify-center space-y-32 text-center">
+    <section className="container flex flex-col items-center justify-center space-y-8 text-center">
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
         <Image
           className="w-1/2"
@@ -19,6 +21,8 @@ export default function Hero() {
           High Performance Onchain Agents
         </h1>
       </div>
+        <SocialLinks />
+
     </section>
   )
 }
