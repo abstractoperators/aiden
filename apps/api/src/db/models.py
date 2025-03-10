@@ -29,7 +29,16 @@ class MetadataMixin(SQLModel):
     )
 
 
-class Wallet(Base):
+class WalletBase(Base):
+    public_key: str | None = Field(
+        description="Ethereum public key", unique=True, nullable=True, default=None
+    )
+    public_key_sei: str | None = Field(
+        "SEI public key", unique=True, nullable=True, default=None
+    )
+
+
+class WalletUpdate(Base):
     public_key: str | None = Field(
         description="Ethereum public key", unique=True, nullable=True, default=None
     )
@@ -57,12 +66,7 @@ class UserBase(Base):
 
 
 class UserUpdate(Base):
-    # public_key: str | None = Field(
-    #     description="Ethereum public key", nullable=True, default=None
-    # )
-    # public_key_sei: str | None = Field(
-    #     description="SEI public key", nullable=True, default=None
-    # )
+    # Not allowed to change dynamic_id.
     email: str | None = Field(
         description="Email of the user.", nullable=True, default=None
     )
@@ -163,6 +167,10 @@ class RuntimeUpdate(Base):
 class User(UserBase, MetadataMixin, table=True):
     agents: list["Agent"] = Relationship(back_populates="owner")
     wallets: list["Wallet"] = Relationship(back_populates="owner")
+
+
+class Wallet(WalletBase, MetadataMixin, table=True):
+    owner: User = Relationship(back_populates="wallets")
 
 
 class Agent(AgentBase, MetadataMixin, table=True):
