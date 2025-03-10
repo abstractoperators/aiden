@@ -21,34 +21,43 @@ import {
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { ClientAgent } from "@/lib/api/agent"
 
-const data = {
-  navMain: [
-    {
-      title: "Agents",
-      url: "#",
-      items: [
-        {
-          title: "Created Agents",
-          url: "/user/agents/created",
-        }
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      items: [
-        {
-          title: "Profile",
-          url: "/user/profile",
-          isActive: true,
-        },
-      ],
-    },
-  ],
+interface NavigationGroup {
+  title: string,
+  url: string,
+  items: {
+    title: string,
+    url: string,
+  }[]
 }
 
-export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  userAgents: ClientAgent[]
+}
+
+export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
+  const navigation: NavigationGroup[] = []
+      // {
+      //   title: "Settings",
+      //   url: "#",
+      //   items: [
+      //     {
+      //       title: "Profile",
+      //       url: "/user/profile",
+      //     },
+      //   ],
+      // },
+
+  navigation.unshift({
+    title: "Your Agents",
+    url: "#",
+    items: userAgents.map(agent => ({
+      title: agent.name,
+      url: `/agents/${agent.id}`,
+    }))
+  })
+
   return (
     <Sidebar
       {...props}
@@ -58,7 +67,7 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
       </SidebarHeader>
       <SidebarContent className="gap-0">
         {/* We create a collapsible SidebarGroup for each parent. */}
-        {data.navMain.map((parent) => (
+        {navigation.map((parent) => (
           <Collapsible
             key={parent.title}
             title={parent.title}

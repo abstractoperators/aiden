@@ -18,6 +18,7 @@ const baseUrlPath = fromApiEndpoint(AGENT_PATH)
 interface ClientAgent {
   id: string
   name: string
+  owner_id: string
   ticker?: string
   marketCapitalization: number
   holderCount: number
@@ -56,18 +57,22 @@ async function startAgent(agentId: string, runtimeId: string): Promise<[ Agent, 
   ))
 }
 
-async function getAgents(): Promise<Agent[]> {
-  return getResource<Agent[]>(baseUrlSegment)
+async function getAgents(ownerId?: string): Promise<Agent[]> {
+  return (ownerId) ?
+    getResource<Agent[]>(baseUrlSegment, { query: new URLSearchParams({owner_id: ownerId})}) :
+    getResource<Agent[]>(baseUrlSegment)
 }
 
-async function getEnlightened(): Promise<ClientAgent[]> {
+async function getEnlightened(ownerId?: string): Promise<ClientAgent[]> {
   try {
     return Promise.all(
-      (await getAgents())
+      (await getAgents(ownerId))
+      .filter(agent => (ownerId) ? agent.owner_id === ownerId: true) // TODO: remove once query param is implemented in backend
       .map(async agent => {
         const clientAgent = {
           id: agent.id,
           name: agent.character_json.name,
+          owner_id: agent.owner_id,
           // TODO: retrieve financial stats via API
           marketCapitalization: 0,
           holderCount: 0,

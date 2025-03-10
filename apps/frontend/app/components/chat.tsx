@@ -103,7 +103,7 @@ export default function Chat({
               key={message.id}
               className={(message.sender === senderName) ? right : left}
             >
-              <Card className="max-w-96 break-words">
+              <Card className="max-w-3/4 break-words">
                 <CardHeader>
                   <CardTitle>{message.sender}</CardTitle>
                   <Separator />
