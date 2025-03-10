@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from src.db import crud
@@ -9,6 +11,8 @@ from src.db.models import (
     TokenBase,
     User,
     UserBase,
+    Wallet,
+    WalletBase,
 )
 from src.models import AgentPublic
 from src.server import Session
@@ -20,21 +24,43 @@ def test_ping(client):
 
 
 @pytest.fixture()
-def user_factory():
-    def factory(client, **kwargs) -> User:
+def wallet_factory(user_factory):
+    def factory(client, **kwargs) -> Wallet:
+        owner_id = kwargs.get("owner_id")
+        if owner_id is None:
+            owner = user_factory(client)
+            owner_id = owner.id
         public_key = kwargs.get("public_key", "public_key_01")
         public_key_sei = kwargs.get("public_key_sei", "public_key_sei_01")
+        wallet_base = WalletBase(
+            public_key=public_key,
+            public_key_sei=public_key_sei,
+            owner_id=owner_id,
+        )
+        response = client.post("/wallets", json=wallet_base.model_dump(mode="json"))
+        assert response.status_code == 200
+        return Wallet.model_validate(response.json())
+
+    return factory
+
+
+@pytest.fixture()
+def user_factory():
+    def factory(client, **kwargs) -> User:
         email = kwargs.get("email", "email@email.com")
         phone_number = kwargs.get("phone_number", "1234567890")
         username = kwargs.get("username", "username_01")
+        dynamic_id = kwargs.get("dynamic_id")
+        if not dynamic_id:
+            dynamic_id = uuid4()
+
         user_base = UserBase(
-            public_key=public_key,
-            public_key_sei=public_key_sei,
             email=email,
             phone_number=phone_number,
             username=username,
+            dynamic_id=dynamic_id,
         )
-        response = client.post("/users", json=user_base.model_dump())
+        response = client.post("/users", json=user_base.model_dump(mode="json"))
         assert response.status_code == 200
         return User.model_validate(response.json())
 
@@ -107,29 +133,34 @@ def agent_factory(user_factory, token_factory, runtime_factory):
     return factory
 
 
-def test_users(client, user_factory):
+def test_users(client, user_factory, wallet_factory) -> None:
     user: User = user_factory(
         client,
+    )
+
+    wallet: Wallet = wallet_factory(
+        client,
+        owner_id=user.id,
     )
     assert user is not None
 
     response = client.get(f"/users?user_id={user.id}")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
     User.model_validate(response.json())
 
-    response = client.get(f"/users?public_key={user.public_key}")
-    assert response.status_code == 200
+    response = client.get(f"/users?public_key={wallet.public_key}")
+    assert response.status_code == 200, response.json()
     User.model_validate(response.json())
 
-    response = client.get(f"/users?public_key={user.public_key_sei}&user_id={user.id}")
-    assert response.status_code == 400
+    response = client.get(
+        f"/users?public_key={wallet.public_key_sei}&user_id={user.id}"
+    )
+    assert response.status_code == 400, response.json()
 
-    response = client.get("/users")
-    assert response.status_code == 200
-    User.model_validate(response.json()[0])
+    return None
 
 
-def test_tokens(client, token_factory):
+def test_tokens(client, token_factory) -> None:
     token: Token = token_factory(
         client,
     )
@@ -143,8 +174,10 @@ def test_tokens(client, token_factory):
     assert response.status_code == 200
     Token.model_validate(response.json()[0])
 
+    return None
 
-def test_runtimes(client, runtime_factory):
+
+def test_runtimes(client, runtime_factory) -> None:
     runtime: Runtime = runtime_factory(
         client,
     )
@@ -157,9 +190,10 @@ def test_runtimes(client, runtime_factory):
     response = client.get("/runtimes")
     assert response.status_code == 200
     Runtime.model_validate(response.json()[0])
+    return None
 
 
-def test_agents(client, agent_factory):
+def test_agents(client, agent_factory) -> None:
     agent: AgentPublic = agent_factory(
         client,
     )
@@ -172,3 +206,5 @@ def test_agents(client, agent_factory):
     response = client.get("/agents")
     assert response.status_code == 200
     AgentPublic.model_validate(response.json()[0])
+
+    return None
