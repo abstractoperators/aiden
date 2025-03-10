@@ -15,7 +15,6 @@ from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
-# from pydantic import TypeAdapter
 from src import logger
 from src.aws_utils import (
     create_http_target_group,

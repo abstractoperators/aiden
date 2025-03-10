@@ -34,7 +34,7 @@ class WalletBase(Base):
         description="Ethereum public key", unique=True, nullable=True, default=None
     )
     public_key_sei: str | None = Field(
-        "SEI public key", unique=True, nullable=True, default=None
+        description="SEI public key", unique=True, nullable=True, default=None
     )
     owner_id: UUID = Field(
         foreign_key="user.id",
@@ -48,7 +48,7 @@ class WalletUpdate(Base):
         description="Ethereum public key", unique=True, nullable=True, default=None
     )
     public_key_sei: str | None = Field(
-        "SEI public key", unique=True, nullable=True, default=None
+        description="SEI public key", unique=True, nullable=True, default=None
     )
 
 
