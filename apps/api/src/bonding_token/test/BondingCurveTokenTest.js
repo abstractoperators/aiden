@@ -16,7 +16,7 @@ describe("BondingCurveToken", function () {
   it("should allow users to buy tokens successfully", async () => {
     const buyAmount = ethers.parseEther("1");
 
-    console.log(`Buying ${buyAmount} SEI worth of tokens`);
+    console.log(`Buying ${buyAmount} SEI (wei) worth of tokens`);
     // addr1 buys tokens
     await addr1.sendTransaction({
       to: await token.getAddress(),
@@ -24,13 +24,13 @@ describe("BondingCurveToken", function () {
     });
 
     // Check token balance
-    const balance = await token.balanceOf(addr1.address);
-    console.log("Token balance: ", balance);
+    const balance = await token.balanceOf(addr1.address); // balanceOf returns a BigNumber (for some fucking reason idfk why, but in units of Eth, that is, divide it by 1e18 to get units of Wei).
+    console.log(`${addr1.address} Token balance (eth): ${balance}`);
     expect(Number(balance)).to.be.gt(0);
 
     // Check reserve balance
     const reserveBalance = await token.reserveBalance();
-    console.log("Reserve balance: ", reserveBalance);
+    console.log("Reserve balance Sei (wei): ", reserveBalance);
     expect(reserveBalance).to.equal(buyAmount);
   });
 
@@ -44,57 +44,87 @@ describe("BondingCurveToken", function () {
       value: initialBuy,
     });
     const priceAfterFirstBuy = await token.getCurrentPrice();
-
+    console.log("Price after first buy: ", priceAfterFirstBuy);
     // Second purchase by addr2
     await addr2.sendTransaction({
       to: await token.getAddress(),
       value: secondBuy,
     });
     const priceAfterSecondBuy = await token.getCurrentPrice();
+    console.log("Price after second buy: ", priceAfterSecondBuy);
 
     // The price should increase after the second purchase
     expect(priceAfterSecondBuy > priceAfterFirstBuy).to.equal(true);
   });
 
   it("should allow users to sell tokens back to the contract and receive SEI", async () => {
-    const buyAmount = ethers.parseEther("1"); // 1 SEI
+    const initialSEIBalance = await ethers.provider.getBalance(addr1.address);
+    console.log(
+      `Initial SEI balance (wei): ${initialSEIBalance} = ${ethers.formatEther(
+        initialSEIBalance
+      )} (eth)`
+    );
 
-    // addr1 buys tokens
-    await addr1.sendTransaction({
+    const contractInitialSEIBalance = await token.reserveBalance();
+    console.log(
+      `Initial contract SEI balance (wei): ${contractInitialSEIBalance} = ${ethers.formatEther(
+        contractInitialSEIBalance
+      )} (eth)`
+    );
+
+    const buyAmount = ethers.parseEther("1");
+    console.log(
+      `Buying ${buyAmount} SEI (wei) worth of tokens = ${ethers.formatEther(
+        buyAmount
+      )} (eth)`
+    );
+    buyTx = await addr1.sendTransaction({
       to: await token.getAddress(),
       value: buyAmount,
     });
+    const buyReceipt = await buyTx.wait();
+    const buyGasUsed = buyReceipt.gasUsed * buyReceipt.gasPrice;
+    console.log(
+      `Buy gas used (wei): ${buyGasUsed} = ${ethers.formatEther(
+        buyGasUsed
+      )} (eth)`
+    );
+    const tokenReserveBalanceAfterBuy = await token.reserveBalance();
+    expect(tokenReserveBalanceAfterBuy).to.equal(buyAmount);
 
-    // Check initial token balance of addr1
     const initialTokenBalance = await token.balanceOf(addr1.address);
-    console.log("Initial token balance: ", initialTokenBalance);
+    console.log(`Token balance after buy: ${initialTokenBalance} (wei)`);
+    const tokensToSell = initialTokenBalance;
 
-    expect(Number(initialTokenBalance)).to.be.gt(0);
-
-    // Check initial SEI balance of addr1
-    const initialSEIBalance = await ethers.provider.getBalance(addr1.address);
-
-    // addr1 approves the token transfer back to the contract
-    // await token.connect(addr1).approve(token.address, initialTokenBalance);
-
-    // addr1 sells half of their tokens
-
-    const tokensToSell = initialTokenBalance / BigInt(2);
-
-    console.log(`Selling ${tokensToSell} tokens`);
+    console.log(`Selling ${tokensToSell} (wei) tokens`);
     const sellTx = await token.connect(addr1).sellTokens(tokensToSell);
 
     const sellReceipt = await sellTx.wait();
-    const gasUsed = sellReceipt.gasUsed * sellReceipt.gasPrice;
+    const sellGasUsed = sellReceipt.gasUsed * sellReceipt.gasPrice;
+    console.log(
+      `Sell gas used (wei): ${sellGasUsed} = ${ethers.formatEther(
+        sellGasUsed
+      )} (eth)`
+    );
 
-    // Check final token balance of addr1
+    // Check final token balance of addr1 (should be 0)
     const finalTokenBalance = await token.balanceOf(addr1.address);
+    console.log(`Final token balance: `, finalTokenBalance);
     expect(finalTokenBalance).to.equal(initialTokenBalance - tokensToSell);
 
     // Check final SEI balance of addr1
     const finalSEIBalance = await ethers.provider.getBalance(addr1.address);
+    console.log(`Final SEI balance (wei): `, finalSEIBalance);
 
-    // addr1's SEI balance should have increased by the expected amount minus gas fees
-    expect(finalSEIBalance > initialSEIBalance - gasUsed).to.equal(true);
+    const finalReserveBalance = await token.reserveBalance();
+    console.log(
+      `Final contract SEI balance (wei): ${finalReserveBalance} = ${ethers.formatEther(
+        finalReserveBalance
+      )} (eth)`
+    );
+    expect(finalReserveBalance).to.equal(contractInitialSEIBalance);
+    expect(finalSEIBalance + sellGasUsed + buyGasUsed).to.equal(
+      initialSEIBalance
+    );
   });
 });

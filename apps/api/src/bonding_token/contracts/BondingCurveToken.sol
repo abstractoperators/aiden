@@ -45,7 +45,6 @@ contract BondingCurveToken is ERC20, ReentrancyGuard {
         uint256 newSupply = supply + sqrt((2 * ethAmount) / k + supply * supply);
         return newSupply - supply;
     }
-
     function calculateSEIForTokens(uint256 tokenAmount, uint256 supply) public pure returns (uint256) {
         uint256 newSupply = supply - tokenAmount;
         require(newSupply >= 0, "Invalid token amount");
