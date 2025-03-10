@@ -72,7 +72,7 @@ describe("BondingCurveToken", function () {
       )} (eth)`
     );
 
-    const buyAmount = ethers.parseEther("1");
+    const buyAmount = ethers.parseEther("200");
     console.log(
       `Buying ${buyAmount} SEI (wei) worth of tokens = ${ethers.formatEther(
         buyAmount
