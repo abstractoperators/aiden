@@ -166,12 +166,15 @@ def create_agent(agent: AgentBase) -> AgentPublic:
 
 
 @app.get("/agents")
-async def get_agents() -> Sequence[AgentPublic]:
+async def get_agents(user_id: UUID | None = None) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
     """
     with Session() as session:
-        agents = crud.get_agents(session)
+        if user_id:
+            agents = crud.get_agents_by_user_id(session, user_id)
+        else:
+            agents = crud.get_agents(session)
 
         return [agent_to_agentpublic(agent) for agent in agents]
 

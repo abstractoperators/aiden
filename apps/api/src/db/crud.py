@@ -93,6 +93,11 @@ def get_agents(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Ag
     return session.scalars(stmt).all()
 
 
+def get_agents_by_user_id(session: Session, user_id: UUID) -> Sequence[Agent]:
+    stmt = select(Agent).where(Agent.owner_id == user_id)
+    return session.scalars(stmt).all()
+
+
 def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     stmt = select(Agent).where(Agent.id == agent_id)
     return session.exec(stmt).first()
