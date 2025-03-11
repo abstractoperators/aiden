@@ -621,7 +621,7 @@ async def get_user(
     if num_params != 1:
         raise HTTPException(
             status_code=400,
-            detail="Exactly one of user_id, public_key, or dynamic_id can be passed",
+            detail="Exactly one of user_id, public_key, or dynamic_id must be passed.",
         )
 
     with Session() as session:
