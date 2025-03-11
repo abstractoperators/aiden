@@ -1,5 +1,3 @@
-'use server'
-
 import { revalidatePath } from "next/cache"
 import { createResource, fromApiEndpoint, getResource } from "./common"
 import { Runtime } from "./runtime"

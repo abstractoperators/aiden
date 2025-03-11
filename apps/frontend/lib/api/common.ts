@@ -1,5 +1,7 @@
+'use server'
+
 function fromApiEndpoint(url: string): URL {
-  return new URL(url, process.env.NEXT_PUBLIC_API_ENDPOINT)
+  return new URL(url, process.env.API_ENDPOINT)
 }
 
 async function getResource<T>(
