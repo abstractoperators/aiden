@@ -166,11 +166,26 @@ def create_agent(agent: AgentBase) -> AgentPublic:
 
 
 @app.get("/agents")
-async def get_agents(user_id: UUID | None = None) -> Sequence[AgentPublic]:
+async def get_agents(
+    user_id: UUID | None = None, user_dynamic_id: UUID | None = None
+) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
+    If user_id is passed, returns all agents for that user.
+    If user_dynamic_id is passed, returns all agents for that user.
+    If neither is passed, returns all agents.
+    Raises a 400 if both user_id and user_dynamic_id are passed.
     """
+    if user_id and user_dynamic_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Exactly one of user_id or user_dynamic_id should be passed",
+        )
+
     with Session() as session:
+        if user_dynamic_id:
+            pass
+            # TODO: merge in pr 52 w/ dynamic_id stuff.
         if user_id:
             agents = crud.get_agents_by_user_id(session, user_id)
         else:
