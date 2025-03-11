@@ -14,7 +14,7 @@ from src.db.models import (
     Wallet,
     WalletBase,
 )
-from src.models import AgentPublic
+from src.models import AgentPublic, UserPublic
 from src.server import Session
 
 
@@ -146,11 +146,17 @@ def test_users(client, user_factory, wallet_factory) -> None:
 
     response = client.get(f"/users?user_id={user.id}")
     assert response.status_code == 200, response.json()
-    User.model_validate(response.json())
+    user_public: UserPublic = UserPublic.model_validate(response.json())
+    assert user_public.id == user.id
+    assert user_public.email == user.email
+    assert user_public.phone_number == user.phone_number
+    assert user_public.username == user.username
+    assert user_public.dynamic_id == user.dynamic_id
+    assert user_public.wallets[0].public_key == wallet.public_key
 
     response = client.get(f"/users?public_key={wallet.public_key}")
     assert response.status_code == 200, response.json()
-    User.model_validate(response.json())
+    UserPublic.model_validate(response.json())
 
     response = client.get(
         f"/users?public_key={wallet.public_key_sei}&user_id={user.id}"
