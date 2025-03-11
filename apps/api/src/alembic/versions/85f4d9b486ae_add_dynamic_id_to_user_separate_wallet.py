@@ -11,6 +11,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+from sqlalchemy.sql import text
 
 # revision identifiers, used by Alembic.
 revision: str = "85f4d9b486ae"
@@ -47,7 +48,14 @@ def upgrade() -> None:
         sa.UniqueConstraint("public_key"),
         sa.UniqueConstraint("public_key_sei"),
     )
-    op.add_column("user", sa.Column("dynamic_id", sa.Uuid(), nullable=False))
+    op.add_column("user", sa.Column("dynamic_id", sa.Uuid(), nullable=True))
+    # Non-nullable dynamic_id is set to zeros_uuid.
+    # zeros are meaningless - abopdev and dance users will have dynamic_id manually set to their real values.
+    conn = op.get_bind()
+    zeros_uuid = "00000000-0000-0000-0000-000000000000"
+    conn.execute(text(f"UPDATE user SET dynamic_id = {zeros_uuid} WHERE true;"))
+    op.alter_column("user", "dynamic_id", existing_type=sa.Uuid(), nullable=False)
+
     op.drop_constraint("user_public_key_key", "user", type_="unique")
     op.drop_constraint("user_public_key_sei_key", "user", type_="unique")
     op.create_index(op.f("ix_user_dynamic_id"), "user", ["dynamic_id"], unique=True)
