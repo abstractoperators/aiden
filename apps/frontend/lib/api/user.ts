@@ -1,3 +1,5 @@
+'use server'
+
 import { UserProfile } from "@dynamic-labs/sdk-react-core";
 import { createResource, fromApiEndpoint, getResource } from "./common";
 
