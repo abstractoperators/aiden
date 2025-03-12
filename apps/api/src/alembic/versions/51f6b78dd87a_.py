@@ -50,11 +50,11 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_wallet_chain"), "wallet", ["chain"], unique=False)
     op.add_column("user", sa.Column("dynamic_id", sa.Uuid(), nullable=True))
-    # Non-nullable dynamic_id is set to zeros_uuid.
-    # zeros are meaningless - abopdev and dance users will have dynamic_id manually set to their real values.
+    # By default, set dynamic_id = id. Meaningless, but is unique and not-null.
+    # AbopDev and Dance's ids will have theirs updated manually on staging.
     conn = op.get_bind()
-    zeros_uuid = "00000000-0000-0000-0000-000000000000"
-    conn.execute(text(f"UPDATE user SET dynamic_id = {zeros_uuid} WHERE true;"))
+    stmt = text('UPDATE "user" SET dynamic_id = id WHERE dynamic_id IS NULL;')
+    conn.execute(stmt)
     op.alter_column("user", "dynamic_id", existing_type=sa.Uuid(), nullable=False)
 
     op.drop_constraint("user_public_key_key", "user", type_="unique")
