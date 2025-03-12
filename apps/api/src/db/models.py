@@ -32,7 +32,7 @@ class MetadataMixin(SQLModel):
 class WalletBase(Base):
     public_key: str = Field(
         description="Public key",
-        default=None,
+        nullable=False,
     )
     chain: str = Field(
         description="Chain the wallet is on",
