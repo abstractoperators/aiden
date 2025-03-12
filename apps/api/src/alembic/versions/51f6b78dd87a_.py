@@ -37,7 +37,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=True,
         ),
-        sa.Column("public_key", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("public_key", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("chain", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("chain_id", sa.Integer(), nullable=True),
         sa.Column("owner_id", sa.Uuid(), nullable=False),

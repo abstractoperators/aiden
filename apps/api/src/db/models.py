@@ -30,10 +30,8 @@ class MetadataMixin(SQLModel):
 
 
 class WalletBase(Base):
-    public_key: str | None = Field(
+    public_key: str = Field(
         description="Public key",
-        unique=True,
-        nullable=True,
         default=None,
     )
     chain: str = Field(
@@ -55,12 +53,8 @@ class WalletBase(Base):
 
 
 class WalletUpdate(Base):
-    public_key: str | None = Field(
-        description="Ethereum public key", unique=True, nullable=True, default=None
-    )
-    public_key_sei: str | None = Field(
-        description="SEI public key", unique=True, nullable=True, default=None
-    )
+    # what does it even mean to update a wallet? public_key, chain_id, and chain are all immutable afaik
+    owner_id: UUID | None
 
 
 class UserBase(Base):
