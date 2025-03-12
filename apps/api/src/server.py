@@ -591,7 +591,7 @@ async def get_wallets(
     Returns wallet(s) by query parameter.
     wallet_id returns a single wallet.
     owner_id returns all wallets for an owner as a sequence
-    public_key returns all wallets for a public key as a sequence
+    public_key returns a wallet.
     """
     if sum([bool(wallet_id), bool(owner_id), bool(public_key)]) != 1:
         raise HTTPException(
