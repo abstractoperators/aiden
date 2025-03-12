@@ -56,5 +56,11 @@ services:
       - path: "./apps/prometheus/.env"
         required: false
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    platform: linux/amd64
+    ports:
+      - "6379:6379"
 volumes:
   agent-runtime:

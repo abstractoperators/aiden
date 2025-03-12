@@ -43,6 +43,7 @@ from src.db.models import (
 )
 from src.models import AgentPublic, AWSConfig, Env, TokenCreationRequest
 from src.setup import test_db_connection
+from src.tasks import add
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
 
@@ -124,6 +125,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/add")
+async def add_celery():
+    result = add.delay(4, 4)
+    result.get()
 
 
 @app.get("/ping")

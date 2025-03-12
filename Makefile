@@ -71,6 +71,11 @@ aws-ecr-push-prometheus: aws-ecr-login
 	docker tag prometheus:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 
+##### Redis #####
+down-redis:
+	docker compose -f docker-compose.yml down redis
+run-redis:
+	docker compose -f docker-compose.yml up -d redis
 mypy:
 	cd apps/api && uv run mypy src || true
 	cd apps/runtime && uv run mypy src || true
