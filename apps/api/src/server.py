@@ -39,6 +39,7 @@ from src.db.models import (
     UserUpdate,
     Wallet,
     WalletBase,
+    WalletUpdate,
 )
 from src.models import (
     AgentPublic,
@@ -620,6 +621,17 @@ async def get_wallets(
             return wallets
 
     raise HTTPException(status_code=500, detail="Should not reach here")
+
+
+@app.patch("/wallets/{wallet_id}")
+async def update_wallet(wallet_id: UUID, wallet_update: WalletUpdate) -> Wallet:
+    with Session() as session:
+        wallet = crud.get_wallet(session, wallet_id)
+        if not wallet:
+            raise HTTPException(status_code=404, detail="Wallet not found")
+        wallet = crud.update_wallet(session, wallet, wallet_update)
+
+        return wallet
 
 
 @app.delete("/wallets/{wallet_id}")
