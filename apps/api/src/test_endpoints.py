@@ -178,6 +178,10 @@ def test_users(client, user_factory, wallet_factory) -> None:
     assert response.status_code == 200, response.json()
     UserPublic.model_validate(response.json())
 
+    response = client.get(f"/users?dynamic_id={user.dynamic_id}")
+    assert response.status_code == 200, response.json()
+    UserPublic.model_validate(response.json())
+
     response = client.get(f"/users?public_key={wallet.public_key}&user_id={user.id}")
     assert response.status_code == 400, response.json()
 
