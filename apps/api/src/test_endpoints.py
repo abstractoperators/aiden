@@ -13,6 +13,7 @@ from src.db.models import (
     UserBase,
     Wallet,
     WalletBase,
+    WalletUpdate,
 )
 from src.models import AgentPublic, UserPublic
 from src.server import Session
@@ -132,12 +133,13 @@ def agent_factory(user_factory, token_factory, runtime_factory):
     return factory
 
 
-def test_wallets(client, wallet_factory) -> None:
+def test_wallets(client, wallet_factory, user_factory) -> None:
     wallet: Wallet = wallet_factory(
         client,
     )
     assert wallet is not None
 
+    # Try the get methods
     response = client.get(f"/wallets?wallet_id={wallet.id}")
     assert response.status_code == 200
     Wallet.model_validate(response.json())
@@ -147,8 +149,27 @@ def test_wallets(client, wallet_factory) -> None:
     Wallet.model_validate(response.json()[0])
 
     response = client.get(f"/wallets?public_key={wallet.public_key}")
+    assert response.status_code == 200
+    Wallet.model_validate(response.json())
 
-    response = client.get(f"/wallets?public_key={wallet.public_key}")
+    # Try patching it
+    new_owner = user_factory(client)
+    wallet_update = WalletUpdate(
+        owner_id=new_owner.id,
+    )
+    response = client.patch(
+        f"/wallets/{wallet.id}",
+        json=wallet_update.model_dump(mode="json"),
+    )
+    assert response.status_code == 200
+    wallet = Wallet.model_validate(response.json())
+    assert wallet.owner_id == new_owner.id
+
+    # Try deleting it
+    response = client.delete(f"/wallets/{wallet.id}")
+    assert response.status_code == 200
+    response = client.get(f"/wallets?wallet_id={wallet.id}")
+    assert response.status_code == 404
 
     return None
 
