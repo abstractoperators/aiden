@@ -1,8 +1,8 @@
-"""Add dynamic_id to user. Separate wallet
+"""Add dynamic_id to user. Separate wallet into its own model.
 
-Revision ID: 85f4d9b486ae
+Revision ID: 51f6b78dd87a
 Revises: fb4810e3c71f
-Create Date: 2025-03-10 16:45:17.611288
+Create Date: 2025-03-12 09:13:03.132020
 
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.sql import text
 
 # revision identifiers, used by Alembic.
-revision: str = "85f4d9b486ae"
+revision: str = "51f6b78dd87a"
 down_revision: Union[str, None] = "fb4810e3c71f"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -38,7 +38,8 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("public_key", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("public_key_sei", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+        sa.Column("chain", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("chain_id", sa.Integer(), nullable=True),
         sa.Column("owner_id", sa.Uuid(), nullable=False),
         sa.ForeignKeyConstraint(
             ["owner_id"],
@@ -46,8 +47,8 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("public_key"),
-        sa.UniqueConstraint("public_key_sei"),
     )
+    op.create_index(op.f("ix_wallet_chain"), "wallet", ["chain"], unique=False)
     op.add_column("user", sa.Column("dynamic_id", sa.Uuid(), nullable=True))
     # Non-nullable dynamic_id is set to zeros_uuid.
     # zeros are meaningless - abopdev and dance users will have dynamic_id manually set to their real values.
@@ -78,5 +79,6 @@ def downgrade() -> None:
     op.create_unique_constraint("user_public_key_sei_key", "user", ["public_key_sei"])
     op.create_unique_constraint("user_public_key_key", "user", ["public_key"])
     op.drop_column("user", "dynamic_id")
+    op.drop_index(op.f("ix_wallet_chain"), table_name="wallet")
     op.drop_table("wallet")
     # ### end Alembic commands ###
