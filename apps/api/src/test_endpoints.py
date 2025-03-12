@@ -26,20 +26,19 @@ def test_ping(client):
 @pytest.fixture()
 def wallet_factory(user_factory):
     def factory(client, **kwargs) -> Wallet:
-        owner_id = kwargs.get("owner_id")
-        if owner_id is None:
-            owner = user_factory(client)
-            owner_id = owner.id
+        owner_id = kwargs.get("owner_id", user_factory(client).id)
+
         public_key = kwargs.get("public_key", "public_key_01")
-        public_key_sei = kwargs.get("public_key_sei", "public_key_sei_01")
         wallet_base = WalletBase(
             public_key=public_key,
-            public_key_sei=public_key_sei,
+            chain="EVM",
+            chain_id="1",
             owner_id=owner_id,
         )
         response = client.post("/wallets", json=wallet_base.model_dump(mode="json"))
         assert response.status_code == 200
-        return Wallet.model_validate(response.json())
+        wallet = Wallet.model_validate(response.json())
+        return wallet
 
     return factory
 
@@ -133,6 +132,27 @@ def agent_factory(user_factory, token_factory, runtime_factory):
     return factory
 
 
+def test_wallets(client, wallet_factory) -> None:
+    wallet: Wallet = wallet_factory(
+        client,
+    )
+    assert wallet is not None
+
+    response = client.get(f"/wallets?wallet_id={wallet.id}")
+    assert response.status_code == 200
+    Wallet.model_validate(response.json())
+
+    response = client.get(f"/wallets?owner_id={wallet.owner_id}")
+    assert response.status_code == 200
+    Wallet.model_validate(response.json()[0])
+
+    response = client.get(f"/wallets?public_key={wallet.public_key}")
+
+    response = client.get(f"/wallets?public_key={wallet.public_key}")
+
+    return None
+
+
 def test_users(client, user_factory, wallet_factory) -> None:
     user: User = user_factory(
         client,
@@ -158,9 +178,7 @@ def test_users(client, user_factory, wallet_factory) -> None:
     assert response.status_code == 200, response.json()
     UserPublic.model_validate(response.json())
 
-    response = client.get(
-        f"/users?public_key={wallet.public_key_sei}&user_id={user.id}"
-    )
+    response = client.get(f"/users?public_key={wallet.public_key}&user_id={user.id}")
     assert response.status_code == 400, response.json()
 
     return None

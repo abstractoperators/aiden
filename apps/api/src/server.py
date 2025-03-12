@@ -581,6 +581,47 @@ async def create_wallet(wallet: WalletBase) -> Wallet:
         return wallet
 
 
+@app.get("/wallets")
+async def get_wallets(
+    wallet_id: UUID | None = None,
+    owner_id: UUID | None = None,
+    public_key: str | None = None,
+) -> Sequence[Wallet] | Wallet:
+    """
+    Returns wallet(s) by query parameter.
+    wallet_id returns a single wallet.
+    owner_id returns all wallets for an owner as a sequence
+    public_key returns all wallets for a public key as a sequence
+    """
+    if sum([bool(wallet_id), bool(owner_id), bool(public_key)]) != 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Exactly one of wallet_id, owner_id, or wallet_public_key must be passed.",
+        )
+
+    with Session() as session:
+        if wallet_id:
+            wallet = crud.get_wallet(session, wallet_id)
+            if not wallet:
+                raise HTTPException(status_code=404, detail="Wallet not found")
+            return wallet
+        elif public_key:
+            wallet = crud.get_wallet_by_public_key(
+                session,
+                public_key,
+            )  # no-redef
+            if not wallet:
+                raise HTTPException(status_code=404, detail="Wallet not found")
+            return wallet
+        elif owner_id:
+            wallets = crud.get_wallets_by_owner(session, owner_id)  # no-redef
+            if not wallets:
+                raise HTTPException(status_code=404, detail="Wallet not found")
+            return wallets
+
+    raise HTTPException(status_code=500, detail="Should not reach here")
+
+
 @app.delete("/wallets/{wallet_id}")
 async def delete_wallet(wallet_id: UUID) -> None:
     """

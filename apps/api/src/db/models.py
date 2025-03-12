@@ -31,10 +31,21 @@ class MetadataMixin(SQLModel):
 
 class WalletBase(Base):
     public_key: str | None = Field(
-        description="Ethereum public key", unique=True, nullable=True, default=None
+        description="Public key",
+        unique=True,
+        nullable=True,
+        default=None,
     )
-    public_key_sei: str | None = Field(
-        description="SEI public key", unique=True, nullable=True, default=None
+    chain: str = Field(
+        description="Chain the wallet is on",
+        nullable=False,
+        index=True,
+        default="EVM",
+    )
+    chain_id: int = Field(
+        description="Chain ID",
+        nullable=True,
+        default=None,
     )
     owner_id: UUID = Field(
         foreign_key="user.id",

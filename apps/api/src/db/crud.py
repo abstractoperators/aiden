@@ -75,8 +75,16 @@ def get_user_by_dynamic_id(session: Session, dynamic_id: UUID) -> User | None:
     return session.exec(stmt).first()
 
 
-def get_user_by_public_key(session: Session, public_key: str) -> User | None:
-    stmt = select(Wallet).where(Wallet.public_key == public_key)
+def get_user_by_public_key(
+    session: Session,
+    public_key: str,
+    chain: str = "EVM",
+) -> User | None:
+    stmt = (
+        select(Wallet)
+        .where(Wallet.chain == chain)
+        .where(Wallet.public_key == public_key)
+    )
     wallet = session.exec(stmt).first()
     if wallet:
         return get_user(session, wallet.owner_id)
@@ -121,6 +129,28 @@ def update_wallet(
 def get_wallet(session: Session, wallet_id: UUID) -> Wallet | None:
     stmt = select(Wallet).where(Wallet.id == wallet_id)
     return session.exec(stmt).first()
+
+
+def get_wallets_by_owner(session: Session, owner_id: UUID) -> Sequence[Wallet]:
+    stmt = select(Wallet).where(Wallet.owner_id == owner_id)
+    return session.exec(stmt).all()
+
+
+def get_wallet_by_public_key(
+    session: Session,
+    public_key: str,
+    chain: str = "EVM",
+) -> Wallet | None:
+    stmt = (
+        select(Wallet)
+        .where(Wallet.chain == chain)
+        .where(Wallet.public_key == public_key)
+    )
+    return session.exec(stmt).first()
+
+
+def delete_wallet(session: Session, wallet: Wallet) -> None:
+    return delete_generic(session, wallet)
 
 
 # endregion Agents
