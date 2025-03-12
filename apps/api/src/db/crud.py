@@ -19,6 +19,7 @@ from .models import (
     UserUpdate,
     Wallet,
     WalletBase,
+    WalletUpdate,
 )
 
 M = TypeVar("M", bound=Base)
@@ -121,7 +122,9 @@ def create_wallet(session: Session, wallet: WalletBase) -> Wallet:
 
 
 def update_wallet(
-    session: Session, wallet: Wallet, wallet_update: WalletBase
+    session: Session,
+    wallet: Wallet,
+    wallet_update: WalletUpdate,
 ) -> Wallet:
     return update_generic(session, wallet, wallet_update)
 
