@@ -126,12 +126,3 @@ def agent_to_agent_public(agent: Agent) -> AgentPublic:
     agent_public.token = agent.token
 
     return agent_public
-
-
-class WalletPublicKey(BaseModel):
-    public_key: str = Field(description="Public key of the wallet")
-    chain: str = Field(default="EVM", description="EVM or COSMOS")
-    chain_id: int | None = Field(
-        default=None,
-        description="Chain ID of the wallet's chain. Makes sense for EVM.",
-    )
