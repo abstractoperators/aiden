@@ -143,37 +143,13 @@ class RuntimeUpdate(Base):
     )
 
 
-# endregion Models
-# # region Job
-# class JobStatus(str, Enum):
-#     pending = "pending"
-#     running = "running"
-#     completed = "completed"
-#     failed = "failed"  # expect FE to keep track of a job id? that seems
-#     # ridiculous
-
-#     # That means you need to be able to query for what job you need.
-#     # For example, if you're starting an agent on a runtime, you need to be able to check
+class AgentStartTask(Base):
+    agent_id: UUID
+    runtime_id: UUID
+    celery_task_id: UUID
 
 
-# class JobBase(Base):
-#     status: str
-
-
-# class AgentStartJobBase(JobBase):
-#     agent_id: UUID
-#     runtime_id: UUID
-
-
-# class RuntimeCreateJobBase(JobBase):
-#     runtime_id: UUID
-
-
-# class RuntimeDeleteJobBase(JobBase):
-#     runtime_id: UUID
-
-
-# # endregion
+# endregion
 # region Tables
 
 

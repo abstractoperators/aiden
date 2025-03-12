@@ -18,7 +18,7 @@ from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 # from pydantic import TypeAdapter
-from src import logger
+from src import logger, tasks
 from src.aws_utils import (
     create_http_target_group,
     create_listener_rules,
@@ -31,6 +31,7 @@ from src.db import Session, crud, init_db
 from src.db.models import (
     Agent,
     AgentBase,
+    AgentStartTask,
     AgentUpdate,
     Runtime,
     RuntimeBase,
@@ -43,7 +44,6 @@ from src.db.models import (
 )
 from src.models import AgentPublic, AWSConfig, Env, TokenCreationRequest
 from src.setup import test_db_connection
-from src.tasks import add
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
 
@@ -129,7 +129,7 @@ app.add_middleware(
 
 @app.get("/add")
 async def add_celery():
-    result = add.delay(4, 4)
+    result = tasks.add.delay(4, 4)
     result.get()
 
 
@@ -519,93 +519,40 @@ def get_runtime(runtime_id: UUID) -> Runtime:
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
-    agent_id: UUID,
-    runtime_id: UUID,
-    background_tasks: BackgroundTasks,
-) -> tuple[Agent, Runtime]:
+    agent_id,
+    runtime_id,
+    # agent_id: UUID,
+    # runtime_id: UUID,
+) -> AgentStartTask:
     """
-    Starts an agent on a runtime.
-    Returns a tuple of the agent and runtime.
-    Potentially stops the old agent on the runtime.
+    Kicks off a task to start an agent on a runtime.
+    Returns a task record that you can retrieve from.
     Returns a 404 if the agent or runtime is not found.
     """
-    with Session() as session:
-        agent: Agent | None = crud.get_agent(session, agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-        agent_character_json: dict = agent.character_json
-        agent_env_file: str = agent.env_file
+    # with Session() as session:
+    #     agent: Agent | None = crud.get_agent(session, agent_id)
+    #     if not agent:
+    #         raise HTTPException(status_code=404, detail="Agent not found")
 
-    with Session() as session:
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-        if not runtime:
-            raise HTTPException(status_code=404, detail="Runtime not found")
+    #     runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+    #     if not runtime:
+    #         raise HTTPException(status_code=404, detail="Runtime not found")
 
-        logger.info(f"Checking if runtime {runtime_id} is online")
-        ping_endpoint = f"{runtime.url}/ping"
-        resp = requests.get(ping_endpoint, timeout=3)
-        resp.raise_for_status()
+    #     logger.info(f"Checking if runtime {runtime_id} is online")
+    #     ping_endpoint = f"{runtime.url}/ping"
+    #     resp = requests.get(ping_endpoint, timeout=3)
+    #     resp.raise_for_status()
 
-        logger.info(f"Runtime {runtime_id} is online")
-        runtime.started = True
+    #     logger.info(f"Runtime {runtime_id} is online")
+    #     runtime.started = True
 
-        logger.info("Stopping old agent if it exists")
-        old_agent = runtime.agent
-        stop_endpoint = f"{runtime.url}/controller/character/stop"
-        resp = requests.post(stop_endpoint)
-        resp.raise_for_status()
-        if old_agent:
-            crud.update_agent(
-                session,
-                old_agent,
-                AgentUpdate(runtime_id=None),
-            )
-
-        start_endpoint = f"{runtime.url}/controller/character/start"
-
-    # Start the new agent
-    async def helper() -> None:
-        """
-        Polls the runtime to ensure the agent has started.
-        Allows for a faster response to the caller
-        """
-        logger.info(f"Starting agent {agent_id} on runtime {runtime_id}")
-        character_json: dict = agent_character_json
-        env_file: str = agent_env_file
-        resp = requests.post(
-            start_endpoint,
-            json={"character_json": character_json, "envs": env_file},
-            timeout=3,
-        )
-        logger.info(resp.text)
-        resp.raise_for_status()
-        # Update the agent once it has been confirmed to be started.
-
-        logger.info(f"Polling runtime {runtime_id} for agent status")
-        for i in range(60):
-            resp = requests.get(f"{runtime.url}/controller/character/status")
-            if resp.status_code == 200 and resp.json().get("running"):
-                logger.info(f"Agent {agent_id} has started")
-                eliza_agent_id: str = resp.json().get("agent_id")
-                with Session() as session:
-                    crud.update_agent(
-                        session,
-                        agent,
-                        AgentUpdate(
-                            eliza_agent_id=eliza_agent_id,
-                            runtime_id=runtime_id,
-                        ),
-                    )
-                return
-            logger.info(f"{i}/{40}: Agent {agent_id} has not started yet")
-            await asyncio.sleep(10)
-
-        logger.info(f"Agent {agent_id} did not start in time.")
-
-        return None
-
-    background_tasks.add_task(helper)
-    return (agent, runtime)
+    res = tasks.start_agent.delay(agent_id, runtime_id)
+    task_record = AgentStartTask(
+        agent_id=agent_id,
+        runtime_id=runtime_id,
+        celery_task_id=res.id,
+    )
+    return task_record
 
 
 @app.post("/users")
