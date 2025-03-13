@@ -242,14 +242,23 @@ def create_agent_start_task(
 
 
 def get_agent_start_task(
-    session: Session, agent_id: UUID, runtime_id: UUID
-) -> AgentStartTask:
-    stmt = (
-        select(AgentStartTask)
-        .where(AgentStartTask.agent_id == agent_id)
-        .where(AgentStartTask.runtime_id == runtime_id)
-        .order_by(AgentStartTask.created_at.desc())
-    )
+    session: Session,
+    agent_id: UUID | None = None,
+    runtime_id: UUID | None = None,
+) -> AgentStartTask | None:
+    """
+    Returns the most recent task where agent_id and/or runtime_id match.
+    """
+    if not agent_id and not runtime_id:
+        raise ValueError("Must provide either agent_id or runtime_id")
+
+    stmt = select(AgentStartTask)
+    if agent_id is not None:
+        stmt = stmt.where(AgentStartTask.agent_id == agent_id)
+    if runtime_id is not None:
+        stmt = stmt.where(AgentStartTask.runtime_id == runtime_id)
+    stmt = stmt.order_by(AgentStartTask.created_at.desc())
+
     return session.exec(stmt).first()
 
 

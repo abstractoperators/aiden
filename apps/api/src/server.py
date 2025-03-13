@@ -528,24 +528,36 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 
 @app.get("/agents/{agent_id}/start/{runtime_id}")
 def get_start_agent_task_status(
-    agent_id: UUID,
-    runtime_id: UUID,
+    agent_id: UUID | None = None,
+    runtime_id: UUID | None = None,
 ) -> TaskStatus | None:
     """
     Returns the status of a task to start an agent on a runtime.
     If not found, then it returns None instead of an HTTP 404.
     Otherwise, it returns the status of the task.
     """
+    if not agent_id and not runtime_id:
+        raise ValueError("Exactly one of agent_id or runtime_id must be provided")
+
     with Session() as session:
-        agent_start_task: AgentStartTask = crud.get_agent_start_task(
-            session, agent_id, runtime_id
-        )
+        if agent_id:
+            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
+                session,
+                agent_id=agent_id,
+            )
+        elif runtime_id:
+            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
+                session,
+                runtime_id=runtime_id,
+            )
+
         if not agent_start_task:
             return None
+
         task_id = agent_start_task.celery_task_id
 
-        task_status = get_task_status(task_id)
-        return task_status
+        agent_start_task = get_task_status(task_id)
+        return agent_start_task
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
@@ -559,12 +571,28 @@ def start_agent(
     Returns a 404 if the agent or runtime is not found.
     """
     # Make sure that no task for starting an agent is already running.
-    task_status: TaskStatus | None = get_start_agent_task_status(agent_id, runtime_id)
+    # Must block on both agent_id or runtime_id.
+    # That is, there must not be a running task for either agent_id or runtime_id.
+    task_status_agent: TaskStatus | None = get_start_agent_task_status(
+        agent_id=agent_id
+    )
+    task_status_runtime: TaskStatus | None = get_start_agent_task_status(
+        runtime_id=runtime_id
+    )
 
-    if task_status and (task_status == "PENDING" or task_status == "STARTED"):
+    if task_status_agent and (
+        task_status_agent == "PENDING" or task_status_agent == "STARTED"
+    ):
         raise HTTPException(
             status_code=400,
-            detail=f"Task is already {task_status}. Please wait for it to finish.",
+            detail=f"There is already a {task_status_agent} task for agent {agent_id}",
+        )
+    if task_status_runtime and (
+        task_status_runtime == "PENDING" or task_status_runtime == "STARTED"
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=f"There is already a {task_status_runtime} task for runtime {runtime_id}",
         )
 
     with Session() as session:
@@ -587,6 +615,7 @@ def start_agent(
             runtime_update = RuntimeUpdate(started=False)
             crud.update_runtime(session, runtime, runtime_update)
             runtime.started = False
+            raise HTTPException(status_code=500, detail="Runtime is not online.")
 
         res = tasks.start_agent.delay(agent_id, runtime_id)
         task_record = AgentStartTaskBase(
