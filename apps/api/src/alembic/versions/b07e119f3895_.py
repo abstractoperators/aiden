@@ -1,4 +1,4 @@
-"""empty message
+"""Add tables for RuntimeCreateTask and RuntimeUpdateTask.
 
 Revision ID: b07e119f3895
 Revises: f032c2e8f187
