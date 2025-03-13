@@ -15,14 +15,14 @@ interface variantProp {
 function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
   switch (variant) {
     case "landing":
-        return {
-          footerStyle: footerStyles.landing,
-        };
+      return {
+        footerStyle: footerStyles.landing,
+      };
     case "main":
     default:
-        return {
-          footerStyle: footerStyles.main,
-        };
+      return {
+        footerStyle: footerStyles.main,
+      };
   }
 }
 
