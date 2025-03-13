@@ -156,7 +156,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = "==1.14.1" },
     { name = "boto3", specifier = "==1.37.5" },
-    { name = "celery", extras = ["redis"], specifier = ">=5.4.0" },
+    { name = "celery", extras = ["redis"], specifier = "==5.4.0" },
     { name = "eth-typing", specifier = "==5.1.0" },
     { name = "fastapi", specifier = "==0.115.8" },
     { name = "httpx", specifier = ">=0.28.1" },
