@@ -1,4 +1,5 @@
 from io import StringIO
+from enum import Enum
 from typing import Any
 from uuid import UUID
 
@@ -126,3 +127,10 @@ def agent_to_agent_public(agent: Agent) -> AgentPublic:
     agent_public.token = agent.token
 
     return agent_public
+
+
+class TaskStatus(str, Enum):
+    FAILURE = "FAILURE"
+    PENDING = "PENDING"
+    STARTED = "STARTED"
+    SUCCESS = "SUCCESS"
