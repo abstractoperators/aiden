@@ -1,7 +1,7 @@
 import Logo from "@/public/brand_assets/dark-ghost.svg";
 import Image from "next/image";
 import Link from "next/link";
-import { SocialLinks } from "./SocialLinks";
+import { SocialLinks } from "./social-links";
 import DynamicWaitlistButton from "./dynamic-waitlist-button";
 
 
