@@ -181,9 +181,12 @@ async def get_agents(
 
     with Session() as session:
         if user_dynamic_id:
-            pass
-            # TODO: merge in pr 52 w/ dynamic_id stuff.
-        if user_id:
+            user = crud.get_user_by_dynamic_id(session, user_dynamic_id)
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            user_id = user.id
+            agents = crud.get_agents_by_user_id(session, user_id)
+        elif user_id:
             agents = crud.get_agents_by_user_id(session, user_id)
         else:
             agents = crud.get_agents(session)
