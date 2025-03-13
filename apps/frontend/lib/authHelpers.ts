@@ -1,14 +1,6 @@
 import jwt, { JwtHeader, JwtPayload, Secret, VerifyErrors } from "jsonwebtoken";
 import { signOut } from "next-auth/react";
 
-interface DynamicJwtPayload extends JwtPayload {
-  verified_credentials: {
-    address?: string
-    chain?: string
-    format: string
-  }[]
-}
-
 export const getKey = (
   _: JwtHeader,
   callback: (err: Error | null, key?: Secret) => void
@@ -42,9 +34,9 @@ export const getKey = (
 
 const validateJWT = async (
   token: string
-): Promise<DynamicJwtPayload | null> => {
+): Promise<JwtPayload | null> => {
   try {
-    return await new Promise<DynamicJwtPayload | null>(
+    return await new Promise<JwtPayload | null>(
       (resolve, reject) => {
         jwt.verify(
           token.trim(),
@@ -61,7 +53,7 @@ const validateJWT = async (
               console.log("JWT successfully decoded");
               // Ensure that the decoded token is of type JwtPayload
               if (typeof decoded === "object" && decoded !== null) {
-                resolve(decoded as DynamicJwtPayload);
+                resolve(decoded);
               } else {
                 reject(new Error("Invalid token"));
               }

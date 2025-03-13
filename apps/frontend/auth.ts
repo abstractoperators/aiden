@@ -29,35 +29,18 @@ export const config = {
           throw new Error("Token is required");
         }
 
-        const dynamicJwtPayload = await validateJWT(token);
-        const blockChainCredentials = dynamicJwtPayload?.verified_credentials.filter(credential =>
-          credential.format === 'blockchain'
-        )
+        const jwtPayload = await validateJWT(token);
 
-        console.debug("Credentials filtered for blockchain", blockChainCredentials)
-
-        const apiUserPayload = {
-          public_key: blockChainCredentials?.find(credential => 
-            credential.chain === 'eip155'
-          )?.address ?? "",
-          public_key_sei: blockChainCredentials?.find(credential => 
-            credential.chain === 'cosmos'
-          )?.address ?? "",
-        }
-
-        if (!(apiUserPayload.public_key && apiUserPayload.public_key_sei)) {
-          console.error("API User Payload", apiUserPayload)
-          throw new Error("While examining JWT Payload, user was found to not have both an EVM and SEI address!!!")
-        }
-
-        if (dynamicJwtPayload) {
+        if (jwtPayload) {
           // Transform the JWT payload into your user object
-          const apiUser = await getOrCreateUser(apiUserPayload)
+          if (!jwtPayload.sub)
+            throw new Error(`JWT ${jwtPayload} has no Dynamic ID!!!`)
+          const apiUser = await getOrCreateUser({dynamic_id: jwtPayload.sub})
           const user: User = {
             apiId: apiUser.id,
-            id: dynamicJwtPayload.sub ?? "", // Assuming 'sub' is the user ID
-            name: dynamicJwtPayload.name ?? "", // Replace with actual field from JWT payload
-            email: dynamicJwtPayload.email ?? "", // Replace with actual field from JWT payload
+            id: jwtPayload.sub, // Assuming 'sub' is the user ID
+            name: jwtPayload.name ?? "", // Replace with actual field from JWT payload
+            email: jwtPayload.email ?? "", // Replace with actual field from JWT payload
             // Map other fields as needed
           };
           return user;
