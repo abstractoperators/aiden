@@ -80,5 +80,14 @@ mypy:
 	cd apps/api && uv run mypy src || true
 	cd apps/runtime && uv run mypy src || true
 
+down-celery:
+	docker compose -f docker-compose.yml down celery
+build-celery:
+	docker compose -f docker-compose.yml build celery
+run-celery: down-celery build-celery
+	docker compose -f docker-compose.yml up -d celery
+run-celery-nodocker:
+	cd apps/api && uv run celery -A src.celery_app worker --loglevel=info
+
 pytest:
 	(cd apps/api && uv run pytest src --capture=no --log-cli-level=INFO)

@@ -25,9 +25,10 @@ db_password = os.getenv("POSTGRES_DB_PASSWORD")
 if not db_password:
     raise ValueError("POSTGRES_DB_PASSWORD is not set")
 BACKEND_DB_URL = str(SQLALCHEMY_DATABASE_URL).replace("***", db_password)
+BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost")
 app = Celery(
     "tasks",
-    broker="redis://localhost",
+    broker=BROKER_URL,
     backend=f"db+{BACKEND_DB_URL}",
 )
 app.config_from_object("src.celeryconfig")
