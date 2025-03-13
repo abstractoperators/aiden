@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import re
 from base64 import b64decode
@@ -15,7 +14,6 @@ from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from pydantic import TypeAdapter
 
 from src import logger
 from src.aws_utils import (
@@ -23,6 +21,7 @@ from src.aws_utils import (
     create_listener_rules,
     create_runtime_service,
     get_aws_config,
+    get_latest_task_definition_revision,
     get_role_session,
 )
 from src.db import Session, crud, init_db
@@ -38,8 +37,18 @@ from src.db.models import (
     User,
     UserBase,
     UserUpdate,
+    Wallet,
+    WalletBase,
+    WalletUpdate,
 )
-from src.models import AgentPublic, AWSConfig, TokenCreationRequest
+from src.models import (
+    AgentPublic,
+    AWSConfig,
+    TokenCreationRequest,
+    UserPublic,
+    agent_to_agent_public,
+    user_to_user_public,
+)
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
@@ -64,7 +73,7 @@ async def auth_middleware(request: Request, call_next):
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             return JSONResponse(
-                status_code=401, content={"detail": "No authorization header"}
+                status_code=401, content={"detail": "No authorization header provided"}
             )
 
         scheme_name, credentials_b64_encoded = auth_header.split(" ")
@@ -107,11 +116,12 @@ instrumentator.add(metrics.response_size())
 instrumentator.instrument(app).expose(app)
 
 # TODO: Change this based on env
-if os.getenv("ENV") == "dev":
+env = os.getenv("ENV")
+if env == "dev" or env == "test":
     allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
-elif os.getenv("ENV") == "staging":
+elif env == "staging":
     allowed_origins = ["https://staigen.space"]
-elif os.getenv("ENV") == "prod":
+elif env == "prod":
     allowed_origins = ["https://aiden.space"]
 
 app.add_middleware(
@@ -132,7 +142,7 @@ async def ping():
 
 
 @app.post("/agents")
-def create_agent(agent: AgentBase) -> Agent:
+def create_agent(agent: AgentBase) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
     Only stores it in db.
@@ -140,17 +150,18 @@ def create_agent(agent: AgentBase) -> Agent:
     with Session() as session:
         agent = crud.create_agent(session, agent)
 
-    return agent
+        return agent_to_agent_public(agent)
 
 
 @app.get("/agents")
-async def get_agents() -> Sequence[Agent]:
+async def get_agents() -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
     """
     with Session() as session:
         agents = crud.get_agents(session)
-    return agents
+
+        return [agent_to_agent_public(agent) for agent in agents]
 
 
 @app.get("/agents/{agent_id}")
@@ -165,15 +176,11 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
-        # Prefetch the runtime
-        agent.runtime  # noqa
-        agent.token  # noqa
-
-        return TypeAdapter(AgentPublic).validate_python(agent)
+        return agent_to_agent_public(agent)
 
 
 @app.patch("/agents/{agent_id}")
-async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> Agent:
+async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> AgentPublic:
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
@@ -186,7 +193,8 @@ async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> Agent:
 
     with Session() as session:
         agent = crud.update_agent(session, agent, agent_update)
-    return agent
+
+        return agent_to_agent_public(agent)
 
 
 @app.post("/tokens")
@@ -209,7 +217,7 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
                 name=name,
                 ticker=ticker,
                 evm_contract_address=contract_address,
-                abi=json.dumps(contract_abi),
+                abi=contract_abi,
             ),
         )
 
@@ -286,6 +294,29 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
         contract_address,
         user_address,
     )
+
+
+def create_runtime_local():
+    """
+    'Creates' a runtime locally.
+    Expects that runtime docker image is already running with make run-runtime
+    Just creates an entry in sqlite db.
+    """
+    if os.getenv("inside_docker") and os.getenv("ENV") == "dev":
+        url = "http://host.docker.internal:8000"
+    else:
+        url = "http://localhost:8000"
+
+    with Session() as session:
+        runtime = crud.create_runtime(
+            session,
+            RuntimeBase(
+                url=url,
+                started=True,
+            ),
+        )
+
+    return runtime
 
 
 @app.post("/runtimes")
@@ -422,13 +453,16 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
 
 
 @app.get("/runtimes")
-def get_runtimes() -> Sequence[Runtime]:
+def get_runtimes(unused: bool = False) -> Sequence[Runtime]:
     """
     Returns a list of up to 100 runtimes.
     """
     with Session() as session:
         runtimes = crud.get_runtimes(session)
-    return runtimes
+
+        if unused:
+            runtimes = [runtime for runtime in runtimes if not runtime.agent]
+        return runtimes
 
 
 @app.get("/runtimes/{runtime_id}")
@@ -470,17 +504,20 @@ def start_agent(
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
+        logger.info(f"Checking if runtime {runtime_id} is online")
         ping_endpoint = f"{runtime.url}/ping"
         resp = requests.get(ping_endpoint, timeout=3)
         resp.raise_for_status()
 
+        logger.info(f"Runtime {runtime_id} is online")
         runtime.started = True
 
+        logger.info("Stopping old agent if it exists")
         old_agent = runtime.agent
+        stop_endpoint = f"{runtime.url}/controller/character/stop"
+        resp = requests.post(stop_endpoint)
+        resp.raise_for_status()
         if old_agent:
-            stop_endpoint = f"{runtime.url}/controller/character/stop"
-            resp = requests.post(stop_endpoint)
-            resp.raise_for_status()
             crud.update_agent(
                 session,
                 old_agent,
@@ -495,18 +532,23 @@ def start_agent(
         Polls the runtime to ensure the agent has started.
         Allows for a faster response to the caller
         """
-        character_json: str = json.dumps(agent_character_json)
+        logger.info(f"Starting agent {agent_id} on runtime {runtime_id}")
+        character_json: dict = agent_character_json
         env_file: str = agent_env_file
         resp = requests.post(
             start_endpoint,
             json={"character_json": character_json, "envs": env_file},
+            timeout=3,
         )
+        logger.info(resp.text)
         resp.raise_for_status()
         # Update the agent once it has been confirmed to be started.
 
-        for _ in range(60):
+        logger.info(f"Polling runtime {runtime_id} for agent status")
+        for i in range(60):
             resp = requests.get(f"{runtime.url}/controller/character/status")
-            if resp.status_code == 200:
+            if resp.status_code == 200 and resp.json().get("running"):
+                logger.info(f"Agent {agent_id} has started")
                 eliza_agent_id: str = resp.json().get("agent_id")
                 with Session() as session:
                     crud.update_agent(
@@ -518,12 +560,92 @@ def start_agent(
                         ),
                     )
                 return
+            logger.info(f"{i}/{40}: Agent {agent_id} has not started yet")
             await asyncio.sleep(10)
+
+        logger.info(f"Agent {agent_id} did not start in time.")
 
         return None
 
     background_tasks.add_task(helper)
     return (agent, runtime)
+
+
+@app.post("/wallets")
+async def create_wallet(wallet: WalletBase) -> Wallet:
+    """
+    Creates a new wallet.
+    Returns the wallet address and private key.
+    """
+    with Session() as session:
+        wallet = crud.create_wallet(session, wallet)
+        return wallet
+
+
+@app.get("/wallets")
+async def get_wallets(
+    wallet_id: UUID | None = None,
+    owner_id: UUID | None = None,
+    public_key: str | None = None,
+) -> Sequence[Wallet] | Wallet:
+    """
+    Returns wallet(s) by query parameter.
+    wallet_id returns a single wallet.
+    owner_id returns all wallets for an owner as a sequence
+    public_key returns a wallet.
+    """
+    if sum([bool(wallet_id), bool(owner_id), bool(public_key)]) != 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Exactly one of wallet_id, owner_id, or wallet_public_key must be passed.",
+        )
+
+    with Session() as session:
+        if wallet_id:
+            wallet = crud.get_wallet(session, wallet_id)
+            if not wallet:
+                raise HTTPException(status_code=404, detail="Wallet not found")
+            return wallet
+        elif public_key:
+            wallet = crud.get_wallet_by_public_key(
+                session,
+                public_key,
+            )  # no-redef
+            if not wallet:
+                raise HTTPException(status_code=404, detail="Wallet not found")
+            return wallet
+        elif owner_id:
+            wallets = crud.get_wallets_by_owner(session, owner_id)  # no-redef
+            if not wallets:
+                raise HTTPException(status_code=404, detail="Wallet not found")
+            return wallets
+
+    raise HTTPException(status_code=500, detail="Should not reach here")
+
+
+@app.patch("/wallets/{wallet_id}")
+async def update_wallet(wallet_id: UUID, wallet_update: WalletUpdate) -> Wallet:
+    with Session() as session:
+        wallet = crud.get_wallet(session, wallet_id)
+        if not wallet:
+            raise HTTPException(status_code=404, detail="Wallet not found")
+        wallet = crud.update_wallet(session, wallet, wallet_update)
+
+        return wallet
+
+
+@app.delete("/wallets/{wallet_id}")
+async def delete_wallet(wallet_id: UUID) -> None:
+    """
+    Deletes a wallet.
+    Returns a 404 if the wallet is not found.
+    """
+    with Session() as session:
+        wallet = crud.get_wallet(session, wallet_id)
+        if not wallet:
+            raise HTTPException(status_code=404, detail="Wallet not found")
+        crud.delete_wallet(session, wallet)
+    return None
 
 
 @app.post("/users")
@@ -541,45 +663,33 @@ async def create_user(user: UserBase) -> User:
 async def get_user(
     user_id: UUID | None = None,
     public_key: str | None = None,
-) -> User | Sequence[User]:
+    dynamic_id: UUID | None = None,
+) -> UserPublic:
     """
-    Returns all users if neither user_id nor public_key are passed
-    Returns a user by id if user_id is passed
-    Returns a user by public key if public_key is passed
-    Raises a 404 if the user is not found
-    Raises a 400 if both user_id and public_key are passed
+    Raises a 400 if more than one parameter is passed.
+    Raises a 404 if the user is not found.
+    Otherwise, returns the user by query parameter.
     """
-    if user_id and public_key:
-        return JSONResponse(
+    num_params = sum([bool(user_id), bool(public_key), bool(dynamic_id)])
+    if num_params != 1:
+        raise HTTPException(
             status_code=400,
-            content={"detail": "Only one of user_id or public_key can be provided"},
+            detail="Exactly one of user_id, public_key, or dynamic_id must be passed.",
         )
 
-    if not user_id and not public_key:
-        with Session() as session:
-            users = crud.get_users(session)
-        return users
+    with Session() as session:
+        user: User | None = None
+        if user_id:
+            user = crud.get_user(session, user_id)
+        elif public_key:
+            user = crud.get_user_by_public_key(session, public_key)  # no-redef
+        elif dynamic_id:
+            user = crud.get_user_by_dynamic_id(session, dynamic_id)  # no-redef
 
-    if user_id:
-        with Session() as session:
-            user: User | None = crud.get_user(session, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
 
-            if user is None:
-                return JSONResponse(
-                    status_code=404, content={"detail": "User not found"}
-                )
-
-            return user
-    else:
-        with Session() as session:
-            user: User | None = crud.get_user_by_public_key(session, public_key)
-
-            if user is None:
-                return JSONResponse(
-                    status_code=404, content={"detail": "User not found"}
-                )
-
-            return user
+        return user_to_user_public(user)
 
 
 @app.patch("/users/{user_id}")
@@ -609,3 +719,122 @@ async def delete_user(user_id: UUID) -> None:
             raise HTTPException(status_code=404, detail="User not found")
         crud.delete_user(session, user)
     return None
+
+
+@app.patch("/runtimes/{runtime_id}")
+def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> Runtime:
+    """
+    Updates runtime to latest task definition.
+    Restarts the agent running on it (if any).
+    This needs to be run everytime:
+       1. Runtime image is updated (in ECR)
+       2. Task definition is updated.
+    """
+    # Get the session, and use it's URL to find the service
+    # TODO: Just track the service ARN in the DB so we don't have to do this shenanigans.
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Runtime not found")
+        runtime_url = runtime.url
+
+        runtime_service_num_match = re.search(r"aiden-runtime-(\d+)", runtime_url)
+        if not runtime_service_num_match or not (
+            runtime_service_num := runtime_service_num_match.group(1)
+        ):
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to parse runtime number from runtime URL",
+            )
+        runtime_service_num = int(runtime_service_num)
+        ecs_client = get_role_session().client("ecs")
+        aws_config = get_aws_config(runtime_service_num)
+        if not aws_config:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
+            )
+        runtime_task_definition_arn: str = aws_config.task_definition_arn
+        latest_revision: int = get_latest_task_definition_revision(
+            ecs_client, runtime_task_definition_arn
+        )
+        service = ecs_client.describe_services(
+            cluster=aws_config.cluster,
+            services=[aws_config.service_name],
+        )["services"][0]
+        service_arn = service["serviceArn"]
+        logger.info(
+            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
+        )
+
+        # Force redeployment w/ latest definition
+        # 1. Update Agent in DB to not have a runtime
+        agent = runtime.agent
+        if agent is not None:
+            agent_id = agent.id
+            crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+        crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+
+    # 2. Force redeployment
+    service = ecs_client.update_service(
+        cluster=aws_config.cluster,
+        service=aws_config.service_name,
+        taskDefinition=f"{runtime_task_definition_arn}:{latest_revision}",
+        forceNewDeployment=True,
+    )["service"]
+
+    # 3. Make sure that the service is stable, then restart the running agent.
+    async def helper():
+        """
+        Helper polls service until deployment is stable.
+        Then it polls the actual service until it is online.
+        Finally, it restarts the agent that was running on this runtime (if any)
+        """
+        # Poll until service is stable
+        for i in range(40):
+            logger.info(
+                f"{i}/40: Polling service {aws_config.service_name} for stability"
+            )
+            service = ecs_client.describe_services(
+                cluster=aws_config.cluster,
+                services=[aws_config.service_name],
+            )["services"][0]
+            active_deployment_id = None
+            for deployment in service["deployments"]:
+                if deployment["status"] == "ACTIVE":
+                    active_deployment_id = deployment["id"]
+                    break
+            if active_deployment_id is None:
+                logger.info(f"{aws_config.service_name} is stable")
+                break
+            await asyncio.sleep(15)
+
+        # Poll until server on the service is up
+        for i in range(40):
+            try:
+                resp = requests.get(f"{runtime_url}/ping", timeout=3)
+                resp.raise_for_status()
+                logger.info(f"Runtime for {runtime_id} is online")
+                with Session() as session:
+                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+                break
+            except Exception as e:
+                logger.info(
+                    f"{i}/{40}: Runtime for {runtime_id} is not online yet. {e}"
+                )
+                await asyncio.sleep(15)
+
+        # Restart the agent (if any)
+        logger.info("Restarting agent (if any)")
+        if agent is not None:
+            logger.info(f"Restarting agent {agent_id}")
+            start_agent(
+                agent_id=agent_id,
+                runtime_id=runtime_id,
+                background_tasks=background_tasks,
+            )
+
+    background_tasks.add_task(helper)
+
+    return runtime
+    return runtime

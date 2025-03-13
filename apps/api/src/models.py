@@ -1,8 +1,19 @@
+from io import StringIO
 from typing import Any
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from dotenv import dotenv_values
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, TypeAdapter
 
-from .db.models import AgentBase, RuntimeBase, TokenBase
+from .db.models import (
+    Agent,
+    AgentBase,
+    RuntimeBase,
+    TokenBase,
+    User,
+    UserBase,
+    WalletBase,
+)
 
 
 # TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
@@ -63,9 +74,21 @@ class ElizaCharacterJson(BaseModel):
 
 # Mirror of Agent model in db.models, but with base model for runtime and token instead of their table types.
 # https://sqlmodel.tiangolo.com/tutorial/fastapi/relationships/#update-the-path-operations
+class Env(BaseModel):
+    key: str
+    value: SecretStr | None
+
+
 class AgentPublic(AgentBase):
+    id: UUID
     token: TokenBase | None = None
     runtime: RuntimeBase | None = None
+    env_file: list[Env] = []  # type: ignore
+
+
+class UserPublic(UserBase):
+    id: UUID
+    wallets: list[WalletBase] = []
 
 
 class AWSConfig(BaseModel):
@@ -80,3 +103,26 @@ class AWSConfig(BaseModel):
     task_definition_arn: str
     subnets: list[str]
     security_groups: list[str]
+
+
+def user_to_user_public(user: User) -> UserPublic:
+    return TypeAdapter(UserPublic).validate_python(user)
+
+
+def agent_to_agent_public(agent: Agent) -> AgentPublic:
+    """
+    Converts an Agent to an AgentPublic.
+    """
+    old_env_file: str = agent.env_file
+    env_dict: dict = dotenv_values(stream=StringIO(old_env_file))
+    list_of_envs: list[Env] = [
+        Env(key=key, value=value) for key, value in env_dict.items()
+    ]
+
+    agent_dump = agent.model_dump()
+    agent_dump["env_file"] = list_of_envs
+    agent_public = AgentPublic(**agent_dump)
+    agent_public.runtime = agent.runtime
+    agent_public.token = agent.token
+
+    return agent_public
