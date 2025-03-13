@@ -163,7 +163,8 @@ def create_agent(agent: AgentBase) -> AgentPublic:
 
 @app.get("/agents")
 async def get_agents(
-    user_id: UUID | None = None, user_dynamic_id: UUID | None = None
+    user_id: UUID | None = None,
+    user_dynamic_id: UUID | None = None,
 ) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
@@ -175,7 +176,7 @@ async def get_agents(
     if user_id and user_dynamic_id:
         raise HTTPException(
             status_code=400,
-            detail="Exactly one of user_id or user_dynamic_id should be passed",
+            detail="Exactly one or zero of user_id or user_dynamic_id may be passed",
         )
 
     with Session() as session:
@@ -707,13 +708,22 @@ def update_runtime(
     """
     # Get the session, and use it's URL to find the service
     # TODO: Just track the service ARN in the DB so we don't have to do this shenanigans.
-
     with Session() as session:
+        # Make sure that there isn't already a task running to update this runtime.
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
-        runtime_url = runtime.url
+        runtime_update_task: RuntimeUpdateTask | None = crud.get_runtime_update_task(
+            session, runtime_id
+        )
+        task_status = get_task_status(runtime_update_task.celery_task_id)
+        if task_status == "PENDING" or task_status == "STARTED":
+            raise HTTPException(
+                status_code=400,
+                detail=f"There is already a {task_status} runtime update task for runtime {runtime_id}",
+            )
 
+        runtime_url = runtime.url
         runtime_service_num_match = re.search(r"aiden-runtime-(\d+)", runtime_url)
         if not runtime_service_num_match or not (
             runtime_service_num := runtime_service_num_match.group(1)

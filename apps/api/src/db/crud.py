@@ -284,4 +284,18 @@ def create_runtime_update_task(
     )
 
 
+def get_runtime_update_task(
+    session: Session, runtime_id: UUID
+) -> RuntimeUpdateTask | None:
+    """
+    Returns the latest update task for a given runtime_id
+    """
+    stmt = (
+        select(RuntimeUpdateTask)
+        .where(RuntimeUpdateTask.runtime_id == runtime_id)
+        .order_by(RuntimeUpdateTask.created_at.desc())
+    )
+    return session.exec(stmt).first()
+
+
 # endregion Tasks
