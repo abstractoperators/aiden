@@ -3,13 +3,13 @@ from time import sleep
 
 import requests
 from celery import Celery
+from celery.utils.log import get_task_logger
 
 from src.db import crud
 from src.db.models import AgentUpdate
-
-# from src.celeryconfig import CELERY_CONFIG
 from src.db.setup import SQLALCHEMY_DATABASE_URL, Session
 
+logger = get_task_logger(__name__)
 db_password = os.getenv("POSTGRES_DB_PASSWORD")
 if not db_password:
     raise ValueError("POSTGRES_DB_PASSWORD is not set")
@@ -61,7 +61,7 @@ def start_agent(agent_id, runtime_id) -> None:
     # Poll the runtime until the agent is running
     for i in range(60):
         resp = requests.get(f"{runtime.url}/controller/character/status")
-        print(f"{i}/{60}: Polling for agent to start")
+        logger.info(f"{i}/{60}: Polling for agent to start")
         if resp.status_code == 200 and resp.json()["running"]:
             eliza_agent_id = resp.json()["agent_id"]
             with Session() as session:
