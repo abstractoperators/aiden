@@ -175,6 +175,11 @@ class AgentStartTaskBase(Base):
     celery_task_id: UUID
 
 
+class RuntimeCreateTaskBase(Base):
+    runtime_id: UUID
+    celery_task_id: UUID
+
+
 # endregion
 # region Tables
 
@@ -203,4 +208,8 @@ class Runtime(RuntimeBase, MetadataMixin, table=True):
 
 
 class AgentStartTask(AgentStartTaskBase, MetadataMixin, table=True):
+    pass
+
+
+class RuntimeCreateTask(RuntimeCreateTaskBase, MetadataMixin, table=True):
     pass

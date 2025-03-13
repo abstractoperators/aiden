@@ -76,3 +76,8 @@ def start_agent(agent_id, runtime_id) -> None:
     # agent failed to start - mark the task as failed
     # TODO: Improve failed to start.
     raise Exception("Agent failed to start")
+
+
+@app.task
+def create_runtime() -> None:
+    pass

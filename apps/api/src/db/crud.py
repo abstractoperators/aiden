@@ -9,6 +9,7 @@ from .models import (
     Agent,
     AgentBase,
     AgentStartTask,
+    AgentStartTaskBase,
     AgentUpdate,
     Base,
     Runtime,
@@ -231,6 +232,13 @@ def get_task(session: Session, task_id: UUID) -> dict | None:
     result = session.exec(query).mappings().first()
 
     return dict(result) if result else None
+
+
+def create_agent_start_task(
+    session: Session,
+    agent_start_task: AgentStartTaskBase,
+) -> AgentStartTask:
+    return create_generic(session, AgentStartTask(**agent_start_task.model_dump()))
 
 
 def get_agent_start_task(

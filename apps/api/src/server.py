@@ -30,9 +30,11 @@ from src.db.models import (
     Agent,
     AgentBase,
     AgentStartTask,
+    AgentStartTaskBase,
     AgentUpdate,
     Runtime,
     RuntimeBase,
+    RuntimeCreateTask,
     RuntimeUpdate,
     Token,
     TokenBase,
@@ -347,7 +349,7 @@ def create_runtime_local():
 
 
 @app.post("/runtimes")
-def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
+def create_runtime(background_tasks: BackgroundTasks) -> RuntimeCreateTask:
     """
     Attempts to create a new runtime.
     Returns a Runtime object immediately, with flag started=False.
@@ -377,6 +379,8 @@ def create_runtime(background_tasks: BackgroundTasks) -> Runtime:
 
     host = f"{aws_config.subdomain}.{aws_config.host}"
     url = f"https://{host}"
+
+    res = tasks.create_runtime.delay()  # noqa
     with Session() as session:
         runtime = crud.create_runtime(
             session,
@@ -537,7 +541,7 @@ def get_start_agent_task_status(
         )
         if not agent_start_task:
             return None
-        task_id = agent_start_task.task_id
+        task_id = agent_start_task.celery_task_id
 
         task_status = get_task_status(task_id)
         return task_status
@@ -579,13 +583,13 @@ def start_agent(
         logger.info(f"Runtime {runtime_id} is online")
         runtime.started = True
 
-    res = tasks.start_agent.delay(agent_id, runtime_id)
-    task_record = AgentStartTask(
-        agent_id=agent_id,
-        runtime_id=runtime_id,
-        celery_task_id=res.id,
-    )
-    return task_record
+        res = tasks.start_agent.delay(agent_id, runtime_id)
+        task_record = AgentStartTaskBase(
+            agent_id=agent_id,
+            runtime_id=runtime_id,
+            celery_task_id=res.id,
+        )
+        return crud.create_agent_start_task(session, task_record)
 
 
 @app.post("/wallets")
