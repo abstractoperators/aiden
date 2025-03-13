@@ -1,3 +1,4 @@
+import os
 from time import sleep
 
 import requests
@@ -9,11 +10,14 @@ from src.db.models import AgentUpdate
 # from src.celeryconfig import CELERY_CONFIG
 from src.db.setup import SQLALCHEMY_DATABASE_URL, Session
 
-print(SQLALCHEMY_DATABASE_URL)
+db_password = os.getenv("POSTGRES_DB_PASSWORD")
+if not db_password:
+    raise ValueError("POSTGRES_DB_PASSWORD is not set")
+BACKEND_DB_URL = str(SQLALCHEMY_DATABASE_URL).replace("***", db_password)
 app = Celery(
     "tasks",
     broker="redis://localhost",
-    backend=f"db+{SQLALCHEMY_DATABASE_URL}",
+    backend=f"db+{BACKEND_DB_URL}",
 )
 app.config_from_object("src.celeryconfig")
 
@@ -26,7 +30,6 @@ def add(x, y):
 @app.task
 # def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
 def start_agent(agent_id, runtime_id) -> None:
-    return None
     with Session() as session:
         # 1. Stop the old agent (if it exists)
         runtime = crud.get_runtime(session, runtime_id)
@@ -45,14 +48,23 @@ def start_agent(agent_id, runtime_id) -> None:
 
         # 2. Start the new agent
         start_endpoint = f"{runtime.url}/controller/character/start"
-        resp = requests.post(start_endpoint)
+        character_json: dict = agent.character_json
+        env_file: str = agent.env_file
+        resp = requests.post(
+            start_endpoint,
+            json={
+                "character_json": character_json,
+                "envs": env_file,
+            },
+        )
         resp.raise_for_status()
 
     # Poll the runtime until the agent is running
     for i in range(60):
         resp = requests.get(f"{runtime.url}/controller/character/status")
-        if resp.status_code == 200 and resp.json()["status"] == "running":
-            eliza_agent_id = resp.json()["eliza_agent_id"]
+        print(f"{i}/{60}: Polling for agent to start")
+        if resp.status_code == 200 and resp.json()["running"]:
+            eliza_agent_id = resp.json()["agent_id"]
             with Session() as session:
                 crud.update_agent(
                     session,
@@ -63,6 +75,5 @@ def start_agent(agent_id, runtime_id) -> None:
         sleep(10)
 
     # agent failed to start - mark the task as failed
-    # TODO: Improve
+    # TODO: Improve failed to start.
     raise Exception("Agent failed to start")
-    return None

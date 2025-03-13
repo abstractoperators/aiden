@@ -508,32 +508,31 @@ def get_runtime(runtime_id: UUID) -> Runtime:
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
-    agent_id,
-    runtime_id,
-    # agent_id: UUID,
-    # runtime_id: UUID,
+    agent_id: UUID,
+    runtime_id: UUID,
 ) -> AgentStartTask:
     """
     Kicks off a task to start an agent on a runtime.
     Returns a task record that you can retrieve from.
     Returns a 404 if the agent or runtime is not found.
     """
-    # with Session() as session:
-    #     agent: Agent | None = crud.get_agent(session, agent_id)
-    #     if not agent:
-    #         raise HTTPException(status_code=404, detail="Agent not found")
+    # Check to make sure that no task is currently running on the same parameters, and that it is still pending.
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
 
-    #     runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-    #     if not runtime:
-    #         raise HTTPException(status_code=404, detail="Runtime not found")
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Runtime not found")
 
-    #     logger.info(f"Checking if runtime {runtime_id} is online")
-    #     ping_endpoint = f"{runtime.url}/ping"
-    #     resp = requests.get(ping_endpoint, timeout=3)
-    #     resp.raise_for_status()
+        logger.info(f"Checking if runtime {runtime_id} is online")
+        ping_endpoint = f"{runtime.url}/ping"
+        resp = requests.get(ping_endpoint, timeout=3)
+        resp.raise_for_status()
 
-    #     logger.info(f"Runtime {runtime_id} is online")
-    #     runtime.started = True
+        logger.info(f"Runtime {runtime_id} is online")
+        runtime.started = True
 
     res = tasks.start_agent.delay(agent_id, runtime_id)
     task_record = AgentStartTask(
