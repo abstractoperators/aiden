@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from urllib3.exceptions import HTTPError
 
 # from pydantic import TypeAdapter
 from src import logger, tasks
@@ -575,13 +576,17 @@ def start_agent(
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
-        logger.info(f"Checking if runtime {runtime_id} is online")
         ping_endpoint = f"{runtime.url}/ping"
         resp = requests.get(ping_endpoint, timeout=3)
-        resp.raise_for_status()
-
-        logger.info(f"Runtime {runtime_id} is online")
-        runtime.started = True
+        try:
+            resp.raise_for_status()
+            runtime_update = RuntimeUpdate(started=True)
+            crud.update_runtime(session, runtime, runtime_update)
+        except HTTPError as e:
+            logger.error(f"Runtime {runtime_id} is not online. {e}")
+            runtime_update = RuntimeUpdate(started=False)
+            crud.update_runtime(session, runtime, runtime_update)
+            runtime.started = False
 
         res = tasks.start_agent.delay(agent_id, runtime_id)
         task_record = AgentStartTaskBase(

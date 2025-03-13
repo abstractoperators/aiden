@@ -248,6 +248,7 @@ def get_agent_start_task(
         select(AgentStartTask)
         .where(AgentStartTask.agent_id == agent_id)
         .where(AgentStartTask.runtime_id == runtime_id)
+        .order_by(AgentStartTask.created_at.desc())
     )
     return session.exec(stmt).first()
 
