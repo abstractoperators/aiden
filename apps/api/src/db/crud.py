@@ -17,6 +17,9 @@ from .models import (
     User,
     UserBase,
     UserUpdate,
+    Wallet,
+    WalletBase,
+    WalletUpdate,
 )
 
 M = TypeVar("M", bound=Base)
@@ -68,9 +71,25 @@ def get_user(session: Session, user_id: UUID) -> User | None:
     return session.exec(stmt).first()
 
 
-def get_user_by_public_key(session: Session, public_key: str) -> User | None:
-    stmt = select(User).where(User.public_key == public_key)
+def get_user_by_dynamic_id(session: Session, dynamic_id: UUID) -> User | None:
+    stmt = select(User).where(User.dynamic_id == dynamic_id)
     return session.exec(stmt).first()
+
+
+def get_user_by_public_key(
+    session: Session,
+    public_key: str,
+    chain: str = "EVM",
+) -> User | None:
+    stmt = (
+        select(Wallet)
+        .where(Wallet.chain == chain)
+        .where(Wallet.public_key == public_key)
+    )
+    wallet = session.exec(stmt).first()
+    if wallet:
+        return get_user(session, wallet.owner_id)
+    return None
 
 
 def get_users(session: Session, skip: int = 0, limit: int = 100) -> Sequence[User]:
@@ -96,6 +115,45 @@ def get_agents(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Ag
 def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     stmt = select(Agent).where(Agent.id == agent_id)
     return session.exec(stmt).first()
+
+
+def create_wallet(session: Session, wallet: WalletBase) -> Wallet:
+    return create_generic(session, Wallet(**wallet.model_dump()))
+
+
+def update_wallet(
+    session: Session,
+    wallet: Wallet,
+    wallet_update: WalletUpdate,
+) -> Wallet:
+    return update_generic(session, wallet, wallet_update)
+
+
+def get_wallet(session: Session, wallet_id: UUID) -> Wallet | None:
+    stmt = select(Wallet).where(Wallet.id == wallet_id)
+    return session.exec(stmt).first()
+
+
+def get_wallets_by_owner(session: Session, owner_id: UUID) -> Sequence[Wallet]:
+    stmt = select(Wallet).where(Wallet.owner_id == owner_id)
+    return session.exec(stmt).all()
+
+
+def get_wallet_by_public_key(
+    session: Session,
+    public_key: str,
+    chain: str = "EVM",
+) -> Wallet | None:
+    stmt = (
+        select(Wallet)
+        .where(Wallet.chain == chain)
+        .where(Wallet.public_key == public_key)
+    )
+    return session.exec(stmt).first()
+
+
+def delete_wallet(session: Session, wallet: Wallet) -> None:
+    return delete_generic(session, wallet)
 
 
 # endregion Agents

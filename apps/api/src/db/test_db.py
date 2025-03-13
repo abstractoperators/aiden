@@ -1,4 +1,5 @@
 # from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import inspect
@@ -103,9 +104,9 @@ def test_create_token(token_factory):
 
 
 def test_create_user(user_factory):
+    uuid = uuid4()
     user = user_factory(
-        public_key="0x123",
-        public_key_sei="0x456",
+        dynamic_id=uuid,
         email="larrypage@gmail.com",
         phone_number="1234567890",
         username="larrypage",
@@ -113,8 +114,7 @@ def test_create_user(user_factory):
 
     assert user is not None
     assert user.id is not None
-    assert user.public_key == "0x123"
-    assert user.public_key_sei == "0x456"
+    assert user.dynamic_id == uuid
     assert user.email == "larrypage@gmail.com"
     assert user.phone_number == "1234567890"
     assert user.username == "larrypage"
@@ -125,8 +125,7 @@ def test_create_agent(user_factory, token_factory, agent_factory) -> None:
     character_json: dict = {}
     env_file = ""
     owner: User = user_factory(
-        public_key="0x123",
-        public_key_sei="0x456",
+        dynamic_id=uuid4(),
     )
     token: Token = token_factory(
         ticker="AIDEN",

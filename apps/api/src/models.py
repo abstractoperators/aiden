@@ -1,9 +1,19 @@
+from io import StringIO
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from dotenv import dotenv_values
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, TypeAdapter
 
-from .db.models import AgentBase, RuntimeBase, TokenBase
+from .db.models import (
+    Agent,
+    AgentBase,
+    RuntimeBase,
+    TokenBase,
+    User,
+    UserBase,
+    WalletBase,
+)
 
 
 # TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
@@ -76,6 +86,11 @@ class AgentPublic(AgentBase):
     env_file: list[Env] = []  # type: ignore
 
 
+class UserPublic(UserBase):
+    id: UUID
+    wallets: list[WalletBase] = []
+
+
 class AWSConfig(BaseModel):
     vpc_id: str
     target_group_name: str
@@ -88,3 +103,26 @@ class AWSConfig(BaseModel):
     task_definition_arn: str
     subnets: list[str]
     security_groups: list[str]
+
+
+def user_to_user_public(user: User) -> UserPublic:
+    return TypeAdapter(UserPublic).validate_python(user)
+
+
+def agent_to_agent_public(agent: Agent) -> AgentPublic:
+    """
+    Converts an Agent to an AgentPublic.
+    """
+    old_env_file: str = agent.env_file
+    env_dict: dict = dotenv_values(stream=StringIO(old_env_file))
+    list_of_envs: list[Env] = [
+        Env(key=key, value=value) for key, value in env_dict.items()
+    ]
+
+    agent_dump = agent.model_dump()
+    agent_dump["env_file"] = list_of_envs
+    agent_public = AgentPublic(**agent_dump)
+    agent_public.runtime = agent.runtime
+    agent_public.token = agent.token
+
+    return agent_public
