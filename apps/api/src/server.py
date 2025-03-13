@@ -377,7 +377,6 @@ def create_runtime(background_tasks: BackgroundTasks) -> RuntimeCreateTask:
 
     host = f"{aws_config.subdomain}.{aws_config.host}"
     url = f"https://{host}"
-    res = tasks.create_runtime.delay(aws_config, runtime_no=next_runtime_number)
     with Session() as session:
         runtime = crud.create_runtime(
             session,
@@ -385,6 +384,11 @@ def create_runtime(background_tasks: BackgroundTasks) -> RuntimeCreateTask:
                 url=url,
                 started=False,
             ),
+        )
+        res = tasks.create_runtime.delay(
+            aws_config_dict=aws_config.model_dump(),
+            runtime_no=next_runtime_number,
+            runtime_id=runtime.id,
         )
 
         runtime_create_task: RuntimeCreateTask = crud.create_runtime_create_task(
@@ -692,7 +696,7 @@ async def delete_user(user_id: UUID) -> None:
 
 @app.patch("/runtimes/{runtime_id}")
 def update_runtime(
-    runtime_id: UUID, background_tasks: BackgroundTasks
+    runtime_id: UUID,
 ) -> RuntimeUpdateTask:
     """
     Updates runtime to latest task definition.
@@ -741,7 +745,7 @@ def update_runtime(
 
         res = tasks.update_runtime.delay(
             runtime_id=runtime_id,
-            aws_config=aws_config,
+            aws_config_dict=aws_config.model_dump(),
             service_arn=service_arn,
             task_definition_arn=runtime_task_definition_arn,
             latest_revision=latest_revision,

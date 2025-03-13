@@ -90,12 +90,15 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
 
 
 @app.task
-def create_runtime(aws_config: AWSConfig, runtime_no: int, runtime_id) -> None:
+def create_runtime(
+    aws_config_dict: AWSConfig, runtime_no: int, runtime_id: UUID
+) -> None:
     """
     Creates a service w/ a basic rollback strategy
     Creates a target group + listener rule + service, deleting them if health check at the end fails.
     """
     try:
+        aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
         sts_client: Boto3Session = get_role_session()
         ecs_client: ECSClient = sts_client.client("ecs")
         elbv2_client: ELBv2Client = sts_client.client("elbv2")
@@ -133,12 +136,13 @@ def create_runtime(aws_config: AWSConfig, runtime_no: int, runtime_id) -> None:
         )
 
         # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
-        with Session() as sessions:
-            runtime = crud.get_runtime(sessions, runtime_id)
+        with Session() as session:
+            runtime = crud.get_runtime(session, runtime_id)
             logger.info(
                 f"Polling runtime {runtime.id} at {runtime.url} for health check"
             )
             for i in range(40):
+                logger.info(f"{i}/40: Polling runtime for health check")
                 sleep(15)
                 try:
                     url = f"{runtime.url}/ping"
@@ -149,17 +153,14 @@ def create_runtime(aws_config: AWSConfig, runtime_no: int, runtime_id) -> None:
                     resp.raise_for_status()
 
                     logger.info(f"Runtime {runtime.id} has started")
-                    with Session() as session:
-                        crud.update_runtime(
-                            session, runtime, RuntimeUpdate(started=True)
-                        )
-                        return
+                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+                    return
                 except Exception as e:
                     logger.info(f"Attempt {i}/{40}. Runtime not online yet. {e}")
                     continue
 
             raise Exception("Runtime did not come online in time. Rolling back.")
-    except Exception as e:
+    except (Exception, KeyboardInterrupt) as e:
         logger.error(e)
         if http_rule_arn:
             logger.info(f"Deleting HTTP rule {http_rule_arn}")
@@ -177,8 +178,9 @@ def create_runtime(aws_config: AWSConfig, runtime_no: int, runtime_id) -> None:
                 service=aws_config.service_name,
                 force=True,
             )
-        logger.info(f"Deleting runtime {runtime.id}")
+        logger.info(f"Deleting runtime {runtime_id}")
         with Session() as session:
+            runtime = crud.get_runtime(session, runtime_id)
             crud.delete_runtime(session, runtime)
 
     return None
@@ -187,11 +189,12 @@ def create_runtime(aws_config: AWSConfig, runtime_no: int, runtime_id) -> None:
 @app.task()
 def update_runtime(
     runtime_id: UUID,
-    aws_config: AWSConfig,
+    aws_config_dict: dict,
     service_arn: str,
     task_definition_arn: str,
     latest_revision: int,
 ) -> None:
+    aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
     with Session() as session:
         # Update agent running on the runtime to not have a runtime anymore.
         runtime = crud.get_runtime(session, runtime_id)
@@ -235,18 +238,15 @@ def update_runtime(
             try:
                 resp = requests.get(f"{runtime_url}/ping", timeout=3)
                 resp.raise_for_status()
-                logger.info(f"Runtime for {runtime_id} is online")
-                with Session() as session:
-                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+                logger.info(f"Runtime {runtime_id} is online")
+                crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
                 break
             except Exception as e:
-                logger.info(
-                    f"{i}/{40}: Runtime for {runtime_id} is not online yet. {e}"
-                )
+                logger.info(f"{i}/{40}: Runtime {runtime_id} is not online yet. {e}")
                 sleep(15)
 
-        # Restart the agent (if any)
-        logger.info("Restarting agent (if any)")
-        if agent is not None:
-            logger.info(f"Restarting agent {agent_id}")
-            start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+    # Restart the agent (if any)
+    logger.info("Restarting agent (if any)")
+    if agent is not None:
+        logger.info(f"Restarting agent {agent_id}")
+        start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
