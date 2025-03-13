@@ -549,6 +549,13 @@ def start_agent(
     Returns a 404 if the agent or runtime is not found.
     """
     # TODO: Check to make sure that no task is currently running on the same parameters, and that it is still pending.
+    task_status: TaskStatus = get_start_agent_task_status(agent_id, runtime_id)
+    if task_status == "PENDING" or task_status == "STARTED":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Task is already {task_status}. Please wait for it to finish.",
+        )
+
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
