@@ -511,6 +511,7 @@ def get_runtime(runtime_id: UUID) -> Runtime:
 def get_task_status(task_id: UUID) -> TaskStatus:
     """
     Returns the status of a task by id.
+    Raises a 404 if the task is not found.
     """
     with Session() as session:
         task = crud.get_task(session, task_id)
@@ -525,6 +526,11 @@ def get_start_agent_task_status(
     agent_id: UUID,
     runtime_id: UUID,
 ) -> TaskStatus | None:
+    """
+    Returns the status of a task to start an agent on a runtime.
+    If not found, then it returns None instead of an HTTP 404.
+    Otherwise, it returns the status of the task.
+    """
     with Session() as session:
         agent_start_task: AgentStartTask = crud.get_agent_start_task(
             session, agent_id, runtime_id
@@ -547,7 +553,7 @@ def start_agent(
     Returns a task record that you can retrieve from.
     Returns a 404 if the agent or runtime is not found.
     """
-    # TODO: Check to make sure that no task is currently running on the same parameters, and that it is still pending.
+    # Make sure that no task for starting an agent is already running.
     task_status: TaskStatus | None = get_start_agent_task_status(agent_id, runtime_id)
 
     if task_status and (task_status == "PENDING" or task_status == "STARTED"):
