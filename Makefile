@@ -88,6 +88,9 @@ run-celery: down-celery build-celery
 	docker compose -f docker-compose.yml up -d celery
 run-celery-nodocker:
 	cd apps/api && uv run celery -A src.celery_app worker --loglevel=info
+aws-ecr-push-celery: aws-ecr-login
+	docker tag celery:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
 
 pytest:
 	(cd apps/api && uv run pytest src --capture=no --log-cli-level=INFO)

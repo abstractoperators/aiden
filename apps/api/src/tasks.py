@@ -34,9 +34,7 @@ app = Celery(
 app.config_from_object("src.celeryconfig")
 
 
-@app.task
-def add(x, y):
-    return x + y
+# TODO: Only include tasks in celery worker, and not in fastapi server.
 
 
 @app.task
