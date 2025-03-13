@@ -3,7 +3,7 @@ from typing import TypeVar
 from uuid import UUID
 
 from sqlalchemy.sql import text
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from .models import (
     Agent,
@@ -228,12 +228,11 @@ def get_token_by_address(session: Session, token_address: str) -> Token | None:
 
 # region Tasks
 def get_task(session: Session, task_id: UUID) -> dict | None:
-    query = text(
-        """
+    query = text("""
         SELECT task_id, status FROM celery_taskmeta WHERE task_id = :task_id
-        """
-    ).bindparams(task_id=str(task_id))
-    result = session.exec(query).mappings().first()
+        """).bindparams(task_id=str(task_id))
+    with session.connection() as conn:
+        result = conn.execute(query).mappings().first()
 
     return dict(result) if result else None
 
@@ -261,7 +260,11 @@ def get_agent_start_task(
         stmt = stmt.where(AgentStartTask.agent_id == agent_id)
     if runtime_id is not None:
         stmt = stmt.where(AgentStartTask.runtime_id == runtime_id)
-    stmt = stmt.order_by(AgentStartTask.created_at.desc())
+
+    # col() required to fix type error
+    # https://github.com/fastapi/sqlmodel/issues/279#issuecomment-1083188422
+    if AgentStartTask.created_at:
+        stmt = stmt.order_by(col(AgentStartTask.created_at).desc())
 
     return session.exec(stmt).first()
 
@@ -290,11 +293,9 @@ def get_runtime_update_task(
     """
     Returns the latest update task for a given runtime_id
     """
-    stmt = (
-        select(RuntimeUpdateTask)
-        .where(RuntimeUpdateTask.runtime_id == runtime_id)
-        .order_by(RuntimeUpdateTask.created_at.desc())
-    )
+    stmt = select(RuntimeUpdateTask).where(RuntimeUpdateTask.runtime_id == runtime_id)
+    if RuntimeUpdateTask.created_at:
+        stmt = stmt.order_by(col(RuntimeUpdateTask.created_at).desc())
     return session.exec(stmt).first()
 
 

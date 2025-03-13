@@ -42,18 +42,22 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
     with Session() as session:
         # 1. Stop the old agent (if it exists)
         runtime = crud.get_runtime(session, runtime_id)
+        if runtime is None:
+            raise ValueError(f"Runtime {runtime_id} does not exist")
         agent = crud.get_agent(session, agent_id)
+        if agent is None:
+            raise ValueError(f"Agent {agent_id} does not exist")
 
-        old_agent = runtime.agent
-        stop_endpoint = f"{runtime.url}/controller/character/stop"
-        resp = requests.post(stop_endpoint)
-        resp.raise_for_status()
-        if old_agent:
-            crud.update_agent(
-                session,
-                old_agent,
-                AgentUpdate(runtime_id=None),
-            )
+        if (old_agent := runtime.agent) is not None:
+            stop_endpoint = f"{runtime.url}/controller/character/stop"
+            resp = requests.post(stop_endpoint)
+            resp.raise_for_status()
+            if old_agent:
+                crud.update_agent(
+                    session,
+                    old_agent,
+                    AgentUpdate(runtime_id=None),
+                )
 
         # 2. Start the new agent
         start_endpoint = f"{runtime.url}/controller/character/start"
@@ -137,6 +141,8 @@ def create_runtime(
         # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
         with Session() as session:
             runtime = crud.get_runtime(session, runtime_id)
+            if runtime is None:
+                raise ValueError(f"Runtime {runtime_id} does not exist")
             logger.info(
                 f"Polling runtime {runtime.id} at {runtime.url} for health check"
             )
@@ -180,7 +186,8 @@ def create_runtime(
         logger.info(f"Deleting runtime {runtime_id}")
         with Session() as session:
             runtime = crud.get_runtime(session, runtime_id)
-            crud.delete_runtime(session, runtime)
+            if runtime is not None:
+                crud.delete_runtime(session, runtime)
 
     return None
 
@@ -197,6 +204,8 @@ def update_runtime(
     with Session() as session:
         # Update agent running on the runtime to not have a runtime anymore.
         runtime = crud.get_runtime(session, runtime_id)
+        if runtime is None:
+            raise ValueError(f"Runtime {runtime_id} does not exist")
         agent = runtime.agent
         if agent is not None:
             agent_id = agent.id

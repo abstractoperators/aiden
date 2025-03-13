@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
@@ -133,12 +133,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.get("/add")
-async def add_celery():
-    result = tasks.add.delay(4, 4)
-    result.get()
 
 
 @app.get("/ping")
@@ -350,7 +344,7 @@ def create_runtime_local():
 
 
 @app.post("/runtimes")
-def create_runtime(background_tasks: BackgroundTasks) -> RuntimeCreateTask:
+def create_runtime() -> RuntimeCreateTask:
     """
     Attempts to create a new runtime.
     Returns a Runtime object immediately, with flag started=False.
@@ -468,7 +462,7 @@ def get_start_agent_task_status(
                 agent_id=agent_id,
             )
         elif runtime_id:
-            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
+            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(  # type: ignore[no-redef]
                 session,
                 runtime_id=runtime_id,
             )
@@ -478,8 +472,7 @@ def get_start_agent_task_status(
 
         task_id = agent_start_task.celery_task_id
 
-        agent_start_task = get_task_status(task_id)
-        return agent_start_task
+        return get_task_status(task_id)
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
@@ -716,15 +709,16 @@ def update_runtime(
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
-        runtime_update_task: RuntimeUpdateTask | None = crud.get_runtime_update_task(
-            session, runtime_id
+        existing_runtime_update_task: RuntimeUpdateTask | None = (
+            crud.get_runtime_update_task(session, runtime_id)
         )
-        task_status = get_task_status(runtime_update_task.celery_task_id)
-        if task_status == "PENDING" or task_status == "STARTED":
-            raise HTTPException(
-                status_code=400,
-                detail=f"There is already a {task_status} runtime update task for runtime {runtime_id}",
-            )
+        if existing_runtime_update_task:
+            task_status = get_task_status(existing_runtime_update_task.celery_task_id)
+            if task_status == "PENDING" or task_status == "STARTED":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"There is already a {task_status} runtime update task for runtime {runtime_id}",
+                )
 
         runtime_url = runtime.url
         runtime_service_num_match = re.search(r"aiden-runtime-(\d+)", runtime_url)
@@ -763,7 +757,7 @@ def update_runtime(
             task_definition_arn=runtime_task_definition_arn,
             latest_revision=latest_revision,
         )
-        runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(
+        runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(  #
             session,
             RuntimeUpdateTaskBase(
                 runtime_id=runtime_id,
