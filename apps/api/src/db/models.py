@@ -180,6 +180,11 @@ class RuntimeCreateTaskBase(Base):
     celery_task_id: UUID
 
 
+class RuntimeUpdateTaskBase(Base):
+    runtime_id: UUID
+    celery_task_id: UUID
+
+
 # endregion
 # region Tables
 
@@ -207,9 +212,14 @@ class Runtime(RuntimeBase, MetadataMixin, table=True):
     agent: Optional["Agent"] = Relationship(back_populates="runtime")
 
 
+# TODO: Add relationships.
 class AgentStartTask(AgentStartTaskBase, MetadataMixin, table=True):
     pass
 
 
 class RuntimeCreateTask(RuntimeCreateTaskBase, MetadataMixin, table=True):
+    pass
+
+
+class RuntimeUpdateTask(RuntimeUpdateTaskBase, MetadataMixin, table=True):
     pass

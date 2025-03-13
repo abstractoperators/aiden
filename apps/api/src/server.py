@@ -1,4 +1,3 @@
-import asyncio
 import os
 import re
 from base64 import b64decode
@@ -7,21 +6,15 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from boto3 import Session as Boto3Session
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from mypy_boto3_ecs.client import ECSClient
-from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from urllib3.exceptions import HTTPError
 
 # from pydantic import TypeAdapter
 from src import logger, tasks
 from src.aws_utils import (
-    create_http_target_group,
-    create_listener_rules,
-    create_runtime_service,
     get_aws_config,
     get_latest_task_definition_revision,
     get_role_session,
@@ -36,7 +29,10 @@ from src.db.models import (
     Runtime,
     RuntimeBase,
     RuntimeCreateTask,
+    RuntimeCreateTaskBase,
     RuntimeUpdate,
+    RuntimeUpdateTask,
+    RuntimeUpdateTaskBase,
     Token,
     TokenBase,
     User,
@@ -356,6 +352,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> RuntimeCreateTask:
     Returns a Runtime object immediately, with flag started=False.
     The runtime will be polled for 10 min to verify that it is online.
     If it is not, then the runtime will be deleted.
+    Note: This doesn't need to block anything.
     """
     # Perhaps, the least performant code ever written
     # This is why *real* companies use leetcode
@@ -380,8 +377,7 @@ def create_runtime(background_tasks: BackgroundTasks) -> RuntimeCreateTask:
 
     host = f"{aws_config.subdomain}.{aws_config.host}"
     url = f"https://{host}"
-
-    res = tasks.create_runtime.delay()  # noqa
+    res = tasks.create_runtime.delay(aws_config, runtime_no=next_runtime_number)
     with Session() as session:
         runtime = crud.create_runtime(
             session,
@@ -391,97 +387,15 @@ def create_runtime(background_tasks: BackgroundTasks) -> RuntimeCreateTask:
             ),
         )
 
-    async def create_service_atomic() -> None:
-        """
-        Creates a service w/ a basic rollback strategy
-        Creates a target group + listener rule + service, deleting them if health check at the end fails.
-        """
-        sts_client: Boto3Session = get_role_session()
-        ecs_client: ECSClient = sts_client.client("ecs")
-        elbv2_client: ELBv2Client = sts_client.client("elbv2")
+        runtime_create_task: RuntimeCreateTask = crud.create_runtime_create_task(
+            session,
+            RuntimeCreateTaskBase(
+                runtime_id=runtime.id,
+                celery_task_id=res.id,
+            ),
+        )
 
-        try:
-            target_group_arn = http_rule_arn = https_rule_arn = service_arn = None
-            logger.info(f'Creating target group "{aws_config.target_group_name}"')
-            target_group_arn = create_http_target_group(
-                elbv2_client=elbv2_client,
-                target_group_name=aws_config.target_group_name,
-                vpc_id=aws_config.vpc_id,
-            )
-
-            logger.info(f"Creating listener rules for {host}")
-            http_rule_arn, https_rule_arn = create_listener_rules(
-                elbv2_client=elbv2_client,
-                http_listener_arn=aws_config.http_listener_arn,
-                https_listener_arn=aws_config.https_listener_arn,
-                host_header_pattern=host,
-                target_group_arn=target_group_arn,
-                priority=100 + 10 * next_runtime_number,
-            )
-
-            logger.info(f"Creating service {aws_config.service_name}")
-            service_arn = create_runtime_service(
-                ecs_client=ecs_client,
-                cluster=aws_config.cluster,
-                service_name=aws_config.service_name,
-                task_definition_arn=aws_config.task_definition_arn,
-                security_groups=aws_config.security_groups,
-                subnets=aws_config.subnets,
-                target_group_arn=target_group_arn,
-            )
-
-            # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
-            logger.info(
-                f"Polling runtime {runtime.id} at {runtime.url} for health check"
-            )
-            for i in range(40):
-                await asyncio.sleep(15)
-                try:
-                    url = f"{runtime.url}/ping"
-                    resp = requests.get(
-                        url=url,
-                        timeout=3,
-                    )
-                    resp.raise_for_status()
-
-                    logger.info(f"Runtime {runtime.id} has started")
-                    with Session() as session:
-                        crud.update_runtime(
-                            session, runtime, RuntimeUpdate(started=True)
-                        )
-                        return
-                except Exception as e:
-                    logger.info(f"Attempt {i}/{40}. Runtime not online yet. {e}")
-                    continue
-
-            raise Exception("Runtime did not come online in time. Rolling back.")
-        except Exception as e:
-            logger.error(e)
-            if http_rule_arn:
-                logger.info(f"Deleting HTTP rule {http_rule_arn}")
-                elbv2_client.delete_rule(RuleArn=http_rule_arn)
-            if https_rule_arn:
-                logger.info(f"Deleting HTTPS rule {https_rule_arn}")
-                elbv2_client.delete_rule(RuleArn=https_rule_arn)
-            if target_group_arn:
-                logger.info(f"Deleting target group {target_group_arn}")
-                elbv2_client.delete_target_group(TargetGroupArn=target_group_arn)
-            if service_arn:
-                logger.info(f"Deleting service {service_arn}")
-                ecs_client.delete_service(
-                    cluster=aws_config.cluster,
-                    service=aws_config.service_name,
-                    force=True,
-                )
-            logger.info(f"Deleting runtime {runtime.id}")
-            with Session() as session:
-                crud.delete_runtime(session, runtime)
-
-        return None
-
-    background_tasks.add_task(create_service_atomic)
-
-    return runtime
+        return runtime_create_task
 
 
 @app.get("/runtimes")
@@ -777,7 +691,9 @@ async def delete_user(user_id: UUID) -> None:
 
 
 @app.patch("/runtimes/{runtime_id}")
-def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> Runtime:
+def update_runtime(
+    runtime_id: UUID, background_tasks: BackgroundTasks
+) -> RuntimeUpdateTask:
     """
     Updates runtime to latest task definition.
     Restarts the agent running on it (if any).
@@ -787,6 +703,7 @@ def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> Runti
     """
     # Get the session, and use it's URL to find the service
     # TODO: Just track the service ARN in the DB so we don't have to do this shenanigans.
+
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
@@ -802,13 +719,13 @@ def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> Runti
                 detail="Failed to parse runtime number from runtime URL",
             )
         runtime_service_num = int(runtime_service_num)
-        ecs_client = get_role_session().client("ecs")
         aws_config = get_aws_config(runtime_service_num)
         if not aws_config:
             raise HTTPException(
                 status_code=500,
                 detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
             )
+        ecs_client = get_role_session().client("ecs")
         runtime_task_definition_arn: str = aws_config.task_definition_arn
         latest_revision: int = get_latest_task_definition_revision(
             ecs_client, runtime_task_definition_arn
@@ -822,73 +739,19 @@ def update_runtime(runtime_id: UUID, background_tasks: BackgroundTasks) -> Runti
             f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
         )
 
-        # Force redeployment w/ latest definition
-        # 1. Update Agent in DB to not have a runtime
-        agent = runtime.agent
-        if agent is not None:
-            agent_id = agent.id
-            crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
-        crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
-
-    # 2. Force redeployment
-    service = ecs_client.update_service(
-        cluster=aws_config.cluster,
-        service=aws_config.service_name,
-        taskDefinition=f"{runtime_task_definition_arn}:{latest_revision}",
-        forceNewDeployment=True,
-    )["service"]
-
-    # 3. Make sure that the service is stable, then restart the running agent.
-    async def helper():
-        """
-        Helper polls service until deployment is stable.
-        Then it polls the actual service until it is online.
-        Finally, it restarts the agent that was running on this runtime (if any)
-        """
-        # Poll until service is stable
-        for i in range(40):
-            logger.info(
-                f"{i}/40: Polling service {aws_config.service_name} for stability"
-            )
-            service = ecs_client.describe_services(
-                cluster=aws_config.cluster,
-                services=[aws_config.service_name],
-            )["services"][0]
-            active_deployment_id = None
-            for deployment in service["deployments"]:
-                if deployment["status"] == "ACTIVE":
-                    active_deployment_id = deployment["id"]
-                    break
-            if active_deployment_id is None:
-                logger.info(f"{aws_config.service_name} is stable")
-                break
-            await asyncio.sleep(15)
-
-        # Poll until server on the service is up
-        for i in range(40):
-            try:
-                resp = requests.get(f"{runtime_url}/ping", timeout=3)
-                resp.raise_for_status()
-                logger.info(f"Runtime for {runtime_id} is online")
-                with Session() as session:
-                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-                break
-            except Exception as e:
-                logger.info(
-                    f"{i}/{40}: Runtime for {runtime_id} is not online yet. {e}"
-                )
-                await asyncio.sleep(15)
-
-        # Restart the agent (if any)
-        logger.info("Restarting agent (if any)")
-        if agent is not None:
-            logger.info(f"Restarting agent {agent_id}")
-            start_agent(
-                agent_id=agent_id,
+        res = tasks.update_runtime.delay(
+            runtime_id=runtime_id,
+            aws_config=aws_config,
+            service_arn=service_arn,
+            task_definition_arn=runtime_task_definition_arn,
+            latest_revision=latest_revision,
+        )
+        runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(
+            session,
+            RuntimeUpdateTaskBase(
                 runtime_id=runtime_id,
-                background_tasks=background_tasks,
-            )
+                celery_task_id=res.id,
+            ),
+        )
 
-    background_tasks.add_task(helper)
-
-    return runtime
+        return runtime_update_task

@@ -14,7 +14,11 @@ from .models import (
     Base,
     Runtime,
     RuntimeBase,
+    RuntimeCreateTask,
+    RuntimeCreateTaskBase,
     RuntimeUpdate,
+    RuntimeUpdateTask,
+    RuntimeUpdateTaskBase,
     Token,
     TokenBase,
     User,
@@ -260,6 +264,24 @@ def get_agent_start_task(
     stmt = stmt.order_by(AgentStartTask.created_at.desc())
 
     return session.exec(stmt).first()
+
+
+def create_runtime_create_task(
+    session: Session,
+    runtime_create_task: RuntimeCreateTaskBase,
+) -> RuntimeCreateTask:
+    return create_generic(
+        session, RuntimeCreateTask(**runtime_create_task.model_dump())
+    )
+
+
+def create_runtime_update_task(
+    session: Session,
+    runtime_update_task: RuntimeUpdateTaskBase,
+):
+    return create_generic(
+        session, RuntimeUpdateTask(**runtime_update_task.model_dump())
+    )
 
 
 # endregion Tasks
