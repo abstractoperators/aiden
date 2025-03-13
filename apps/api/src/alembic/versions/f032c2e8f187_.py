@@ -1,4 +1,4 @@
-"""empty message
+"""Add AgentStartTask table.
 
 Revision ID: f032c2e8f187
 Revises: 51f6b78dd87a
