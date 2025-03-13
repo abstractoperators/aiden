@@ -46,6 +46,7 @@ from src.db.models import (
 from src.models import (
     AgentPublic,
     AWSConfig,
+    TaskStatus,
     TokenCreationRequest,
     UserPublic,
     agent_to_agent_public,
@@ -506,6 +507,37 @@ def get_runtime(runtime_id: UUID) -> Runtime:
     return runtime
 
 
+@app.get("/tasks/{task_id}")
+def get_task_status(task_id: UUID) -> TaskStatus:
+    """
+    Returns the status of a task by id.
+    """
+    with Session() as session:
+        task = crud.get_task(session, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        return TaskStatus(task["status"])
+
+
+@app.get("/agents/{agent_id}/start/{runtime_id}")
+def get_start_agent_task_status(
+    agent_id: UUID,
+    runtime_id: UUID,
+) -> TaskStatus:
+    with Session() as session:
+        agent_start_task: AgentStartTask = crud.get_agent_start_task(
+            session, agent_id, runtime_id
+        )
+        if not agent_start_task:
+            raise HTTPException(status_code=404, detail="Agent start task not found.")
+
+        task_id = agent_start_task.task_id
+
+        task_status = get_task_status(task_id)
+        return task_status
+
+
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
     agent_id: UUID,
@@ -516,7 +548,7 @@ def start_agent(
     Returns a task record that you can retrieve from.
     Returns a 404 if the agent or runtime is not found.
     """
-    # Check to make sure that no task is currently running on the same parameters, and that it is still pending.
+    # TODO: Check to make sure that no task is currently running on the same parameters, and that it is still pending.
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:

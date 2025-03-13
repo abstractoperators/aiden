@@ -2,11 +2,13 @@ from collections.abc import Sequence
 from typing import TypeVar
 from uuid import UUID
 
+from sqlalchemy.sql import text
 from sqlmodel import Session, select
 
 from .models import (
     Agent,
     AgentBase,
+    AgentStartTask,
     AgentUpdate,
     Base,
     Runtime,
@@ -122,6 +124,10 @@ def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     return session.exec(stmt).first()
 
 
+# endregion Agents
+# region Wallets
+
+
 def create_wallet(session: Session, wallet: WalletBase) -> Wallet:
     return create_generic(session, Wallet(**wallet.model_dump()))
 
@@ -161,7 +167,7 @@ def delete_wallet(session: Session, wallet: Wallet) -> None:
     return delete_generic(session, wallet)
 
 
-# endregion Agents
+# endregion Wallets
 # region Runtimes
 
 
@@ -213,3 +219,29 @@ def get_token_by_address(session: Session, token_address: str) -> Token | None:
 
 
 # endregion Tokens
+
+
+# region Tasks
+def get_task(session: Session, task_id: UUID) -> dict | None:
+    query = text(
+        """
+        SELECT task_id, status FROM celery_taskmeta WHERE task_id = :task_id
+        """
+    ).bindparams(task_id=str(task_id))
+    result = session.exec(query).mappings().first()
+
+    return dict(result) if result else None
+
+
+def get_agent_start_task(
+    session: Session, agent_id: UUID, runtime_id: UUID
+) -> AgentStartTask:
+    stmt = (
+        select(AgentStartTask)
+        .where(AgentStartTask.agent_id == agent_id)
+        .where(AgentStartTask.runtime_id == runtime_id)
+    )
+    return session.exec(stmt).first()
+
+
+# endregion Tasks

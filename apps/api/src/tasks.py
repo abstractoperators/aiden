@@ -28,7 +28,6 @@ def add(x, y):
 
 
 @app.task
-# def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
 def start_agent(agent_id, runtime_id) -> None:
     with Session() as session:
         # 1. Stop the old agent (if it exists)
