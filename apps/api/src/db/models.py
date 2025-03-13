@@ -169,7 +169,7 @@ class RuntimeUpdate(Base):
     )
 
 
-class AgentStartTask(Base):
+class AgentStartTaskBase(Base):
     agent_id: UUID
     runtime_id: UUID
     celery_task_id: UUID
@@ -200,3 +200,7 @@ class Token(TokenBase, MetadataMixin, table=True):
 
 class Runtime(RuntimeBase, MetadataMixin, table=True):
     agent: Optional["Agent"] = Relationship(back_populates="runtime")
+
+
+class AgentStartTask(AgentStartTaskBase, MetadataMixin, table=True):
+    pass
