@@ -256,4 +256,17 @@ def test_agents(client, agent_factory) -> None:
     assert response.status_code == 200
     AgentPublic.model_validate(response.json()[0])
 
+    response = client.get(f"/agents?user_id={agent.owner_id}")
+    assert response.status_code == 200
+    AgentPublic.model_validate(response.json()[0])
+
+    response = client.get(f"/users?user_id={agent.owner_id}")
+    owner = UserPublic.model_validate(response.json())
+    assert owner.id == agent.owner_id
+    response = client.get(f"/agents?dynamic_user_id={owner.dynamic_id}")
+    assert response.status_code == 200
+    response_json = response.json()
+    AgentPublic.model_validate(response_json[0])
+    assert len(response_json) == 1
+
     return None

@@ -168,8 +168,8 @@ async def get_agents(
 ) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
-    If user_id is passed, returns all agents for that user.
-    If user_dynamic_id is passed, returns all agents for that user.
+    If user_id is passed, returns all agents owned by that user.
+    If user_dynamic_id is passed, returns all agents owned by that user.
     If neither is passed, returns all agents.
     Raises a 400 if both user_id and user_dynamic_id are passed.
     """
