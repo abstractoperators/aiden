@@ -2,16 +2,23 @@ from collections.abc import Sequence
 from typing import TypeVar
 from uuid import UUID
 
-from sqlmodel import Session, select
+from sqlalchemy.sql import text
+from sqlmodel import Session, col, select
 
 from .models import (
     Agent,
     AgentBase,
+    AgentStartTask,
+    AgentStartTaskBase,
     AgentUpdate,
     Base,
     Runtime,
     RuntimeBase,
+    RuntimeCreateTask,
+    RuntimeCreateTaskBase,
     RuntimeUpdate,
+    RuntimeUpdateTask,
+    RuntimeUpdateTaskBase,
     Token,
     TokenBase,
     User,
@@ -112,9 +119,18 @@ def get_agents(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Ag
     return session.scalars(stmt).all()
 
 
+def get_agents_by_user_id(session: Session, user_id: UUID) -> Sequence[Agent]:
+    stmt = select(Agent).where(Agent.owner_id == user_id)
+    return session.scalars(stmt).all()
+
+
 def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     stmt = select(Agent).where(Agent.id == agent_id)
     return session.exec(stmt).first()
+
+
+# endregion Agents
+# region Wallets
 
 
 def create_wallet(session: Session, wallet: WalletBase) -> Wallet:
@@ -156,7 +172,7 @@ def delete_wallet(session: Session, wallet: Wallet) -> None:
     return delete_generic(session, wallet)
 
 
-# endregion Agents
+# endregion Wallets
 # region Runtimes
 
 
@@ -208,3 +224,79 @@ def get_token_by_address(session: Session, token_address: str) -> Token | None:
 
 
 # endregion Tokens
+
+
+# region Tasks
+def get_task(session: Session, task_id: UUID) -> dict | None:
+    query = text("""
+        SELECT task_id, status FROM celery_taskmeta WHERE task_id = :task_id
+        """).bindparams(task_id=str(task_id))
+    with session.connection() as conn:
+        result = conn.execute(query).mappings().first()
+
+    return dict(result) if result else None
+
+
+def create_agent_start_task(
+    session: Session,
+    agent_start_task: AgentStartTaskBase,
+) -> AgentStartTask:
+    return create_generic(session, AgentStartTask(**agent_start_task.model_dump()))
+
+
+def get_agent_start_task(
+    session: Session,
+    agent_id: UUID | None = None,
+    runtime_id: UUID | None = None,
+) -> AgentStartTask | None:
+    """
+    Returns the most recent task where agent_id and/or runtime_id match.
+    """
+    if not agent_id and not runtime_id:
+        raise ValueError("Must provide either agent_id or runtime_id")
+
+    stmt = select(AgentStartTask)
+    if agent_id is not None:
+        stmt = stmt.where(AgentStartTask.agent_id == agent_id)
+    if runtime_id is not None:
+        stmt = stmt.where(AgentStartTask.runtime_id == runtime_id)
+
+    # col() required to fix type error
+    # https://github.com/fastapi/sqlmodel/issues/279#issuecomment-1083188422
+    if AgentStartTask.created_at:
+        stmt = stmt.order_by(col(AgentStartTask.created_at).desc())
+
+    return session.exec(stmt).first()
+
+
+def create_runtime_create_task(
+    session: Session,
+    runtime_create_task: RuntimeCreateTaskBase,
+) -> RuntimeCreateTask:
+    return create_generic(
+        session, RuntimeCreateTask(**runtime_create_task.model_dump())
+    )
+
+
+def create_runtime_update_task(
+    session: Session,
+    runtime_update_task: RuntimeUpdateTaskBase,
+):
+    return create_generic(
+        session, RuntimeUpdateTask(**runtime_update_task.model_dump())
+    )
+
+
+def get_runtime_update_task(
+    session: Session, runtime_id: UUID
+) -> RuntimeUpdateTask | None:
+    """
+    Returns the latest update task for a given runtime_id
+    """
+    stmt = select(RuntimeUpdateTask).where(RuntimeUpdateTask.runtime_id == runtime_id)
+    if RuntimeUpdateTask.created_at:
+        stmt = stmt.order_by(col(RuntimeUpdateTask.created_at).desc())
+    return session.exec(stmt).first()
+
+
+# endregion Tasks

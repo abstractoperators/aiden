@@ -56,5 +56,22 @@ services:
       - path: "./apps/prometheus/.env"
         required: false
 
+  celery:
+    build:
+      context: ./apps/api
+      dockerfile: ./Dockerfile.celery
+    container_name: celery
+    platform: linux/amd64
+    image: celery:latest
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      # Relis on service name
+    
+  redis:
+    image: redis:latest
+    container_name: redis
+    platform: linux/amd64
+    ports:
+      - "6379:6379"
 volumes:
   agent-runtime:
