@@ -7,9 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core"
-import { dynamicToApiUser, getOrCreateUser } from "@/lib/api/user";
-import { getEthSeiAddresses } from "@/lib/dynamic";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+import { getUser } from "@/lib/api/user";
 import { createAgent, startAgent } from "@/lib/api/agent";
 import { createRuntime, getRuntime } from "@/lib/api/runtime";
 
@@ -30,13 +29,16 @@ export default function CreationForm() {
       env: "",
     }
   })
-  const { user } = useDynamicContext()
-  const userWallets = useUserWallets()
-  const { ethAddress, seiAddress } = getEthSeiAddresses(userWallets)
   // TODO: set up sei and eth addresses if undefined
 
   async function onSubmit(formData: z.infer<typeof formSchema>) {
     try {
+      const { user } = useDynamicContext()
+      if (!user)
+        throw new Error(`User ${user} does not exist!`)
+      if (!user.userId)
+        throw new Error(`User ${user} has no userId!`)
+
       const character = await formData.character.text()
       const characterJson = JSON.parse(character) // TODO: catch SyntaxError
       console.debug(characterJson)
@@ -44,18 +46,7 @@ export default function CreationForm() {
       const env = formData.env
       console.debug(".env", env)
 
-      if (!ethAddress || !seiAddress) {
-        console.debug("ETH address or SEI undefined:", ethAddress, seiAddress)
-        console.debug("user:", user)
-        console.debug("user wallets:", userWallets)
-        throw new Error("ETH address or SEI undefined!")
-      }
-
-      const apiUser = await getOrCreateUser(dynamicToApiUser(
-        ethAddress,
-        seiAddress,
-        user,
-      ))
+      const apiUser = await getUser({dynamic_id: user.userId})
 
       const agentPayload = {
         owner_id: apiUser.id,
