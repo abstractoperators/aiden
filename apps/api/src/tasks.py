@@ -94,55 +94,70 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
 
 @app.task
 def create_runtime(
-    aws_config_dict: AWSConfig, runtime_no: int, runtime_id: UUID
+    aws_config_dict: AWSConfig,
+    runtime_no: int,
+    runtime_id: UUID,
 ) -> None:
     """
     Creates a service w/ a basic rollback strategy
     Creates a target group + listener rule + service, deleting them if health check at the end fails.
     """
     try:
-        aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
-        sts_client: Boto3Session = get_role_session()
-        ecs_client: ECSClient = sts_client.client("ecs")
-        elbv2_client: ELBv2Client = sts_client.client("elbv2")
-
-        host = f"{aws_config.subdomain}.{aws_config.host}"
-        url = f"https://{host}"
-
-        target_group_arn = http_rule_arn = https_rule_arn = service_arn = None
-        logger.info(f'Creating target group "{aws_config.target_group_name}"')
-        target_group_arn = create_http_target_group(
-            elbv2_client=elbv2_client,
-            target_group_name=aws_config.target_group_name,
-            vpc_id=aws_config.vpc_id,
-        )
-
-        logger.info(f"Creating listener rules for {host}")
-        http_rule_arn, https_rule_arn = create_listener_rules(
-            elbv2_client=elbv2_client,
-            http_listener_arn=aws_config.http_listener_arn,
-            https_listener_arn=aws_config.https_listener_arn,
-            host_header_pattern=host,
-            target_group_arn=target_group_arn,
-            priority=100 + 10 * runtime_no,
-        )
-
-        logger.info(f"Creating service {aws_config.service_name}")
-        service_arn = create_runtime_service(
-            ecs_client=ecs_client,
-            cluster=aws_config.cluster,
-            service_name=aws_config.service_name,
-            task_definition_arn=aws_config.task_definition_arn,
-            security_groups=aws_config.security_groups,
-            subnets=aws_config.subnets,
-            target_group_arn=target_group_arn,
-        )
-
-        # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
         with Session() as session:
+            aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
+            sts_client: Boto3Session = get_role_session()
+            ecs_client: ECSClient = sts_client.client("ecs")
+            elbv2_client: ELBv2Client = sts_client.client("elbv2")
             runtime = crud.get_runtime(session, runtime_id)
             if runtime is None:
                 raise ValueError(f"Runtime {runtime_id} does not exist")
+            host = f"{aws_config.subdomain}.{aws_config.host}"
+            url = f"https://{host}"
+
+            logger.info(f'Creating target group "{aws_config.target_group_name}"')
+            target_group_arn = create_http_target_group(
+                elbv2_client=elbv2_client,
+                target_group_name=aws_config.target_group_name,
+                vpc_id=aws_config.vpc_id,
+            )
+            runtime = crud.update_runtime(
+                session, runtime, RuntimeUpdate(target_group_arn=target_group_arn)
+            )
+
+            logger.info(f"Creating listener rules for {host}")
+            http_rule_arn, https_rule_arn = create_listener_rules(
+                elbv2_client=elbv2_client,
+                http_listener_arn=aws_config.http_listener_arn,
+                https_listener_arn=aws_config.https_listener_arn,
+                host_header_pattern=host,
+                target_group_arn=target_group_arn,
+                priority=100 + 10 * runtime_no,
+            )
+            runtime = crud.update_runtime(
+                session,
+                runtime,
+                RuntimeUpdate(
+                    http_listener_rule_arn=http_rule_arn,
+                    https_listener_rule_arn=https_rule_arn,
+                ),
+            )
+
+            logger.info(f"Creating service {aws_config.service_name}")
+            service_arn = create_runtime_service(
+                ecs_client=ecs_client,
+                cluster=aws_config.cluster,
+                service_name=aws_config.service_name,
+                task_definition_arn=aws_config.task_definition_arn,
+                security_groups=aws_config.security_groups,
+                subnets=aws_config.subnets,
+                target_group_arn=target_group_arn,
+            )
+            runtime = crud.update_runtime(
+                session, runtime, RuntimeUpdate(service_arn=service_arn)
+            )
+
+            # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
+
             logger.info(
                 f"Polling runtime {runtime.id} at {runtime.url} for health check"
             )
@@ -167,16 +182,19 @@ def create_runtime(
             raise Exception("Runtime did not come online in time. Rolling back.")
     except (Exception, KeyboardInterrupt) as e:
         logger.error(e)
-        if http_rule_arn:
+        with Session() as session:
+            runtime = crud.get_runtime(session, runtime_id=runtime_id)
+
+        if http_rule_arn := runtime.http_listener_rule_arn:
             logger.info(f"Deleting HTTP rule {http_rule_arn}")
             elbv2_client.delete_rule(RuleArn=http_rule_arn)
-        if https_rule_arn:
+        if https_rule_arn := runtime.https_listener_rule_arn:
             logger.info(f"Deleting HTTPS rule {https_rule_arn}")
             elbv2_client.delete_rule(RuleArn=https_rule_arn)
-        if target_group_arn:
+        if target_group_arn := runtime.target_group_arn:
             logger.info(f"Deleting target group {target_group_arn}")
             elbv2_client.delete_target_group(TargetGroupArn=target_group_arn)
-        if service_arn:
+        if service_arn := runtime.service_arn:
             logger.info(f"Deleting service {service_arn}")
             ecs_client.delete_service(
                 cluster=aws_config.cluster,
