@@ -85,7 +85,6 @@ async function getEnlightened(query?: {
 
     return Promise.all(
       (await apiAgents)
-      .filter(agent => (!query) ? true: ("user_id" in query) ? agent.owner_id === query.user_id : true)
       .map(async agent => {
         const clientAgent = {
           id: agent.id,
