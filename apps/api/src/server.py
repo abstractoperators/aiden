@@ -1,5 +1,4 @@
 import os
-import re
 from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
@@ -358,13 +357,13 @@ def create_runtime() -> RuntimeCreateTask:
         runtimes = crud.get_runtimes(
             session, limit=1000000
         )  # lul better hope you don't run out of memory
-        runtime_nums = []
+        runtime_nums = set()
         for runtime in runtimes:
-            match = re.search(r"aiden-runtime-(\d+)", runtime.url)
-            if match:
-                runtime_nums.append(int(match.group(1)))
+            runtime_nums.add(runtime.service_no)
 
-    next_runtime_number = max(runtime_nums) + 1 if runtime_nums else 1
+    next_runtime_number = 1
+    while next_runtime_number in runtime_nums:
+        next_runtime_number += 1
 
     aws_config: AWSConfig | None = get_aws_config(next_runtime_number)
     if not aws_config:
