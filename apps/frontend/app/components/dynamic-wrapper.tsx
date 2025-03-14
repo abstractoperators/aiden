@@ -3,7 +3,7 @@
 import { DynamicContextProvider, getAuthToken, useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { CosmosWalletConnectors } from "@dynamic-labs/cosmos";
-import { handleLogout } from "@/lib/authHelpers";
+import { handleLogout } from "@/lib/auth-helpers";
 import { getCsrfToken } from "next-auth/react";
 import { createUser, dynamicToApiUser, getUser, updateUser } from "@/lib/api/user";
 import { createWallet, getWallet, Wallet as ApiWallet, updateWallet, deleteWallet } from "@/lib/api/wallet";
