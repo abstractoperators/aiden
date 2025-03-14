@@ -156,6 +156,18 @@ class RuntimeBase(Base):
         description="If the runtime has started. Proxies for a heartbeat.",
         default=None,
     )
+    service_arn: str | None = Field(
+        description="ARN of the service that runs the runtime.",
+        nullable=True,
+        default=None,
+    )
+    task_definition_arn: str | None = Field()
+    http_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTP listener rule."
+    )
+    https_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTPS listener rule."
+    )
 
 
 class RuntimeUpdate(Base):
