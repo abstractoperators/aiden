@@ -161,6 +161,7 @@ class RuntimeBase(Base):
         nullable=True,
         default=None,
     )
+    target_group_arn: str | None = Field()
     task_definition_arn: str | None = Field()
     http_listener_rule_arn: str | None = Field(
         description="ARN of the HTTP listener rule."
@@ -176,6 +177,31 @@ class RuntimeUpdate(Base):
     )
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
+        nullable=True,
+        default=None,
+    )
+    service_arn: str | None = Field(
+        description="ARN of the service that runs the runtime.",
+        nullable=True,
+        default=None,
+    )
+    target_group_arn: str | None = Field(
+        description="ARN of the target group pointing to the service.",
+        nullable=True,
+        default=None,
+    )
+    task_definition_arn: str | None = Field(
+        description="ARN of the task definition that the runtime uses.",
+        nullable=True,
+        default=None,
+    )
+    http_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTP listener rule.",
+        nullable=True,
+        default=None,
+    )
+    https_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTPS listener rule.",
         nullable=True,
         default=None,
     )
