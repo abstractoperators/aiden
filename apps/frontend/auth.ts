@@ -2,7 +2,7 @@
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { validateJWT } from "./lib/authHelpers";
+import { validateJWT } from "./lib/auth-helpers";
 import { NextResponse } from "next/server";
 
 type User = {
