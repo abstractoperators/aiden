@@ -4,13 +4,13 @@ function fromApiEndpoint(url: string): URL {
   return new URL(url, process.env.API_ENDPOINT)
 }
 
-async function getResource<T>(
+async function getResource<ResponseType>(
   baseUrl: URL,
   options: {
     resourceId?: string,
     query?: URLSearchParams,
   } = {},
-): Promise<T> {
+): Promise<ResponseType> {
   try {
     const { resourceId, query } = options
     const resourceUrl = resourceId ? new URL(resourceId, baseUrl) : baseUrl
@@ -28,10 +28,10 @@ async function getResource<T>(
   throw new Error("Logic error, this should never be reached.")
 }
 
-async function createResource<T, P = undefined>(
+async function createResource<ResponseType, RequestType = undefined>(
   baseUrl: URL,
-  body?: P,
-) {
+  body?: RequestType,
+): Promise<ResponseType> {
   try {
     const response = await fetch(
       baseUrl,
@@ -47,7 +47,7 @@ async function createResource<T, P = undefined>(
     if (!response.ok)
       throw new Error(`Failed to create at ${baseUrl} with body ${body}`)
 
-    return response.json() as T
+    return response.json() as ResponseType
   } catch (error) {
     console.error(error)
   }
