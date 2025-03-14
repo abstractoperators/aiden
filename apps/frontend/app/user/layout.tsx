@@ -3,16 +3,23 @@ import { UserSidebar } from "@/components/user-sidebar";
 import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { getEnlightened } from "@/lib/api/agent";
-import { auth, SessionUser } from "@/auth";
+import { auth } from "@/auth";
+import { getUser } from "@/lib/api/user";
 
 export default async function UserLayout({
   children,
 }: {
   children: React.ReactNode,
 }) {
+  // TODO consider removing in favor of context/context provider
   const session = await auth()
-  const userId = (session?.user as SessionUser).apiId
-  const userAgents = (await getEnlightened(userId)).sort((a, b) => (a.name < b.name) ? -1 : 1);
+  if (!session)
+    throw new Error(`Session ${JSON.stringify(session)} does not exist!`)
+
+  const apiUser = await getUser({dynamic_id: session.user.id})
+  const userAgents = (
+    await getEnlightened({user_id: apiUser.id})
+  ).sort((a, b) => (a.name < b.name) ? -1 : 1);
 
   return (
     <SidebarProvider>

@@ -18,7 +18,7 @@ const baseUrlPath = fromApiEndpoint(AGENT_PATH)
 interface ClientAgent {
   id: string
   name: string
-  owner_id: string
+  ownerId: string
   ticker?: string
   marketCapitalization: number
   holderCount: number
@@ -57,22 +57,40 @@ async function startAgent(agentId: string, runtimeId: string): Promise<[ Agent, 
   ))
 }
 
-async function getAgents(ownerId?: string): Promise<Agent[]> {
-  return (ownerId) ?
-    getResource<Agent[]>(baseUrlSegment, { query: new URLSearchParams({owner_id: ownerId})}) :
-    getResource<Agent[]>(baseUrlSegment)
+async function getAgents(): Promise<Agent[]>
+async function getAgents(query: {user_id: string}): Promise<Agent[]>
+async function getAgents(query: {user_dynamic_id: string}): Promise<Agent[]>
+async function getAgents(query?: {
+  user_id: string,
+} | {
+  user_dynamic_id: string,
+}): Promise<Agent[]> {
+  return getResource<Agent[]>(
+    baseUrlSegment,
+    (query) ? { query: new URLSearchParams(query) } : {},
+  )
 }
 
-async function getEnlightened(ownerId?: string): Promise<ClientAgent[]> {
+async function getEnlightened(): Promise<ClientAgent[]>
+async function getEnlightened(query: {user_id: string}): Promise<ClientAgent[]>
+async function getEnlightened(query: {user_dynamic_id: string}): Promise<ClientAgent[]>
+async function getEnlightened(query?: {
+  user_id: string,
+} | {
+  user_dynamic_id: string,
+}): Promise<ClientAgent[]> {
   try {
+    // TODO: this is so goofy
+    const apiAgents = (!query) ? getAgents() : ("user_id" in query) ? getAgents(query) : getAgents(query)
+
     return Promise.all(
-      (await getAgents(ownerId))
-      .filter(agent => (ownerId) ? agent.owner_id === ownerId: true) // TODO: remove once query param is implemented in backend
+      (await apiAgents)
+      .filter(agent => (!query) ? true: ("user_id" in query) ? agent.owner_id === query.user_id : true)
       .map(async agent => {
         const clientAgent = {
           id: agent.id,
           name: agent.character_json.name,
-          owner_id: agent.owner_id,
+          ownerId: agent.owner_id,
           // TODO: retrieve financial stats via API
           marketCapitalization: 0,
           holderCount: 0,
