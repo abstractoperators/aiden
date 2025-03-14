@@ -702,8 +702,6 @@ def update_runtime(
        1. Runtime image is updated (in ECR)
        2. Task definition is updated.
     """
-    # Get the session, and use it's URL to find the service
-    # TODO: Just track the service ARN in the DB so we don't have to do this shenanigans.
     with Session() as session:
         # Make sure that there isn't already a task running to update this runtime.
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
@@ -720,17 +718,8 @@ def update_runtime(
                     detail=f"There is already a {task_status} runtime update task for runtime {runtime_id}",
                 )
 
-        runtime_url = runtime.url
-        runtime_service_num_match = re.search(r"aiden-runtime-(\d+)", runtime_url)
-        if not runtime_service_num_match or not (
-            runtime_service_num := runtime_service_num_match.group(1)
-        ):
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to parse runtime number from runtime URL",
-            )
-        runtime_service_num = int(runtime_service_num)
-        aws_config = get_aws_config(runtime_service_num)
+        service_arn = runtime.service_arn
+        aws_config = get_aws_config(runtime.service_no)
         if not aws_config:
             raise HTTPException(
                 status_code=500,
@@ -741,11 +730,7 @@ def update_runtime(
         latest_revision: int = get_latest_task_definition_revision(
             ecs_client, runtime_task_definition_arn
         )
-        service = ecs_client.describe_services(
-            cluster=aws_config.cluster,
-            services=[aws_config.service_name],
-        )["services"][0]
-        service_arn = service["serviceArn"]
+
         logger.info(
             f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
         )

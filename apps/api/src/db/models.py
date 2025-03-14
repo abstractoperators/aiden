@@ -150,8 +150,11 @@ class TokenBase(Base):
 
 class RuntimeBase(Base):
     url: str = Field(description="URL of the agents runtime.")
+    service_no: int = Field(
+        description="The service number of the runtime.", nullable=False
+    )
     # AWS does an actual heartbeat/healthcheck + restarts the runtime if it's down.
-    # This is a temp solution so that you can't attempt to start an agent until the runtime has been confirmed to have started at least once
+    # This is a temp solution so that you can't attempt to start an agent until the runtime has been confirmed to have started at least once # noqa
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
         default=None,
@@ -162,7 +165,6 @@ class RuntimeBase(Base):
         default=None,
     )
     target_group_arn: str | None = Field()
-    task_definition_arn: str | None = Field()
     http_listener_rule_arn: str | None = Field(
         description="ARN of the HTTP listener rule."
     )
@@ -187,11 +189,6 @@ class RuntimeUpdate(Base):
     )
     target_group_arn: str | None = Field(
         description="ARN of the target group pointing to the service.",
-        nullable=True,
-        default=None,
-    )
-    task_definition_arn: str | None = Field(
-        description="ARN of the task definition that the runtime uses.",
         nullable=True,
         default=None,
     )
