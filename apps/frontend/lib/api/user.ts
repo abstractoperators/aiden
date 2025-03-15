@@ -58,15 +58,6 @@ async function createUser(userPayload: UserBase): Promise<User> {
   return createResource<User, UserBase>(baseUrlPath, userPayload)
 }
 
-async function getOrCreateUser(userPayload: UserBase): Promise<User> {
-  try {
-    return getUser(userPayload).catch(() => createUser(userPayload))
-  } catch (error) {
-    console.error(error)
-  }
-  throw new Error("Logic error, this should never be reached.")
-}
-
 async function updateUser(userId: string, userUpdate: UserUpdate): Promise<User> {
   return updateResource(
     baseUrlSegment,
@@ -78,7 +69,6 @@ async function updateUser(userId: string, userUpdate: UserUpdate): Promise<User>
 export {
   createUser,
   dynamicToApiUser,
-  getOrCreateUser,
   getUser,
   updateUser,
 }
