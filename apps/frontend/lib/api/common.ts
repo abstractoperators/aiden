@@ -18,6 +18,8 @@ async function getResource<ResponseType>(
 
     const response = await fetch(url);
 
+    if (response.status === 404)
+      throw new Error(`Resource at ${url} not found!`)
     if (!response.ok)
       throw new Error(`Failed to GET at ${url} with response ${JSON.stringify(response)}`)
 
@@ -72,6 +74,8 @@ async function updateResource<ResponseType, RequestType = undefined>(
       }
     )
 
+    if (response.status === 404)
+      throw new Error(`Resource at ${url} not found!`)
     if (!response.ok)
       throw new Error(`Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -80,6 +84,46 @@ async function updateResource<ResponseType, RequestType = undefined>(
     console.error(error)
   }
   throw new Error("Logic error, this should never be reached.")
+}
+
+async function updateOrCreateResource<
+  ResponseType,
+  UpdateRequestType = undefined,
+  CreateRequestType = undefined,
+>(args: {
+  baseUpdateUrl: URL | string,
+  resourceId: string,
+  updateBody?: UpdateRequestType,
+  createUrl: URL | string,
+  createBody?: CreateRequestType,
+}): Promise<ResponseType> {
+  const {
+    baseUpdateUrl,
+    resourceId,
+    updateBody,
+    createUrl,
+    createBody,
+  } = args
+
+  return (
+    updateResource<ResponseType, UpdateRequestType>(
+      baseUpdateUrl,
+      resourceId,
+      updateBody,
+    )
+    .catch((error) => {
+      if (
+        error instanceof Error
+        && error.message.startsWith("Resource at")
+        && error.message.endsWith("not found!")
+      ) {
+        return createResource(createUrl, createBody)
+      } else {
+        console.error(error)
+        throw error
+      }
+    })
+  )
 }
 
 async function deleteResource(
@@ -95,6 +139,8 @@ async function deleteResource(
       }
     );
 
+    if (response.status === 404)
+      throw new Error(`Resource at ${url} not found!`)
     if (!response.ok)
       throw new Error(`Failed to DELETE at ${url} with response ${JSON.stringify(response)}`)
 
@@ -111,4 +157,5 @@ export {
   fromApiEndpoint,
   getResource,
   updateResource,
+  updateOrCreateResource,
 }
