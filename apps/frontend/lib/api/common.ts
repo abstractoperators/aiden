@@ -1,5 +1,14 @@
 'use server'
 
+class UrlResourceNotFoundError extends Error {
+  constructor(url: URL) {
+    super(`Resource at ${url} not found!`)
+    this.name = "UrlResourceNotFoundError"
+    // It's recommended to set the prototype explicitly.
+    Object.setPrototypeOf(this, UrlResourceNotFoundError.prototype)
+  }
+}
+
 function fromApiEndpoint(url: string): URL {
   return new URL(url, process.env.API_ENDPOINT)
 }
@@ -19,7 +28,7 @@ async function getResource<ResponseType>(
     const response = await fetch(url);
 
     if (response.status === 404)
-      throw new Error(`Resource at ${url} not found!`)
+      throw new UrlResourceNotFoundError(url)
     if (!response.ok)
       throw new Error(`Failed to GET at ${url} with response ${JSON.stringify(response)}`)
 
@@ -75,7 +84,7 @@ async function updateResource<ResponseType, RequestType = undefined>(
     )
 
     if (response.status === 404)
-      throw new Error(`Resource at ${url} not found!`)
+      throw new UrlResourceNotFoundError(url)
     if (!response.ok)
       throw new Error(`Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -112,11 +121,7 @@ async function updateOrCreateResource<
       updateBody,
     )
     .catch((error) => {
-      if (
-        error instanceof Error
-        && error.message.startsWith("Resource at")
-        && error.message.endsWith("not found!")
-      ) {
+      if (error instanceof UrlResourceNotFoundError) {
         return createResource(createUrl, createBody)
       } else {
         console.error(error)
@@ -140,7 +145,7 @@ async function deleteResource(
     );
 
     if (response.status === 404)
-      throw new Error(`Resource at ${url} not found!`)
+      throw new UrlResourceNotFoundError(url)
     if (!response.ok)
       throw new Error(`Failed to DELETE at ${url} with response ${JSON.stringify(response)}`)
 
@@ -158,4 +163,5 @@ export {
   getResource,
   updateResource,
   updateOrCreateResource,
+  UrlResourceNotFoundError,
 }
