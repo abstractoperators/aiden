@@ -34,9 +34,6 @@ app = Celery(
 app.config_from_object("src.celeryconfig")
 
 
-# TODO: Only include tasks in celery worker, and not in fastapi server.
-
-
 @app.task
 def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
     with Session() as session:
@@ -189,8 +186,6 @@ def create_runtime(
 def update_runtime(
     runtime_id: UUID,
     aws_config_dict: dict,
-    service_arn: str,
-    task_definition_arn: str,
     latest_revision: int,
 ) -> None:
     aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
