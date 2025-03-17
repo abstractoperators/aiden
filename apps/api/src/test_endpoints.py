@@ -26,9 +26,11 @@ def test_ping(client):
 
 
 @pytest.fixture()
-def wallet_factory(user_factory):
-    def factory(client, **kwargs) -> Wallet:
-        owner_id = kwargs.get("owner_id", user_factory(client).id)
+def wallet_factory(client, user_factory):
+    wallet_ids: list[UUID] = []
+
+    def factory(**kwargs) -> Wallet:
+        owner_id = kwargs.get("owner_id", user_factory().id)
 
         public_key = kwargs.get("public_key", "public_key_01")
         wallet_base = WalletBase(
@@ -40,14 +42,20 @@ def wallet_factory(user_factory):
         response = client.post("/wallets", json=wallet_base.model_dump(mode="json"))
         assert response.status_code == 200
         wallet = Wallet.model_validate(response.json())
+        wallet_ids.append(wallet.id)
         return wallet
 
-    return factory
+    yield factory
+
+    for wallet_id in wallet_ids:
+        client.delete(f"/wallets/{wallet_id}")
 
 
 @pytest.fixture()
-def user_factory():
-    def factory(client, **kwargs) -> User:
+def user_factory(client):
+    user_ids: list[UUID] = []
+
+    def factory(**kwargs) -> User:
         email = kwargs.get("email", "email@email.com")
         phone_number = kwargs.get("phone_number", "1234567890")
         username = kwargs.get("username", "username_01")
@@ -63,15 +71,22 @@ def user_factory():
         )
         response = client.post("/users", json=user_base.model_dump(mode="json"))
         assert response.status_code == 200
-        return User.model_validate(response.json())
+        user = User.model_validate(response.json())
+        user_ids.append(user.id)
+        return user
 
-    return factory
+    yield factory
+
+    for user_id in user_ids:
+        client.delete(f"/users/{user_id}")
 
 
 # TODO: Use the actual endpoint instead of directly through crud
 @pytest.fixture()
-def token_factory():
-    def factory(client, **kwargs) -> Token:
+def token_factory(client):
+    token_ids = []
+
+    def factory(**kwargs) -> Token:
         ticker = kwargs.get("ticker", "testticker")
         name = kwargs.get("name", "testtokenname")
         evm_contract_address = kwargs.get("evm_contract_address", "0x12345")
@@ -84,10 +99,15 @@ def token_factory():
         )
         with Session() as session:
             token = crud.create_token(session, token_base)
-
+            token_ids.append(token.id)
             return token
 
-    return factory
+    yield factory
+
+    for token_id in token_ids:
+        with Session() as session:
+            token = crud.get_token(session, token_id)
+            crud.delete_token(session, token)
 
 
 # TODO: Use the actual endpoint instead of directly through crud
@@ -95,20 +115,23 @@ def token_factory():
 def runtime_factory(client):
     runtime_ids: list[UUID] = []
 
-    def factory(**kwargs) -> Runtime:
+    def factory() -> Runtime:
         runtime_resp = client.post("/runtimes")
         runtime_create_task = RuntimeCreateTask.model_validate(runtime_resp.json())
+        runtime_ids.append(runtime_create_task.runtime_id)
 
         # Wait for the runtime to be created
         task_status = TaskStatus.PENDING
         while task_status != TaskStatus.SUCCESS:
-            runtime_create_task = client.get_task_status(
-                runtime_create_task.celery_task_id
-            )
             celery_task_id = runtime_create_task.celery_task_id
-            task_status = client.get(f"/tasks/{celery_task_id}").json()["status"]
+            task_status = client.get(f"/tasks/{celery_task_id}").json()
             assert task_status != TaskStatus.FAILURE
-            sleep(1)
+            sleep(5)
+
+        resp = client.get(f"/runtimes/{runtime_create_task.runtime_id}")
+        assert resp.status_code == 200
+        runtime = Runtime.model_validate(resp.json())
+        return runtime
 
     yield factory
 
@@ -117,14 +140,16 @@ def runtime_factory(client):
 
 
 @pytest.fixture()
-def agent_factory(user_factory, token_factory, runtime_factory):
-    def factory(client, **kwargs) -> AgentPublic:
+def agent_factory(client, user_factory, token_factory, runtime_factory):
+    agent_ids: list[UUID] = []
+
+    def factory(**kwargs) -> AgentPublic:
         if (owner_id := kwargs.get("owner_id")) is None:
-            owner = user_factory(client)
+            owner = user_factory()
             owner_id = owner.id
         eliza_agent_id = kwargs.get("eliza_agent_id", "eliza_agent_id_01")
         if (token_id := kwargs.get("token_id")) is None:
-            token = token_factory(client)
+            token = token_factory()
             token_id = token.id
         if (runtime_id := kwargs.get("runtime_id")) is None:
             runtime = runtime_factory()
@@ -142,15 +167,21 @@ def agent_factory(user_factory, token_factory, runtime_factory):
         )
         response = client.post("/agents", json=agent_base.model_dump(mode="json"))
         assert response.status_code == 200
-        return AgentPublic.model_validate(response.json())
+        agent_public = AgentPublic.model_validate(response.json())
+        agent_ids.append(agent_public.id)
+        return agent_public
 
-    return factory
+    yield factory
+
+    try:
+        for agent_id in agent_ids:
+            client.delete(f"/agents/{agent_id}")
+    except Exception as e:
+        print(e)
 
 
 def test_wallets(client, wallet_factory, user_factory) -> None:
-    wallet: Wallet = wallet_factory(
-        client,
-    )
+    wallet: Wallet = wallet_factory()
     assert wallet is not None
 
     # Try the get methods
@@ -167,7 +198,7 @@ def test_wallets(client, wallet_factory, user_factory) -> None:
     Wallet.model_validate(response.json())
 
     # Try patching it
-    new_owner = user_factory(client)
+    new_owner = user_factory()
     wallet_update = WalletUpdate(
         owner_id=new_owner.id,
     )
@@ -189,15 +220,12 @@ def test_wallets(client, wallet_factory, user_factory) -> None:
 
 
 def test_users(client, user_factory, wallet_factory) -> None:
-    user: User = user_factory(
-        client,
-    )
-
+    user: User = user_factory()
+    assert user is not None
     wallet: Wallet = wallet_factory(
-        client,
         owner_id=user.id,
     )
-    assert user is not None
+    assert wallet is not None
 
     response = client.get(f"/users?user_id={user.id}")
     assert response.status_code == 200, response.json()
@@ -224,9 +252,7 @@ def test_users(client, user_factory, wallet_factory) -> None:
 
 
 def test_tokens(client, token_factory) -> None:
-    token: Token = token_factory(
-        client,
-    )
+    token: Token = token_factory()
     assert token is not None
 
     response = client.get(f"/tokens/{token.id}")
@@ -255,15 +281,13 @@ def test_runtimes(client, runtime_factory) -> None:
 
 
 def test_agents(client, agent_factory, user_factory) -> None:
-    agent: AgentPublic = agent_factory(
-        client,
-    )
+    agent: AgentPublic = agent_factory()
     assert agent is not None
     # Test getting agents by the user's dynamic id.
     # Make a random agent with a different owner.
-    random_user = user_factory(client)
-    agent_factory(client, owner_id=random_user.id)
-    agent_factory(client, owner_id=random_user.id)
+    random_user = user_factory()
+    agent_factory(owner_id=random_user.id)
+    agent_factory(owner_id=random_user.id)
 
     response = client.get(f"/agents/{agent.id}")
     assert response.status_code == 200
