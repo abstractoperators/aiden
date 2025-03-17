@@ -1,5 +1,7 @@
 'use server'
 
+import { camelize, snakify } from "@/lib/utils"
+
 class UrlResourceNotFoundError extends Error {
   constructor(url: URL) {
     super(`Resource at ${url} not found!`)
@@ -17,13 +19,14 @@ async function getResource<ResponseType>(
   baseUrl: URL | string,
   options: {
     resourceId?: string,
-    query?: URLSearchParams,
+    query?: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
   } = {},
 ): Promise<ResponseType> {
   try {
     const { resourceId, query } = options
     const resourceUrl = resourceId ? new URL(resourceId, baseUrl) : new URL(baseUrl)
-    const url = query ? new URL(`${resourceUrl.href}?${query.toString()}`) : resourceUrl
+    const params = query ? new URLSearchParams(snakify(query)) : undefined
+    const url = params ? new URL(`${resourceUrl.href}?${params.toString()}`) : resourceUrl
 
     const response = await fetch(url);
 
@@ -32,11 +35,10 @@ async function getResource<ResponseType>(
     if (!response.ok)
       throw new Error(`Failed to GET at ${url} with response ${JSON.stringify(response)}`)
 
-    return response.json()
+    return camelize(await response.json() as Record<string, any>) // eslint-disable-line @typescript-eslint/no-explicit-any
   } catch (error) {
-    console.error(error)
+    throw error
   }
-  throw new Error("Logic error, this should never be reached.")
 }
 
 async function createResource<ResponseType, RequestType = undefined>(
@@ -48,21 +50,20 @@ async function createResource<ResponseType, RequestType = undefined>(
       url,
       {
         method: 'POST',
-        headers: (body) ? {
+        headers: body ? {
           'Content-Type': 'application/json',
         } : undefined,
-        body: JSON.stringify(body),
+        body: body ? JSON.stringify(snakify(body)) : undefined,
       }
     )
 
     if (!response.ok)
       throw new Error(`Failed to CREATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
-    return response.json()
+    return camelize(await response.json() as Record<string, any>) // eslint-disable-line @typescript-eslint/no-explicit-any
   } catch (error) {
-    console.error(error)
+    throw error
   }
-  throw new Error("Logic error, this should never be reached.")
 }
 
 async function updateResource<ResponseType, RequestType = undefined>(
@@ -76,10 +77,10 @@ async function updateResource<ResponseType, RequestType = undefined>(
       url,
       {
         method: 'PATCH',
-        headers: (body) ? {
+        headers: body ? {
           'Content-Type': 'application/json',
         } : undefined,
-        body: JSON.stringify(body),
+        body: body ? JSON.stringify(snakify(body)) : undefined,
       }
     )
 
@@ -88,11 +89,10 @@ async function updateResource<ResponseType, RequestType = undefined>(
     if (!response.ok)
       throw new Error(`Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
-    return response.json()
+    return camelize(await response.json() as Record<string, any>) // eslint-disable-line @typescript-eslint/no-explicit-any
   } catch (error) {
-    console.error(error)
+    throw error
   }
-  throw new Error("Logic error, this should never be reached.")
 }
 
 async function updateOrCreateResource<
@@ -124,7 +124,6 @@ async function updateOrCreateResource<
       if (error instanceof UrlResourceNotFoundError) {
         return createResource(createUrl, createBody)
       } else {
-        console.error(error)
         throw error
       }
     })
@@ -134,7 +133,8 @@ async function updateOrCreateResource<
 async function deleteResource(
   baseUrl: URL | string,
   resourceId: string,
-): Promise<any> {
+): Promise<any> { // eslint-disable-line  @typescript-eslint/no-explicit-any
+
   try {
     const url = new URL(resourceId, baseUrl)
     const response = await fetch(
@@ -151,9 +151,8 @@ async function deleteResource(
 
     return response.json()
   } catch (error) {
-    console.error(error)
+    throw error
   }
-  throw new Error("Logic error, this should never be reached.")
 }
 
 export {

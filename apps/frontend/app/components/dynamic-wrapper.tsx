@@ -1,12 +1,12 @@
 'use client'
 
-import { DynamicContextProvider, getAuthToken, useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { DynamicContextProvider, getAuthToken } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { CosmosWalletConnectors } from "@dynamic-labs/cosmos";
 import { handleLogout } from "@/lib/auth-helpers";
 import { getCsrfToken } from "next-auth/react";
 import { createUser, dynamicToApiUser, getUser, updateUser } from "@/lib/api/user";
-import { createWallet, getWallet, Wallet as ApiWallet, updateWallet, deleteWallet } from "@/lib/api/wallet";
+import { createWallet, getWallet, Wallet as ApiWallet, updateWallet, deleteWallet, updateOrCreateWallet } from "@/lib/api/wallet";
 
 export default function DynamicProviderWrapper({ children }: React.PropsWithChildren) {
   return (
@@ -18,7 +18,7 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
           EthereumWalletConnectors,
         ],
         events: {
-          onAuthSuccess: async ({ user }) => {
+          onAuthSuccess: async ({ user, primaryWallet }) => {
             const authToken = getAuthToken();
 
             if (!authToken) {
@@ -58,7 +58,18 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
 
             // new user initialization
             if (user.newUser) {
-              createUser(dynamicToApiUser(user))
+              const apiUser = await createUser(dynamicToApiUser(user))
+              if (primaryWallet) {
+                updateOrCreateWallet(
+                  { publicKey: primaryWallet.address },
+                  { ownerId: apiUser.id },
+                  {
+                    publicKey: primaryWallet.address,
+                    chain: primaryWallet.chain,
+                    ownerId: apiUser.id,
+                  }
+                )
+              }
             }
           },
           onEmbeddedWalletCreated: async (jwtVerifiedCredential, user) => {
@@ -72,12 +83,12 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
             if (!jwtVerifiedCredential.address)
               throw new Error(`JWT Credential ${jwtVerifiedCredential} has no address!`)
 
-            const apiUser = await getUser({ dynamic_id: user.userId })
+            const apiUser = await getUser({ dynamicId: user.userId })
 
             createWallet({
-              public_key: jwtVerifiedCredential.address,
+              publicKey: jwtVerifiedCredential.address,
               chain: jwtVerifiedCredential.chain,
-              owner_id: apiUser.id,
+              ownerId: apiUser.id,
             })
           },
           onLogout: () => {
@@ -86,30 +97,41 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
           onUserProfileUpdate: async (user) => {
             if (!user.userId)
               throw new Error(`User ${user} has no userId!`)
-            const apiUser = await getUser({ dynamic_id: user.userId })
-            updateUser(apiUser.id, dynamicToApiUser(user))
+            const apiUser = await getUser({ dynamicId: user.userId })
+            // TODO: I have NO idea why you need to await what's supposed to be a synchronous function here
+            updateUser(apiUser.id, await dynamicToApiUser(user))
           },
-          onWalletAdded: async ({ wallet }) => {
-            const { user } = useDynamicContext() // TODO: get the user another way, invalid hook call.
+          onWalletAdded: async ({ wallet, userWallets }) => {
+            const user = await Promise.any(
+              userWallets.map(
+                dynamicWallet => getUser({ publicKey: dynamicWallet.address })
+              )
+            )
+
+            // Cannot await auth on client >:(
+            // https://stackoverflow.com/questions/78452233/error-headers-was-called-outside-a-request-scope
+            // const session = await auth()
+            // if (!session)
+            //   throw new Error(`Session ${session} does not exist!`)
+            // const user = session.user
+
             if (!user)
               throw new Error(`User ${user} does not exist!`)
-            if (!user.userId)
-              throw new Error(`User ${user} has no userId!`)
-            const apiUser = await getUser({ dynamic_id: user.userId })
 
-            const apiWallet: ApiWallet | null = await getWallet({ public_key: wallet.address }).catch(() => null)
+            const apiWallet: ApiWallet | null = await getWallet({ publicKey: wallet.address }).catch(() => null)
+
             if (apiWallet) {
-              updateWallet(apiWallet.id, { owner_id: apiUser.id })
+              updateWallet(apiWallet.id, { ownerId: user.id })
             } else {
               createWallet({
-                public_key: wallet.address,
+                publicKey: wallet.address,
                 chain: wallet.chain,
-                owner_id: apiUser.id,
+                ownerId: user.id,
               })
             }
           },
           onWalletRemoved: ({ wallet }) => {
-            getWallet({ public_key: wallet.address })
+            getWallet({ publicKey: wallet.address })
             .then(apiWallet => deleteWallet(apiWallet.id))
             .catch(() => {
               // do nothing if it doesn't exist.

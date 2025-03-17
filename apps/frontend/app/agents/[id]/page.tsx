@@ -16,15 +16,15 @@ export default async function AgentHome({
   return (
     <main className="w-full flex-1 grid grid-cols-12 gap-8 p-16 sm:m-4 md:m-8 lg:m-16">
       <div className="col-span-7 flex flex-col items-center my-8">
-        <AgentCard name={agent.character_json.name} />
+        <AgentCard name={agent.characterJson.name} />
         <div></div>
       </div>
       <div className="col-span-5 flex flex-row justify-center my-8">
         <div className="flex-1">
           {
-            (agent.runtime && agent.eliza_agent_id) ?
+            (agent.runtime && agent.elizaAgentId) ?
             <Chat
-              elizaId={agent.eliza_agent_id}
+              elizaId={agent.elizaAgentId}
               runtimeUrl={agent.runtime.url}
             /> : <p className="text-center">
               This agent has no chat.

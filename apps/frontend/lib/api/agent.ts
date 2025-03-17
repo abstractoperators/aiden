@@ -25,14 +25,14 @@ interface ClientAgent {
 }
 
 interface AgentBase {
-  eliza_agent_id?: string | null
-  owner_id: string
-  runtime_id?: string | null
-  token_id?: string | null
-  character_json: {
+  elizaAgentId?: string | null
+  ownerId: string
+  runtimeId?: string | null
+  tokenId?: string | null
+  characterJson: {
     name: string
   }
-  env_file: string
+  envFile: string
 }
 
 interface Agent extends AgentBase {
@@ -57,46 +57,39 @@ async function startAgent(agentId: string, runtimeId: string): Promise<[ Agent, 
   ))
 }
 
-async function getAgents(): Promise<Agent[]>
-async function getAgents(query: {user_id: string}): Promise<Agent[]>
-async function getAgents(query: {user_dynamic_id: string}): Promise<Agent[]>
-async function getAgents(query?: {
-  user_id: string,
-} | {
-  user_dynamic_id: string,
-}): Promise<Agent[]> {
+async function getAgents(
+  query?: { userId: string } | { userDynamicId: string }
+): Promise<Agent[]> {
   return getResource<Agent[]>(
     baseUrlSegment,
-    (query) ? { query: new URLSearchParams(query) } : {},
+    query ? { query: query } : {},
   )
 }
 
-async function getEnlightened(): Promise<ClientAgent[]>
-async function getEnlightened(query: {user_id: string}): Promise<ClientAgent[]>
-async function getEnlightened(query: {user_dynamic_id: string}): Promise<ClientAgent[]>
-async function getEnlightened(query?: {
-  user_id: string,
-} | {
-  user_dynamic_id: string,
-}): Promise<ClientAgent[]> {
+async function getEnlightened(
+  query?: (
+    { userId: string } |
+    { userDynamicId: string }
+  )
+): Promise<ClientAgent[]> {
   try {
     // TODO: this is so goofy
-    const apiAgents = (!query) ? getAgents() : ("user_id" in query) ? getAgents(query) : getAgents(query)
+    const apiAgents = (!query) ? getAgents() : ("userId" in query) ? getAgents(query) : getAgents(query)
 
     return Promise.all(
       (await apiAgents)
       .map(async agent => {
         const clientAgent = {
           id: agent.id,
-          name: agent.character_json.name,
-          ownerId: agent.owner_id,
+          name: agent.characterJson.name,
+          ownerId: agent.ownerId,
           // TODO: retrieve financial stats via API
           marketCapitalization: 0,
           holderCount: 0,
         }
 
-        return (agent.token_id) ? {
-          ticker: (await getToken(agent.token_id)).ticker,
+        return (agent.tokenId) ? {
+          ticker: (await getToken(agent.tokenId)).ticker,
           ...clientAgent,
         } : clientAgent
       })

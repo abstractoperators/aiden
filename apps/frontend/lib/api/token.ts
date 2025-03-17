@@ -3,7 +3,7 @@ import { fromApiEndpoint, getResource } from "./common"
 interface TokenBase {
   ticker: string
   name: string
-  evm_contract_address: string
+  evmContractAddress: string
   abi: object[]
 }
 

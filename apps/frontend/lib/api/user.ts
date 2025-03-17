@@ -12,12 +12,12 @@ const baseUrlSegment = fromApiEndpoint(USER_SEGMENT)
 
 interface UserUpdate {
   email?: string | null
-  phone_number?: string | null
+  phoneNumber?: string | null
   username?: string | null
 }
 
 interface UserBase extends UserUpdate{
-  dynamic_id: string
+  dynamicId: string
 }
 
 interface User extends UserBase {
@@ -31,26 +31,23 @@ function dynamicToApiUser(
   if (!user.userId)
     throw new Error(`Dynamic User ${user} has no ID!!!`)
   return {
-    dynamic_id: user.userId,
+    dynamicId: user.userId,
     email: user.email,
-    phone_number: user.phoneNumber,
+    phoneNumber: user.phoneNumber,
     username: user.username,
   }
 }
 
-async function getUser(query: {user_id: string}): Promise<User>;
-async function getUser(query: {public_key: string}): Promise<User>;
-async function getUser(query: {dynamic_id: string}): Promise<User>;
-async function getUser(query: {
-  user_id: string,
-} | {
-  public_key: string,
-} | {
-  dynamic_id: string,
-}): Promise<User> {
+async function getUser(
+  query: (
+    { userId: string } |
+    { publicKey: string } |
+    { dynamicId: string }
+  )
+): Promise<User> {
   return getResource<User>(
     baseUrlPath,
-    { query: new URLSearchParams(query) },
+    { query: query },
   )
 }
 

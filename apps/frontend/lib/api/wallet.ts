@@ -1,6 +1,14 @@
 'use server'
 
-import { createResource, deleteResource, fromApiEndpoint, getResource, updateResource } from "./common"
+import {
+  createResource,
+  deleteResource,
+  fromApiEndpoint,
+  getResource,
+  updateOrCreateResource,
+  updateResource,
+  UrlResourceNotFoundError,
+} from "./common"
 
 const WALLET_PATH = '/wallets'
 const WALLET_SEGMENT = '/wallets/'
@@ -9,30 +17,26 @@ const baseUrlPath = fromApiEndpoint(WALLET_PATH)
 const baseUrlSegment = fromApiEndpoint(WALLET_SEGMENT)
 
 interface WalletUpdate {
-  owner_id: string | null
+  ownerId: string | null
 }
 
 interface WalletBase {
-  public_key: string
+  publicKey: string
   chain?: string
-  chain_id?: number
-  owner_id: string
+  chainId?: number
+  ownerId: string
 }
 
 interface Wallet extends WalletBase {
   id: string
 }
 
-async function getWallet(query: {public_key: string}): Promise<Wallet>
-async function getWallet(query: {wallet_id: string}): Promise<Wallet>
-async function getWallet(query: {
-  public_key: string,
-} | {
-  wallet_id: string,
-}): Promise<Wallet> {
+async function getWallet(
+  query: { publicKey: string } | { walletId: string }
+): Promise<Wallet> {
   return getResource<Wallet>(
     baseUrlPath,
-    { query: new URLSearchParams(query) },
+    { query: query },
   )
 }
 
@@ -45,6 +49,35 @@ async function updateWallet(walletId: string, walletUpdate: WalletUpdate): Promi
     baseUrlSegment,
     walletId,
     walletUpdate,
+  )
+}
+
+async function updateOrCreateWallet(
+  id: { publicKey: string } | { walletId: string},
+  walletUpdate: WalletUpdate,
+  wallet: WalletBase,
+): Promise<Wallet> {
+  if ("walletId" in id) {
+    return updateOrCreateResource({
+      baseUpdateUrl: baseUrlSegment,
+      resourceId: id.walletId,
+      updateBody: walletUpdate,
+      createUrl: baseUrlPath,
+      createBody: wallet,
+    })
+  }
+
+  return (
+    getWallet(id)
+    .then(apiWallet => (updateWallet(apiWallet.id, walletUpdate)))
+    .catch((error) => {
+      if (error instanceof UrlResourceNotFoundError) {
+        return createWallet(wallet)
+      } else {
+        console.error(error)
+        throw error
+      }
+    })
   )
 }
 
@@ -65,4 +98,5 @@ export {
   deleteWallet,
   getWallet,
   updateWallet,
+  updateOrCreateWallet,
 }

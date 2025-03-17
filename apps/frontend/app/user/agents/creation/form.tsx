@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+import { useDynamicContext, UserProfile } from "@dynamic-labs/sdk-react-core"
 import { getUser } from "@/lib/api/user";
 import { createAgent, startAgent } from "@/lib/api/agent";
 import { createRuntime, getRuntime } from "@/lib/api/runtime";
@@ -31,14 +31,14 @@ export default function CreationForm() {
   })
   // TODO: set up sei and eth addresses if undefined
 
+  const { user } = useDynamicContext()
+  if (!user)
+    throw new Error(`User ${user} does not exist!`)
+  if (!user.userId)
+    throw new Error(`User ${user} has no userId!`)
+
   async function onSubmit(formData: z.infer<typeof formSchema>) {
     try {
-      const { user } = useDynamicContext()
-      if (!user)
-        throw new Error(`User ${user} does not exist!`)
-      if (!user.userId)
-        throw new Error(`User ${user} has no userId!`)
-
       const character = await formData.character.text()
       const characterJson = JSON.parse(character) // TODO: catch SyntaxError
       console.debug(characterJson)
@@ -46,12 +46,15 @@ export default function CreationForm() {
       const env = formData.env
       console.debug(".env", env)
 
-      const apiUser = await getUser({dynamic_id: user.userId})
+      const apiUser = await getUser({
+        // TS not able to use user assertion from outside of function
+        dynamicId: (user as UserProfile).userId as string
+      })
 
       const agentPayload = {
-        owner_id: apiUser.id,
-        character_json: characterJson,
-        env_file: env,
+        ownerId: apiUser.id,
+        characterJson: characterJson,
+        envFile: env,
       }
 
       const agent = await createAgent(agentPayload)
