@@ -321,29 +321,6 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
     )
 
 
-def create_runtime_local():
-    """
-    'Creates' a runtime locally.
-    Expects that runtime docker image is already running with make run-runtime
-    Just creates an entry in sqlite db.
-    """
-    if os.getenv("inside_docker") and os.getenv("ENV") == "dev":
-        url = "http://host.docker.internal:8000"
-    else:
-        url = "http://localhost:8000"
-
-    with Session() as session:
-        runtime = crud.create_runtime(
-            session,
-            RuntimeBase(
-                url=url,
-                started=True,
-            ),
-        )
-
-    return runtime
-
-
 @app.post("/runtimes")
 def create_runtime() -> RuntimeCreateTask:
     """
@@ -382,6 +359,7 @@ def create_runtime() -> RuntimeCreateTask:
             RuntimeBase(
                 url=url,
                 started=False,
+                service_no=next_runtime_number,
             ),
         )
         res = tasks.create_runtime.delay(
@@ -767,7 +745,8 @@ def delete_runtime(
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
-        res = tasks.delete_runtime.delay(runtime_id)
+        aws_config = get_aws_config(runtime.service_no)
+        res = tasks.delete_runtime.delay(runtime_id, aws_config.model_dump())
         runtime_delete_task: RuntimeDeleteTask = crud.create_runtime_delete_task(
             session,
             RuntimeDeleteTaskBase(
