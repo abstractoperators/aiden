@@ -181,33 +181,8 @@ def create_runtime(
 
             raise Exception("Runtime did not come online in time. Rolling back.")
     except (Exception, KeyboardInterrupt) as e:
-        logger.error(e)
-        with Session() as session:
-            runtime = crud.get_runtime(session, runtime_id=runtime_id)
-
-        if http_rule_arn := runtime.http_listener_rule_arn:
-            logger.info(f"Deleting HTTP rule {http_rule_arn}")
-            elbv2_client.delete_rule(RuleArn=http_rule_arn)
-        if https_rule_arn := runtime.https_listener_rule_arn:
-            logger.info(f"Deleting HTTPS rule {https_rule_arn}")
-            elbv2_client.delete_rule(RuleArn=https_rule_arn)
-        if target_group_arn := runtime.target_group_arn:
-            logger.info(f"Deleting target group {target_group_arn}")
-            elbv2_client.delete_target_group(TargetGroupArn=target_group_arn)
-        if service_arn := runtime.service_arn:
-            logger.info(f"Deleting service {service_arn}")
-            ecs_client.delete_service(
-                cluster=aws_config.cluster,
-                service=aws_config.service_name,
-                force=True,
-            )
-        logger.info(f"Deleting runtime {runtime_id}")
-        with Session() as session:
-            runtime = crud.get_runtime(session, runtime_id)
-            if runtime is not None:
-                crud.delete_runtime(session, runtime)
-
-    return None
+        logger.error(f"{e}: Rolling back runtime")
+        delete_runtime(runtime_id=runtime_id, aws_config_dict=aws_config_dict)
 
 
 @app.task()
@@ -277,3 +252,42 @@ def update_runtime(
     if agent is not None:
         logger.info(f"Restarting agent {agent_id}")
         start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+
+
+@app.task()
+def delete_runtime(
+    runtime_id: UUID,
+    aws_config_dict: dict,
+) -> None:
+    aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
+    with Session() as session:
+        runtime = crud.get_runtime(session, runtime_id)
+        if runtime is None:
+            raise ValueError(f"Runtime {runtime_id} does not exist")
+        ecs_client = get_role_session().client("ecs")
+        elbv2_client = get_role_session().client("elbv2")
+
+        # Stop the runtime
+        if runtime.service_arn:
+            ecs_client.delete_service(
+                cluster=aws_config.cluster,
+                service=aws_config.service_name,
+                force=True,
+            )
+
+        # Delete the target group
+        if runtime.target_group_arn:
+            elbv2_client.delete_target_group(
+                TargetGroupArn=runtime.target_group_arn,
+            )
+
+        # Delete the listener rules
+        if runtime.http_listener_rule_arn:
+            elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
+        if runtime.https_listener_rule_arn:
+            elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
+
+        # Delete the runtime in db
+        crud.delete_runtime(session, runtime)
+
+    return None
