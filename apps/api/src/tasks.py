@@ -29,7 +29,7 @@ BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost")
 app = Celery(
     "tasks",
     broker=BROKER_URL,
-    backend=f"db+{BACKEND_DB_URL}",
+    backend=f"db+{BACKEND_DB_URL}?sslmode=disable",
 )
 app.config_from_object("src.celeryconfig")
 
@@ -153,30 +153,28 @@ def create_runtime(
                 session, runtime, RuntimeUpdate(service_arn=service_arn)
             )
 
-            # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
+        # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
+        logger.info(f"Polling runtime {runtime.id} at {runtime.url} for health check")
+        for i in range(40):
+            logger.info(f"{i}/40: Polling runtime for health check")
+            sleep(15)
+            try:
+                url = f"{runtime.url}/ping"
+                resp = requests.get(
+                    url=url,
+                    timeout=3,
+                )
+                resp.raise_for_status()
 
-            logger.info(
-                f"Polling runtime {runtime.id} at {runtime.url} for health check"
-            )
-            for i in range(40):
-                logger.info(f"{i}/40: Polling runtime for health check")
-                sleep(15)
-                try:
-                    url = f"{runtime.url}/ping"
-                    resp = requests.get(
-                        url=url,
-                        timeout=3,
-                    )
-                    resp.raise_for_status()
-
-                    logger.info(f"Runtime {runtime.id} has started")
+                logger.info(f"Runtime {runtime.id} has started")
+                with Session() as session:
                     crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-                    return
-                except Exception as e:
-                    logger.info(f"Attempt {i}/{40}. Runtime not online yet. {e}")
-                    continue
+                return
+            except Exception as e:
+                logger.info(f"Attempt {i}/{40}. Runtime not online yet. {e}")
+                continue
 
-            raise Exception("Runtime did not come online in time. Rolling back.")
+        raise Exception("Runtime did not come online in time. Rolling back.")
     except (Exception, KeyboardInterrupt) as e:
         logger.error(f"{e}: Rolling back runtime")
         delete_runtime(runtime_id=runtime_id, aws_config_dict=aws_config_dict)
@@ -270,17 +268,17 @@ def delete_runtime(
                 force=True,
             )
 
-        # Delete the target group
-        if runtime.target_group_arn:
-            elbv2_client.delete_target_group(
-                TargetGroupArn=runtime.target_group_arn,
-            )
-
         # Delete the listener rules
         if runtime.http_listener_rule_arn:
             elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
         if runtime.https_listener_rule_arn:
             elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
+
+        # Delete the target group
+        if runtime.target_group_arn:
+            elbv2_client.delete_target_group(
+                TargetGroupArn=runtime.target_group_arn,
+            )
 
         # Delete the runtime in db
         crud.delete_runtime(session, runtime)
