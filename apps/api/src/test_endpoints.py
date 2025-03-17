@@ -1,4 +1,5 @@
-from uuid import uuid4
+from time import sleep
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -6,7 +7,7 @@ from src.db import crud
 from src.db.models import (
     AgentBase,
     Runtime,
-    RuntimeBase,
+    RuntimeCreateTask,
     Token,
     TokenBase,
     User,
@@ -15,7 +16,7 @@ from src.db.models import (
     WalletBase,
     WalletUpdate,
 )
-from src.models import AgentPublic, UserPublic
+from src.models import AgentPublic, TaskStatus, UserPublic
 from src.server import Session
 
 
@@ -91,33 +92,28 @@ def token_factory():
 
 # TODO: Use the actual endpoint instead of directly through crud
 @pytest.fixture()
-def runtime_factory():
+def runtime_factory(client):
+    runtime_ids: list[UUID] = []
+
     def factory(**kwargs) -> Runtime:
-        url = kwargs.get("url", "testurl")
-        service_no = kwargs.get("service_no", 1)
-        started = kwargs.get("started", False)
-        service_arn = kwargs.get("service_arn", "test_arn")
-        target_group_arn = kwargs.get("target_group_arn", "test_target_group_arn")
-        http_listener_rule_arn = kwargs.get(
-            "http_listener_rule_arn", "test_http_listener_rule_arn"
-        )
-        https_listener_rule_arn = kwargs.get(
-            "https_listener_rule_arn", "test_https_listener_rule_arn"
-        )
+        runtime_resp = client.post("/runtimes")
+        runtime_create_task = RuntimeCreateTask.model_validate(runtime_resp.json())
 
-        runtime_base = RuntimeBase(
-            url=url,
-            started=started,
-            service_no=service_no,
-            service_arn=service_arn,
-            target_group_arn=target_group_arn,
-            http_listener_rule_arn=http_listener_rule_arn,
-            https_listener_rule_arn=https_listener_rule_arn,
-        )
-        with Session() as session:
-            return crud.create_runtime(session, runtime_base)
+        # Wait for the runtime to be created
+        task_status = TaskStatus.PENDING
+        while task_status != TaskStatus.SUCCESS:
+            runtime_create_task = client.get_task_status(
+                runtime_create_task.celery_task_id
+            )
+            celery_task_id = runtime_create_task.celery_task_id
+            task_status = client.get(f"/tasks/{celery_task_id}").json()["status"]
+            assert task_status != TaskStatus.FAILURE
+            sleep(1)
 
-    return factory
+    yield factory
+
+    for runtime_id in runtime_ids:
+        client.delete(f"/runtimes/{runtime_id}")
 
 
 @pytest.fixture()
