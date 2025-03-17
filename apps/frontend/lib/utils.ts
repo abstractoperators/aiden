@@ -24,16 +24,23 @@ function camelCase(str: string) {
 }
 
 // TODO: resolve explicit any
+// TODO: extend to more general objects
+// TODO: https://github.com/kbrabrand/camelize-ts/blob/main/src/index.ts
 function camelize(value: string): string;
 function camelize<O>(value: Record<string, any>): O; // eslint-disable-line @typescript-eslint/no-explicit-any
+function camelize<O>(value: Record<string, any>[]): O; // eslint-disable-line @typescript-eslint/no-explicit-any
 function camelize<O>(
-  value: string | Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
+  value: string | Record<string, any> | Record<string, any>[], // eslint-disable-line @typescript-eslint/no-explicit-any
 ): string | O {
-  return (typeof value === "string")
-    ? camelCase(value)
-    : Object.fromEntries(Object.entries(value).map(([k, v]) => (
+  if (typeof value === "string") {
+    return camelCase(value)
+  } else if (value instanceof Array) {
+    return value.map(item => camelize(item)) as O
+  } else {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => (
       [camelCase(k), v]))
     ) as O
+  }
 }
 
 export {
