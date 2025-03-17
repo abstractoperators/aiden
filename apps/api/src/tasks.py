@@ -280,7 +280,22 @@ def delete_runtime(
                 TargetGroupArn=runtime.target_group_arn,
             )
 
-        # Delete the runtime in db
+    # Wait until the service is no longer draining.
+    for i in range(40):
+        sleep(15)
+        logger.info(f"{i}/40: Polling service for draining")
+
+        service = ecs_client.describe_services(
+            cluster=aws_config.cluster,
+            services=[aws_config.service_name],
+        )["services"][0]
+        desired_count = service["desiredCount"]
+        if desired_count == 0:
+            logger.info(f"Service {aws_config.service_name} is drained")
+            break
+
+    # Delete the runtime in db
+    with Session() as session:
         crud.delete_runtime(session, runtime)
 
     return None
