@@ -92,10 +92,28 @@ def token_factory():
 # TODO: Use the actual endpoint instead of directly through crud
 @pytest.fixture()
 def runtime_factory():
-    def factory(client, **kwargs) -> Runtime:
+    def factory(**kwargs) -> Runtime:
         url = kwargs.get("url", "testurl")
+        service_no = kwargs.get("service_no", 1)
         started = kwargs.get("started", False)
-        runtime_base = RuntimeBase(url=url, started=started)
+        service_arn = kwargs.get("service_arn", "test_arn")
+        target_group_arn = kwargs.get("target_group_arn", "test_target_group_arn")
+        http_listener_rule_arn = kwargs.get(
+            "http_listener_rule_arn", "test_http_listener_rule_arn"
+        )
+        https_listener_rule_arn = kwargs.get(
+            "https_listener_rule_arn", "test_https_listener_rule_arn"
+        )
+
+        runtime_base = RuntimeBase(
+            url=url,
+            started=started,
+            service_no=service_no,
+            service_arn=service_arn,
+            target_group_arn=target_group_arn,
+            http_listener_rule_arn=http_listener_rule_arn,
+            https_listener_rule_arn=https_listener_rule_arn,
+        )
         with Session() as session:
             return crud.create_runtime(session, runtime_base)
 
@@ -113,7 +131,7 @@ def agent_factory(user_factory, token_factory, runtime_factory):
             token = token_factory(client)
             token_id = token.id
         if (runtime_id := kwargs.get("runtime_id")) is None:
-            runtime = runtime_factory(client)
+            runtime = runtime_factory()
             runtime_id = runtime.id
         character_json = kwargs.get("character_json", {})
         env_file = kwargs.get("env_file", "env_var=env_val")
@@ -227,9 +245,7 @@ def test_tokens(client, token_factory) -> None:
 
 
 def test_runtimes(client, runtime_factory) -> None:
-    runtime: Runtime = runtime_factory(
-        client,
-    )
+    runtime: Runtime = runtime_factory()
     assert runtime is not None
 
     response = client.get(f"/runtimes/{runtime.id}")
