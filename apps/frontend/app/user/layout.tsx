@@ -16,9 +16,9 @@ export default async function UserLayout({
   if (!session)
     throw new Error(`Session ${JSON.stringify(session)} does not exist!`)
 
-  const apiUser = await getUser({dynamic_id: session.user.id})
+  const apiUser = await getUser({dynamicId: session.user.id})
   const userAgents = (
-    await getEnlightened({user_id: apiUser.id})
+    await getEnlightened({userId: apiUser.id})
   ).sort((a, b) => (a.name < b.name) ? -1 : 1);
 
   return (
