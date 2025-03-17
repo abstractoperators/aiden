@@ -80,7 +80,7 @@ async function getEnlightened(
       .map(async agent => {
         const clientAgent = {
           id: agent.id,
-          name: agent.characterJson.name,
+          name: agent.characterJson.name || "Nameless",
           ownerId: agent.ownerId,
           // TODO: retrieve financial stats via API
           marketCapitalization: 0,

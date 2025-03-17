@@ -12,11 +12,12 @@ export default async function AgentHome({
   const agent = await getAgent(id)
   if (!agent.runtime)
     console.log("Agent", agent, "has no runtime!")
+  const name = agent.characterJson.name || "Nameless"
 
   return (
     <main className="w-full flex-1 grid grid-cols-12 gap-8 p-16 sm:m-4 md:m-8 lg:m-16">
       <div className="col-span-7 flex flex-col items-center my-8">
-        <AgentCard name={agent.characterJson.name} />
+        <AgentCard name={name} />
         <div></div>
       </div>
       <div className="col-span-5 flex flex-row justify-center my-8">
