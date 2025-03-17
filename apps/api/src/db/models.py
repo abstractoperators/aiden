@@ -220,6 +220,11 @@ class RuntimeUpdateTaskBase(Base):
     celery_task_id: UUID
 
 
+class RuntimeDeleteTaskBase(Base):
+    runtime_id: UUID
+    celery_task_id: UUID
+
+
 # endregion
 # region Tables
 
@@ -257,4 +262,8 @@ class RuntimeCreateTask(RuntimeCreateTaskBase, MetadataMixin, table=True):
 
 
 class RuntimeUpdateTask(RuntimeUpdateTaskBase, MetadataMixin, table=True):
+    pass
+
+
+class RuntimeDeleteTask(RuntimeDeleteTaskBase, MetadataMixin, table=True):
     pass

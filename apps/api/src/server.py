@@ -29,6 +29,8 @@ from src.db.models import (
     RuntimeBase,
     RuntimeCreateTask,
     RuntimeCreateTaskBase,
+    RuntimeDeleteTask,
+    RuntimeDeleteTaskBase,
     RuntimeUpdate,
     RuntimeUpdateTask,
     RuntimeUpdateTaskBase,
@@ -750,3 +752,27 @@ def update_runtime(
         )
 
         return runtime_update_task
+
+
+@app.delete("/runtimes/{runtime_id}")
+def delete_runtime(
+    runtime_id: UUID,
+) -> RuntimeDeleteTask:
+    """
+    Deletes a runtime by id.
+    Raises a 404 if the runtime is not found.
+    """
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Runtime not found")
+
+        res = tasks.delete_runtime.delay(runtime_id)
+        runtime_delete_task: RuntimeDeleteTask = crud.create_runtime_delete_task(
+            session,
+            RuntimeDeleteTaskBase(
+                runtime_id=runtime_id,
+                celery_task_id=res.id,
+            ),
+        )
+        return runtime_delete_task

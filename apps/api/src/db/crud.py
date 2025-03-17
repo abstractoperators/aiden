@@ -16,6 +16,8 @@ from .models import (
     RuntimeBase,
     RuntimeCreateTask,
     RuntimeCreateTaskBase,
+    RuntimeDeleteTask,
+    RuntimeDeleteTaskBase,
     RuntimeUpdate,
     RuntimeUpdateTask,
     RuntimeUpdateTaskBase,
@@ -284,6 +286,15 @@ def create_runtime_update_task(
 ):
     return create_generic(
         session, RuntimeUpdateTask(**runtime_update_task.model_dump())
+    )
+
+
+def create_runtime_delete_task(
+    session: Session,
+    runtime_delete_task: RuntimeDeleteTaskBase,
+):
+    return create_generic(
+        session, RuntimeDeleteTask(**runtime_delete_task.model_dump())
     )
 
 
