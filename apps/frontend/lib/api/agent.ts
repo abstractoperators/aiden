@@ -62,7 +62,7 @@ async function getAgents(
 ): Promise<Agent[]> {
   return getResource<Agent[]>(
     baseUrlSegment,
-    query ? { query: query } : {},
+    query ? { query: query } : undefined,
   )
 }
 
@@ -73,8 +73,7 @@ async function getEnlightened(
   )
 ): Promise<ClientAgent[]> {
   try {
-    // TODO: this is so goofy
-    const apiAgents = (!query) ? getAgents() : ("userId" in query) ? getAgents(query) : getAgents(query)
+    const apiAgents = (!query) ? getAgents() : getAgents(query)
 
     return Promise.all(
       (await apiAgents)
