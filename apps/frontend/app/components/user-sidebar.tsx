@@ -27,6 +27,7 @@ interface NavigationGroup {
   title: string,
   url: string,
   items: {
+    key: string,
     title: string,
     url: string,
   }[]
@@ -53,6 +54,7 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
     title: "Your Agents",
     url: "#",
     items: userAgents.map(agent => ({
+      key: agent.id,
       title: agent.name,
       url: `/agents/${agent.id}`,
     }))
@@ -88,7 +90,7 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {parent.items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
+                      <SidebarMenuItem key={item.key}>
                         {/* TODO: implement dynamic isActive */}
                         <SidebarMenuButton asChild>
                           <Link href={item.url}>{item.title}</Link>
