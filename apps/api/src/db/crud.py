@@ -225,6 +225,10 @@ def get_token_by_address(session: Session, token_address: str) -> Token | None:
     return session.exec(stmt).first()
 
 
+def delete_token(session: Session, token: Token) -> None:
+    return delete_generic(session, token)
+
+
 # endregion Tokens
 
 
