@@ -18,7 +18,15 @@ const formSchema = z.object({
   character: z
     .instanceof(File)
     .refine(file => file.size !== 0, "File may not be empty.")
-    .refine(file => file.size < MAX_FILE_SIZE, "Max file size is 5MB."),
+    .refine(file => file.size < MAX_FILE_SIZE, "Max file size is 5MB.")
+    .refine(file =>
+      [
+        ".json",
+        "application/json",
+      ].includes(file.type),
+      { message: "Invalid file type, must be JSON." }
+    ),
+    // TODO validate against Character JSON schema
   env: z.string(),
 })
 
