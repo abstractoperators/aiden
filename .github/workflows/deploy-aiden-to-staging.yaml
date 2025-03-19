@@ -29,6 +29,15 @@ jobs:
             - name: Push api to ECR
               run: |
                 make aws-ecr-push-api
+
+            - name: Build and tag celery worker
+              run:
+                make build-celery
+            
+            - name: Push celery worker to ECR
+              run:
+                make aws-ecr-push-celery
+    
       
     force-redeployment:
       needs: build-and-push-aiden

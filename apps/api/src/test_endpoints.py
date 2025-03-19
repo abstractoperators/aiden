@@ -242,11 +242,16 @@ def test_runtimes(client, runtime_factory) -> None:
     return None
 
 
-def test_agents(client, agent_factory) -> None:
+def test_agents(client, agent_factory, user_factory) -> None:
     agent: AgentPublic = agent_factory(
         client,
     )
     assert agent is not None
+    # Test getting agents by the user's dynamic id.
+    # Make a random agent with a different owner.
+    random_user = user_factory(client)
+    agent_factory(client, owner_id=random_user.id)
+    agent_factory(client, owner_id=random_user.id)
 
     response = client.get(f"/agents/{agent.id}")
     assert response.status_code == 200
@@ -255,5 +260,21 @@ def test_agents(client, agent_factory) -> None:
     response = client.get("/agents")
     assert response.status_code == 200
     AgentPublic.model_validate(response.json()[0])
+
+    response = client.get(f"/agents?user_id={agent.owner_id}")
+    assert response.status_code == 200
+    response_json = response.json()
+    AgentPublic.model_validate(response_json[0])
+    assert len(response_json) == 1
+
+    response = client.get(f"/users?user_id={agent.owner_id}")
+    owner = UserPublic.model_validate(response.json())
+    assert owner.id == agent.owner_id
+
+    response = client.get(f"/agents?user_dynamic_id={owner.dynamic_id}")
+    assert response.status_code == 200
+    response_json = response.json()
+    AgentPublic.model_validate(response_json[0])
+    assert len(response_json) == 1
 
     return None

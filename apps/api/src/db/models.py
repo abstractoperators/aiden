@@ -169,8 +169,23 @@ class RuntimeUpdate(Base):
     )
 
 
-# endregion Models
+class AgentStartTaskBase(Base):
+    agent_id: UUID
+    runtime_id: UUID
+    celery_task_id: UUID
 
+
+class RuntimeCreateTaskBase(Base):
+    runtime_id: UUID
+    celery_task_id: UUID
+
+
+class RuntimeUpdateTaskBase(Base):
+    runtime_id: UUID
+    celery_task_id: UUID
+
+
+# endregion
 # region Tables
 
 
@@ -195,3 +210,16 @@ class Token(TokenBase, MetadataMixin, table=True):
 
 class Runtime(RuntimeBase, MetadataMixin, table=True):
     agent: Optional["Agent"] = Relationship(back_populates="runtime")
+
+
+# TODO: Add relationships.
+class AgentStartTask(AgentStartTaskBase, MetadataMixin, table=True):
+    pass
+
+
+class RuntimeCreateTask(RuntimeCreateTaskBase, MetadataMixin, table=True):
+    pass
+
+
+class RuntimeUpdateTask(RuntimeUpdateTaskBase, MetadataMixin, table=True):
+    pass

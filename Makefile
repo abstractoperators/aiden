@@ -27,9 +27,9 @@ down-api:
 	docker compose -f docker-compose.yml down api
 build-api:
 	docker compose -f docker-compose.yml build api
-run-api: down-api build-api
+run-api: down-api build-api run-celery
 	docker compose -f docker-compose.yml up -d api	
-run-api-nodocker:
+run-api-nodocker: run-celery-nodocker
 	cd apps/api && \
 	uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8003
 aws-ecr-push-api: aws-ecr-login
@@ -44,6 +44,23 @@ test-token-contract:
 	cd apps/api/src/bonding_token && \
 	npm install && \
 	npx hardhat test
+
+down-redis:
+	docker compose -f docker-compose.yml down redis
+run-redis:
+	docker compose -f docker-compose.yml up -d redis
+
+down-celery:
+	docker compose -f docker-compose.yml down celery
+build-celery:
+	docker compose -f docker-compose.yml build celery
+run-celery: down-celery build-celery run-redis
+	docker compose -f docker-compose.yml up -d celery
+run-celery-nodocker: run-redis
+	cd apps/api && uv run celery -A src.tasks worker --loglevel=info &
+aws-ecr-push-celery: aws-ecr-login
+	docker tag celery:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
 
 ######### RUNTIME #########
 down-runtime:
@@ -71,9 +88,9 @@ aws-ecr-push-prometheus: aws-ecr-login
 	docker tag prometheus:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 
-mypy:
-	cd apps/api && uv run mypy src || true
-	cd apps/runtime && uv run mypy src || true
 
 pytest:
 	(cd apps/api && uv run pytest src --capture=no --log-cli-level=INFO)
+mypy:
+	cd apps/api && uv run mypy src || true
+	cd apps/runtime && uv run mypy src || true
