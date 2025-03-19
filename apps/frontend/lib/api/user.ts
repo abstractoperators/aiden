@@ -1,7 +1,13 @@
 'use server'
 
 import { UserProfile } from "@dynamic-labs/sdk-react-core";
-import { createResource, fromApiEndpoint, getResource, updateResource } from "./common";
+import {
+  createResource,
+  fromApiEndpoint,
+  getResource,
+  updateResource,
+  UrlResourceNotFoundError,
+} from "./common";
 import { WalletBase } from "./wallet";
 
 const USER_PATH = '/users'
@@ -25,9 +31,10 @@ interface User extends UserBase {
   wallets: WalletBase[]
 }
 
-function dynamicToApiUser(
+// https://react.dev/reference/rsc/use-server#use-server see 'caveats'
+async function dynamicToApiUser(
   user: UserProfile,
-): UserBase {
+): Promise<UserBase> {
   if (!user.userId)
     throw new Error(`Dynamic User ${user} has no ID!!!`)
   return {
@@ -63,9 +70,23 @@ async function updateUser(userId: string, userUpdate: UserUpdate): Promise<User>
   )
 }
 
+async function getOrCreateUser(
+  userPayload: UserBase,
+): Promise<User> {
+  const { dynamicId } = userPayload
+  return getUser({ dynamicId: dynamicId }).catch(error => {
+    if (error instanceof UrlResourceNotFoundError) {
+      return createUser(userPayload)
+    } else {
+      throw error
+    }
+  })
+}
+
 export {
   createUser,
   dynamicToApiUser,
   getUser,
+  getOrCreateUser,
   updateUser,
 }

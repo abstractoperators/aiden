@@ -5,8 +5,20 @@ import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { CosmosWalletConnectors } from "@dynamic-labs/cosmos";
 import { handleLogout } from "@/lib/auth-helpers";
 import { getCsrfToken } from "next-auth/react";
-import { createUser, dynamicToApiUser, getUser, updateUser } from "@/lib/api/user";
-import { createWallet, getWallet, Wallet as ApiWallet, updateWallet, deleteWallet, updateOrCreateWallet } from "@/lib/api/wallet";
+import {
+  dynamicToApiUser,
+  getOrCreateUser,
+  getUser,
+  updateUser,
+} from "@/lib/api/user";
+import {
+  createWallet,
+  getWallet,
+  Wallet as ApiWallet,
+  updateWallet,
+  deleteWallet,
+  updateOrCreateWallet,
+} from "@/lib/api/wallet";
 
 export default function DynamicProviderWrapper({ children }: React.PropsWithChildren) {
   return (
@@ -56,20 +68,18 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
               console.error("Error logging in", error);
             });
 
-            // new user initialization
-            if (user.newUser) {
-              const apiUser = await createUser(dynamicToApiUser(user))
-              if (primaryWallet) {
-                updateOrCreateWallet(
-                  { publicKey: primaryWallet.address },
-                  { ownerId: apiUser.id },
-                  {
-                    publicKey: primaryWallet.address,
-                    chain: primaryWallet.chain,
-                    ownerId: apiUser.id,
-                  }
-                )
-              }
+            // user initialization if needed
+            const apiUser = await getOrCreateUser(await dynamicToApiUser(user))
+            if (primaryWallet) {
+              updateOrCreateWallet(
+                { publicKey: primaryWallet.address },
+                { ownerId: apiUser.id },
+                {
+                  publicKey: primaryWallet.address,
+                  chain: primaryWallet.chain,
+                  ownerId: apiUser.id,
+                }
+              )
             }
           },
           onEmbeddedWalletCreated: async (jwtVerifiedCredential, user) => {
@@ -94,11 +104,10 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
           onLogout: () => {
             handleLogout();
           },
-          onUserProfileUpdate: async (user) => {
+          onUserProfileUpdate: async user => {
             if (!user.userId)
               throw new Error(`User ${user} has no userId!`)
             const apiUser = await getUser({ dynamicId: user.userId })
-            // TODO: I have NO idea why you need to await what's supposed to be a synchronous function here
             updateUser(apiUser.id, await dynamicToApiUser(user))
           },
           onWalletAdded: async ({ wallet, userWallets }) => {
