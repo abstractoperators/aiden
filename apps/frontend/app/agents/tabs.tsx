@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns"
-import { getIncubating, getEnlightened } from "@/lib/agent";
+import { getIncubating, getEnlightened } from "@/lib/api/agent";
 
 export default async function AgentsTabs() {
   const enlightened = await getEnlightened();

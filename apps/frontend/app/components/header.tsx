@@ -8,6 +8,8 @@ import ThemeImage from '@/components/ui/theme-image'
 import DynamicWaitlistButton from './dynamic-waitlist-button'
 import Image from 'next/image'
 import { ReactElement } from 'react'
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core'
+import UserMenu from './user-menu'
 
 const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full {}"
 enum headerStyles {
@@ -49,6 +51,7 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
 
 export default function Header({ variant }: variantProp) {
   const { headerStyle, aidenImage, } = getVariantOutputs(variant)
+  const { handleLogOut, primaryWallet, user } = useDynamicContext()
 
   return (
     <header
@@ -76,6 +79,15 @@ export default function Header({ variant }: variantProp) {
           </Link>
           <div className="flex items-center justify-between space-x-2 font-medium">
             <DynamicWaitlistButton cta="Join the Waitlist" />
+            {
+              user &&
+              primaryWallet &&
+              <UserMenu
+                logout={handleLogOut}
+                user={user}
+                wallet={primaryWallet}
+              />
+            }
             <DarkModeToggle />
           </div>
         </nav>
