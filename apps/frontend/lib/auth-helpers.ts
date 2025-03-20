@@ -1,4 +1,5 @@
 import jwt, { JwtHeader, JwtPayload, Secret, VerifyErrors } from "jsonwebtoken";
+import { signOut } from "next-auth/react";
 
 export const getKey = (
   _: JwtHeader,
@@ -31,11 +32,11 @@ export const getKey = (
   });
 };
 
-export const validateJWT = async (
+const validateJWT = async (
   token: string
 ): Promise<JwtPayload | null> => {
   try {
-    const decodedToken = await new Promise<JwtPayload | null>(
+    return await new Promise<JwtPayload | null>(
       (resolve, reject) => {
         jwt.verify(
           token.trim(),
@@ -45,7 +46,6 @@ export const validateJWT = async (
             err: VerifyErrors | null,
             decoded: string | JwtPayload | undefined
           ) => {
-            console.log("decoded the jwt");
             if (err) {
               console.log("JWT verification error:", err);
               reject(err);
@@ -62,9 +62,17 @@ export const validateJWT = async (
         )
       }
     )
-    return decodedToken;
   } catch (error) {
     console.error("Invalid token:", error);
     return null;
   }
 };
+
+async function handleLogout() {
+  await signOut({ redirectTo: '/' });
+}
+
+export {
+  handleLogout,
+  validateJWT,
+}
