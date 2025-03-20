@@ -140,7 +140,7 @@ def runtime_factory(client):
 
 
 @pytest.fixture()
-def agent_factory(client, user_factory, token_factory, runtime_factory):
+def agent_factory(client, user_factory, token_factory):
     agent_ids: list[UUID] = []
 
     def factory(**kwargs) -> AgentPublic:
@@ -151,9 +151,7 @@ def agent_factory(client, user_factory, token_factory, runtime_factory):
         if (token_id := kwargs.get("token_id")) is None:
             token = token_factory()
             token_id = token.id
-        if (runtime_id := kwargs.get("runtime_id")) is None:
-            runtime = runtime_factory()
-            runtime_id = runtime.id
+        runtime_id = kwargs.get("runtime_id")
         character_json = kwargs.get("character_json", {})
         env_file = kwargs.get("env_file", "env_var=env_val")
 
@@ -173,11 +171,8 @@ def agent_factory(client, user_factory, token_factory, runtime_factory):
 
     yield factory
 
-    try:
-        for agent_id in agent_ids:
-            client.delete(f"/agents/{agent_id}")
-    except Exception as e:
-        print(e)
+    for agent_id in agent_ids:
+        client.delete(f"/agents/{agent_id}")
 
 
 def test_wallets(client, wallet_factory, user_factory) -> None:

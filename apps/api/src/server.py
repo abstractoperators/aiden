@@ -571,7 +571,8 @@ def delete_agent(agent_id: UUID) -> None:
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
-        stop_agent(agent_id)
+        if agent.runtime_id:
+            stop_agent(agent_id)
         crud.delete_agent(session, agent)
 
     return None
