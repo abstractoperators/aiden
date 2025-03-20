@@ -280,7 +280,7 @@ def test_runtimes(client, runtime_factory) -> None:
     return None
 
 
-def test_agents(client, agent_factory, user_factory) -> None:
+def test_agents(client, user_factory, agent_factory) -> None:
     agent: AgentPublic = agent_factory()
     assert agent is not None
     # Test getting agents by the user's dynamic id.
