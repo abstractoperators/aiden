@@ -1,4 +1,5 @@
-from time import sleep
+import asyncio
+from asyncio import sleep as asyncio_sleep
 from uuid import UUID, uuid4
 
 import pytest
@@ -115,7 +116,7 @@ def token_factory(client):
 def runtime_factory(client):
     runtime_ids: list[UUID] = []
 
-    def factory() -> Runtime:
+    async def factory() -> Runtime:
         runtime_resp = client.post("/runtimes")
         runtime_create_task = RuntimeCreateTask.model_validate(runtime_resp.json())
         runtime_ids.append(runtime_create_task.runtime_id)
@@ -126,7 +127,7 @@ def runtime_factory(client):
             celery_task_id = runtime_create_task.celery_task_id
             task_status = client.get(f"/tasks/{celery_task_id}").json()
             assert task_status != TaskStatus.FAILURE
-            sleep(5)
+            asyncio_sleep(5)
 
         resp = client.get(f"/runtimes/{runtime_create_task.runtime_id}")
         assert resp.status_code == 200
@@ -261,17 +262,26 @@ def test_tokens(client, token_factory) -> None:
     return None
 
 
-def test_runtimes(client, runtime_factory) -> None:
-    runtime: Runtime = runtime_factory()
-    assert runtime is not None
+@pytest.mark.asyncio
+async def test_runtimes(client, runtime_factory) -> None:
+    runtime_1, runtime_2 = asyncio.gather(runtime_factory(), runtime_factory())
+    assert runtime_1 is not None
+    assert runtime_2 is not None
 
-    response = client.get(f"/runtimes/{runtime.id}")
+    response = client.get(f"/runtimes/{runtime_1.id}")
+    assert response.status_code == 200
+    Runtime.model_validate(response.json())
+
+    response = client.get(f"/runtimes/{runtime_2.id}")
     assert response.status_code == 200
     Runtime.model_validate(response.json())
 
     response = client.get("/runtimes")
     assert response.status_code == 200
+    assert len(response.json()) == 2
     Runtime.model_validate(response.json()[0])
+    Runtime.model_validate(response.json()[1])
+
     return None
 
 
