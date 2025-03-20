@@ -427,15 +427,23 @@ def get_start_agent_task_status(
     runtime_id: UUID | None = None,
 ) -> TaskStatus | None:
     """
-    Returns the status of a task to start an agent on a runtime.
-    If not found, then it returns None instead of an HTTP 404.
+    Returns the latest status of a task to start an agent on a runtime.
+    If only one of agent_id or runtime_id is passed, it returns the status of the most recent task using that id.
+    If both are passed, it returns the status of the most recent task using both ids.
+    If not found, raises a 404
     Otherwise, it returns the status of the task.
     """
     if not agent_id and not runtime_id:
-        raise ValueError("Exactly one of agent_id or runtime_id must be provided")
+        raise ValueError("At least one of agent_id or runtime_id must be provided")
 
     with Session() as session:
-        if agent_id:
+        if agent_id and runtime_id:
+            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
+                session,
+                agent_id=agent_id,
+                runtime_id=runtime_id,
+            )
+        elif agent_id:
             agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
                 session,
                 agent_id=agent_id,
@@ -445,9 +453,14 @@ def get_start_agent_task_status(
                 session,
                 runtime_id=runtime_id,
             )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Should not reach here",
+            )
 
         if not agent_start_task:
-            return None
+            raise HTTPException(status_code=404, detail="Task not found")
 
         task_id = agent_start_task.celery_task_id
 
@@ -482,7 +495,8 @@ def start_agent(
             detail=f"There is already a {task_status_agent} task for agent {agent_id}",
         )
     if task_status_runtime and (
-        task_status_runtime == "PENDING" or task_status_runtime == "STARTED"
+        task_status_runtime == TaskStatus.PENDING
+        or task_status_runtime == TaskStatus.STARTED
     ):
         raise HTTPException(
             status_code=400,

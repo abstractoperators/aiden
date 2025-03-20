@@ -70,7 +70,7 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
         resp.raise_for_status()
 
     # Poll the runtime until the agent is running
-    for i in range(60):
+    for i in range(1, 61):
         resp = requests.get(f"{runtime.url}/controller/character/status")
         logger.info(f"{i}/{60}: Polling for agent to start")
         if resp.status_code == 200 and resp.json()["running"]:
@@ -155,7 +155,7 @@ def create_runtime(
 
         # Poll runtime to see if it stands up. If it doesn't, throw an error and rollback.
         logger.info(f"Polling runtime {runtime.id} at {runtime.url} for health check")
-        for i in range(40):
+        for i in range(1, 41):
             logger.info(f"{i}/40: Polling runtime for health check")
             sleep(15)
             try:
@@ -210,7 +210,7 @@ def update_runtime(
 
         # Poll the service until the deployment is stable (that is, old tasks are stopped, and new ones are running)
         runtime_url = runtime.url
-        for i in range(40):
+        for i in range(1, 41):
             logger.info(
                 f"{i}/40: Polling service {aws_config.service_name} for stability"
             )
@@ -229,7 +229,7 @@ def update_runtime(
             sleep(15)
 
         # Poll runtime until it's online.
-        for i in range(40):
+        for i in range(1, 41):
             try:
                 resp = requests.get(f"{runtime_url}/ping", timeout=3)
                 resp.raise_for_status()
@@ -281,7 +281,7 @@ def delete_runtime(
             )
 
     # Wait until the service is no longer draining.
-    for i in range(40):
+    for i in range(1, 41):
         sleep(15)
         logger.info(f"{i}/40: Polling service for draining")
 

@@ -259,7 +259,7 @@ def get_agent_start_task(
     Returns the most recent task where agent_id and/or runtime_id match.
     """
     if not agent_id and not runtime_id:
-        raise ValueError("Must provide either agent_id or runtime_id")
+        raise ValueError("Must provide at least one of agent_id or runtime_id")
 
     stmt = select(AgentStartTask)
     if agent_id is not None:
