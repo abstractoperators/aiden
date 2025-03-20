@@ -127,7 +127,7 @@ def runtime_factory(client):
             celery_task_id = runtime_create_task.celery_task_id
             task_status = client.get(f"/tasks/{celery_task_id}").json()
             assert task_status != TaskStatus.FAILURE
-            asyncio_sleep(5)
+            await asyncio_sleep(5)
 
         resp = client.get(f"/runtimes/{runtime_create_task.runtime_id}")
         assert resp.status_code == 200
@@ -264,7 +264,12 @@ def test_tokens(client, token_factory) -> None:
 
 @pytest.mark.asyncio
 async def test_runtimes(client, runtime_factory) -> None:
-    runtime_1, runtime_2 = asyncio.gather(runtime_factory(), runtime_factory())
+    response = client.get("/runtimes")
+    assert response.status_code == 200
+    num_runtimes = len(response.json())
+    # prayge that runtimes aren't being created/deleted while this test runs.
+
+    runtime_1, runtime_2 = await asyncio.gather(runtime_factory(), runtime_factory())
     assert runtime_1 is not None
     assert runtime_2 is not None
 
@@ -278,7 +283,9 @@ async def test_runtimes(client, runtime_factory) -> None:
 
     response = client.get("/runtimes")
     assert response.status_code == 200
-    assert len(response.json()) == 2
+    assert (
+        len(response.json()) == 2 + num_runtimes
+    )  # uhhhh what happens when there are runtimes prior to this test?
     Runtime.model_validate(response.json()[0])
     Runtime.model_validate(response.json()[1])
 
