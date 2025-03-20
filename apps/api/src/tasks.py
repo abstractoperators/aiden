@@ -178,6 +178,7 @@ def create_runtime(
     except (Exception, KeyboardInterrupt) as e:
         logger.error(f"{e}: Rolling back runtime")
         delete_runtime(runtime_id=runtime_id, aws_config_dict=aws_config_dict)
+        raise e
 
 
 @app.task()
@@ -289,8 +290,12 @@ def delete_runtime(
             cluster=aws_config.cluster,
             services=[aws_config.service_name],
         )["services"][0]
-        desired_count = service["desiredCount"]
-        if desired_count == 0:
+        deployments = service["deployments"]
+        if all(
+            deployment.get("runningCount", 0) == 0
+            and deployment.get("pendingCount", 0) == 0
+            for deployment in deployments
+        ):
             logger.info(f"Service {aws_config.service_name} is drained")
             break
 

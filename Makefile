@@ -91,7 +91,7 @@ aws-ecr-push-prometheus: aws-ecr-login
 
 
 pytest:
-	(cd apps/api && uv run pytest src --capture=no --log-cli-level=DEBUG)
+	(cd apps/api && uv run pytest src --log-cli-level=DEBUG)
 mypy:
 	cd apps/api && uv run mypy src || true
 	cd apps/runtime && uv run mypy src || true
