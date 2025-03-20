@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache"
 import { createResource, fromApiEndpoint, getResource } from "./common"
 import { Runtime } from "./runtime"
 import { getToken, Token } from "./token"
+import { AgentStartTask, TaskStatus } from "./task"
+// TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
+import { setTimeout } from "node:timers/promises"
 
 const AGENT_PATH = '/agents'
 const AGENT_SEGMENT = '/agents/'
@@ -51,9 +54,22 @@ async function createAgent(agentPayload: AgentBase): Promise<Agent> {
   return ret
 }
 
-async function startAgent(agentId: string, runtimeId: string): Promise<[ Agent, Runtime ]> {
-  return createResource<[ Agent, Runtime ]>(new URL(
+async function startAgent(agentId: string, runtimeId: string): Promise<AgentStartTask> {
+  return createResource<AgentStartTask>(new URL(
     `${baseUrlPath.href}/${agentId}/start/${runtimeId}`
+  ))
+}
+
+// TODO: update when endpoint is updated
+async function getAgentStartTaskStatus(
+  agentId: string,
+  runtimeId: string,
+  delay?: number,
+): Promise<TaskStatus> {
+  await setTimeout(delay)
+  const baseUrl = fromApiEndpoint('/agents')
+  return getResource<TaskStatus>(new URL(
+    `${baseUrl.href}/${agentId}/start/${runtimeId}`,
   ))
 }
 
@@ -111,6 +127,7 @@ export {
   getAgent,
   getEnlightened,
   getIncubating,
+  getAgentStartTaskStatus,
   startAgent,
 }
 

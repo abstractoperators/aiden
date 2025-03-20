@@ -3,6 +3,8 @@ import AgentCard from "@/components/agent-card"
 import Chat from "@/components/chat"
 import { getAgent } from "@/lib/api/agent"
 
+// TODO: start agent button
+
 export default async function AgentHome({
   params,
 }: {

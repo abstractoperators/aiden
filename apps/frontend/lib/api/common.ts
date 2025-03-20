@@ -17,13 +17,16 @@ function fromApiEndpoint(url: string): URL {
 
 async function getResource<ResponseType>(
   baseUrl: URL | string,
-  options: {
+  {
+    resourceId,
+    query,
+  } :
+  {
     resourceId?: string,
     query?: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
   } = {},
 ): Promise<ResponseType> {
   try {
-    const { resourceId, query } = options
     const resourceUrl = resourceId ? new URL(resourceId, baseUrl) : new URL(baseUrl)
     const params = query ? new URLSearchParams(snakify(query)) : undefined
     const url = params ? new URL(`${resourceUrl.href}?${params.toString()}`) : resourceUrl
@@ -99,20 +102,19 @@ async function updateOrCreateResource<
   ResponseType,
   UpdateRequestType = undefined,
   CreateRequestType = undefined,
->(args: {
+>({
+  baseUpdateUrl,
+  resourceId,
+  updateBody,
+  createUrl,
+  createBody,
+}: {
   baseUpdateUrl: URL | string,
   resourceId: string,
   updateBody?: UpdateRequestType,
   createUrl: URL | string,
   createBody?: CreateRequestType,
 }): Promise<ResponseType> {
-  const {
-    baseUpdateUrl,
-    resourceId,
-    updateBody,
-    createUrl,
-    createBody,
-  } = args
 
   return (
     updateResource<ResponseType, UpdateRequestType>(

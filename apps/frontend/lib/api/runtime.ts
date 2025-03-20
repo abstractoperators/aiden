@@ -1,8 +1,6 @@
 'use server'
 
 import { createResource, fromApiEndpoint, getResource } from "./common"
-// TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
-import { setTimeout } from "node:timers/promises"
 
 interface RuntimeBase {
   url: string
@@ -18,8 +16,16 @@ const RUNTIME_SEGMENT = '/runtimes/'
 const baseUrlSegment = fromApiEndpoint(RUNTIME_SEGMENT)
 const baseUrlPath = fromApiEndpoint(RUNTIME_PATH)
 
-async function getRuntime(runtimeId: string, delay?: number): Promise<Runtime> {
-  await setTimeout(delay)
+async function getRuntimes(unused: boolean = true): Promise<Runtime[]> {
+  return getResource<Runtime[]>(
+    baseUrlPath,
+    { query: { unused: unused }},
+  )
+}
+
+async function getRuntime(
+  runtimeId: string,
+): Promise<Runtime> {
   return getResource<Runtime>(
     baseUrlSegment,
     { resourceId: runtimeId },
@@ -33,6 +39,7 @@ async function createRuntime(): Promise<Runtime> {
 export {
   createRuntime,
   getRuntime,
+  getRuntimes,
 }
 
 export type {

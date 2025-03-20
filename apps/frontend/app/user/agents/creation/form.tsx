@@ -9,8 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useDynamicContext, UserProfile } from "@dynamic-labs/sdk-react-core"
 import { getUser } from "@/lib/api/user";
-import { createAgent, startAgent } from "@/lib/api/agent";
-import { createRuntime, getRuntime } from "@/lib/api/runtime";
+import {
+  createAgent,
+  getAgentStartTaskStatus,
+  startAgent,
+} from "@/lib/api/agent";
+import {
+  createRuntime,
+  getRuntimes,
+  Runtime,
+} from "@/lib/api/runtime";
+import { TaskStatus } from "@/lib/api/task";
 
 
 const MAX_FILE_SIZE = 5000000;
@@ -66,40 +75,67 @@ export default function CreationForm() {
       }
 
       const agent = await createAgent(agentPayload)
-      const runtime = await createRuntime()
+      const unusedRuntimes = await getRuntimes()
+      // if no unused runtime, get a random one
+      // TODO: delete once getlatestruntime is implemented on API
+      const runtime: Runtime = unusedRuntimes.length ?
+        unusedRuntimes[0] :
+        await (async () => {
+          console.log("No unused runtimes to start an agent, getting a random runtime")
+          const runtimes: Runtime[] = (
+            await getRuntimes(false)
+            .then(list => list.length ? list : Promise.all([createRuntime()]))
+          )
+          return runtimes[Math.floor(Math.random() * runtimes.length)]
+        })()
+
+      startAgent(agent.id, runtime.id)
       toast({
         title: "Agent Created!",
-        description: "Agent has been created, but is still waiting for the runtime to start.",
+        description: "Agent has been defined, but is still waiting to start up.",
       })
-      // wait for runtime to be up to start agent
-      while (!runtime.started) {
+
+      // TODO: configurable maxTries
+      // TODO: configurable delay (in ms)
+      const delay = 30000
+      const maxTries = 15
+      const arr = [...Array(maxTries).keys()]
+      startLoop: for (const i of arr) {
         console.log(
-          "Waiting for runtime",
-          runtime.id,
-          "at",
-          runtime.url,
-          "to instantiate",
+          "Waiting for agent", agent.id,
+          "to start up for runtime", runtime.id,
+          "at", runtime.url,
         )
-        const updatedRuntime = await getRuntime(
+
+        const status = await getAgentStartTaskStatus(
+          agent.id,
           runtime.id,
-          30000, // 30 second delay
+          delay,
         )
-        if (updatedRuntime.started) {
-          console.log(runtime.id, "has successfully started!")
-          break
+        switch (status) {
+          case TaskStatus.SUCCESS:
+            console.log(
+              "Agent", agent.id,
+              "successfully started on", runtime.id,
+            "at", runtime.url,
+          )
+            toast({
+              title: "Success!",
+              description: "Agent defined and started! You can now fully interact with it.",
+            })
+            break startLoop;
+          case TaskStatus.FAILURE:
+            throw new Error("Agent Start Task Status failed!!!")
+          case TaskStatus.PENDING:
+          case TaskStatus.STARTED:
+            toast({
+              title: "Still waiting for agent to start..."
+            })
         }
-        toast({
-          title: "Still waiting for runtime..."
-        })
+
+        if (i === maxTries - 1)
+          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
       }
-
-      console.log("Attempting to start agent", agent.id, "on runtime", runtime.id)
-      await startAgent(agent.id, runtime.id)
-
-      toast({
-        title: "Success!",
-        description: "Character JSON loaded and Agent created.",
-      })
     } catch (error) {
       toast({
         title: "Something went wrong. Please try again",
