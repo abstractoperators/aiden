@@ -39,7 +39,7 @@ export function SocialLinks() {
           target="_blank"
         >
           <Image
-            className="transition duration-300 w-8 rounded-full hover:invert-[.8] dark:invert dark:hover:invert-[.2]"
+            className="transition duration-300 w-6 rounded-full hover:invert-[.8] dark:invert dark:hover:invert-[.2]"
             src={src}
             alt={alt}
           />

@@ -4,14 +4,14 @@ import { SocialLinks } from "./social-links"
 const baseFooterStyle = "w-full flex justify-center"
 enum footerStyles {
   landing = `${baseFooterStyle}`,
-  main = `${baseFooterStyle} bg-background/10 backdrop-blur supports-[backdrop-filter]:bg-background/10`
+  main = `${baseFooterStyle} bg-background/10 backdrop-blur supports-[backdrop-filter]:bg-background/10`,
 }
 
 interface variantOutputs {
   footerStyle: footerStyles,
 }
 interface variantProp {
-  variant?: "landing" | "main",
+  variant?: "landing" | "main"
 }
 function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
   switch (variant) {
@@ -38,12 +38,6 @@ export default function Footer({ variant }: variantProp) {
             © 2025 AIDEN. All rights reserved.
           </p>
         </div>
-        <Link
-          href="/about"
-          className="transition duration-300 hover:invert-[.5]"
-        >
-          About Us
-        </Link>
         <SocialLinks />
       </div>
     </footer>

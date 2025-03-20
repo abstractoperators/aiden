@@ -54,27 +54,31 @@ export default function Header({ variant }: variantProp) {
     <header
       className={headerStyle}
     >
-      <div className="container flex h-14 items-center">
-        <div className="mr-4 hidden md:flex">
+      <div className="container flex h-14 items-center justify-between">
+        <Link
+          href="/"
+          className="mr-6 flex items-center space-x-2"
+        >
+          {aidenImage}
+        </Link>
+        <nav className="flex items-center justify-between space-x-8 font-medium">
           <Link
-            href="/"
-            className="mr-6 flex items-center space-x-2"
+            className="transition duration-300 hover:invert-[.5]"
+            href='/agents'
           >
-            {aidenImage}
+            Agents
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link
-              className="transition duration-300 hover:invert-[.5]"
-              href='/agents'
-            >
-              Agents
-            </Link>
-          </nav>
-        </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <DynamicWaitlistButton cta="Join the Waitlist" />
-          <DarkModeToggle />
-        </div>
+          <Link
+            href="/about"
+            className="transition duration-300 hover:invert-[.5]"
+          >
+            About Us
+          </Link>
+          <div className="flex items-center justify-between space-x-2 font-medium">
+            <DynamicWaitlistButton cta="Join the Waitlist" />
+            <DarkModeToggle />
+          </div>
+        </nav>
       </div>
     </header>
   )
