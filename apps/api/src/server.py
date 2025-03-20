@@ -421,8 +421,8 @@ def get_task_status(task_id: UUID) -> TaskStatus:
         return TaskStatus(task["status"])
 
 
-@app.get("/agents/{agent_id}/start/{runtime_id}")
-def get_start_agent_task_status(
+@app.get("/tasks/start-agent")
+def get_agent_start_task_status(
     agent_id: UUID | None = None,
     runtime_id: UUID | None = None,
 ) -> TaskStatus | None:
@@ -480,10 +480,10 @@ def start_agent(
     # Make sure that no task for starting an agent is already running.
     # Must block on both agent_id or runtime_id.
     # That is, there must not be a running task for either agent_id or runtime_id.
-    task_status_agent: TaskStatus | None = get_start_agent_task_status(
+    task_status_agent: TaskStatus | None = get_agent_start_task_status(
         agent_id=agent_id
     )
-    task_status_runtime: TaskStatus | None = get_start_agent_task_status(
+    task_status_runtime: TaskStatus | None = get_agent_start_task_status(
         runtime_id=runtime_id
     )
 
