@@ -131,6 +131,10 @@ def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     return session.exec(stmt).first()
 
 
+def delete_agent(session: Session, agent: Agent) -> None:
+    return delete_generic(session, agent)
+
+
 # endregion Agents
 # region Wallets
 

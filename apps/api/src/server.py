@@ -534,6 +534,49 @@ def start_agent(
         return crud.create_agent_start_task(session, task_record)
 
 
+@app.post("/agents/{agent_id}/stop")
+def stop_agent(agent_id: UUID) -> Agent:
+    """
+    Stops agent running on a runtime.
+    """
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        runtime_id = agent.runtime_id
+        if not runtime_id:
+            raise HTTPException(status_code=404, detail="Agent is not running")
+
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Runtime not found")
+
+        stop_endpoint = f"{runtime.url}/stop_agent/{agent_id}"
+        resp = requests.post(stop_endpoint, timeout=3)
+        resp.raise_for_status()
+        stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+
+        return stopped_agent
+
+
+@app.delete("/agents/{agent_id}")
+def delete_agent(agent_id: UUID) -> None:
+    """
+    Deletes an agent by id.
+    Raises a 404 if the agent is not found.
+    """
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        stop_agent(agent_id)
+        crud.delete_agent(session, agent)
+
+    return None
+
+
 @app.post("/wallets")
 async def create_wallet(wallet: WalletBase) -> Wallet:
     """
