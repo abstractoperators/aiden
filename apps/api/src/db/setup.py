@@ -29,7 +29,11 @@ elif env == "test":
 else:
     raise ValueError("Unknown environment for db. See db/setup.py")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args=connect_args,
+    pool_pre_ping=True,
+)
 
 
 @contextmanager
