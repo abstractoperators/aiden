@@ -1,5 +1,5 @@
 import Link from "next/link"
-import AbopIcon from "@/public/abstractoperators_favicon.jpg"
+// import AbopIcon from "@/public/abstractoperators_favicon.jpg"
 import Image from "next/image"
 import SeiIcon from "@/public/sei-favicon.png"
 import { Twitter } from "lucide-react"
@@ -58,7 +58,7 @@ export default function Footer({ variant }: variantProp) {
               strokeWidth={2.5}
             />
           </Link>
-          <Link
+          {/* <Link
             href="https://abop.ai/"
             className="text-gray-500 hover:text-gray-700"
             target="_blank"
@@ -69,7 +69,7 @@ export default function Footer({ variant }: variantProp) {
               alt="Abop"
             />
             <span className="sr-only">Abstract Operators</span>
-          </Link>
+          </Link> */}
           <Link
             href="https://www.sei.io/"
             className="text-gray-500 hover:text-gray-700"

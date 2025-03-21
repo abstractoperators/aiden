@@ -6,6 +6,7 @@ export default function Hero() {
     <section className="container flex flex-col items-center justify-center space-y-32 text-center">
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
         <Image
+          priority={true}
           className="w-1/2"
           src={LightGhost}
           alt="AIDEN"
