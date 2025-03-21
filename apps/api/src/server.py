@@ -813,3 +813,11 @@ def delete_runtime(
             ),
         )
         return runtime_delete_task
+
+
+def healthcheck_runtimes() -> list:
+    """
+    Checks the health of all runtimes.
+    Restarts them with their agents if they are down.
+    """
+    pass

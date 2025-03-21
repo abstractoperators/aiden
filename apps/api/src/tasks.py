@@ -34,6 +34,14 @@ app = Celery(
 app.config_from_object("src.celeryconfig")
 
 
+@app.on_after_configure.connect
+def setup_periodic_tasks(sender: Celery, **kwargs):
+    sender.add_periodic_task(
+        120,
+    )
+    pass
+
+
 @app.task
 def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
     with Session() as session:
