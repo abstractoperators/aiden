@@ -10,6 +10,24 @@ export default {
   theme: {
   	extend: {
   		colors: {
+				anakiwa: {
+					lightest: '#f5f8ff',
+					lighter: '#ebf1ff',
+					light: '#b9ceff',
+					DEFAULT: '#9bb9ff',
+					dark: '#7c94cc',
+					darker: '#3e4a66',
+					darkest: '#2e374c',
+				},
+				carnation: {
+					lightest: '#fef5fa',
+					lighter: '#feecf5',
+					light: '#febedc',
+					DEFAULT: '#fea3cd',
+					dark: '#cb82a4',
+					darker: '#654152',
+					darkest: '#4c303d',
+				},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

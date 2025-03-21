@@ -1,20 +1,16 @@
-import Link from "next/link"
-// import AbopIcon from "@/public/abstractoperators_favicon.jpg"
-import Image from "next/image"
-import SeiIcon from "@/public/sei-favicon.png"
-import { Twitter } from "lucide-react"
+import { SocialLinks } from "./social-links"
 
 const baseFooterStyle = "w-full flex justify-center"
 enum footerStyles {
   landing = `${baseFooterStyle}`,
-  main = `${baseFooterStyle} bg-background/10 backdrop-blur supports-[backdrop-filter]:bg-background/10`
+  main = `${baseFooterStyle} bg-background/10 backdrop-blur supports-[backdrop-filter]:bg-background/10`,
 }
 
 interface variantOutputs {
   footerStyle: footerStyles,
 }
 interface variantProp {
-  variant?: "landing" | "main",
+  variant?: "landing" | "main"
 }
 function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
   switch (variant) {
@@ -41,48 +37,7 @@ export default function Footer({ variant }: variantProp) {
             © 2025 AIDEN. All rights reserved.
           </p>
         </div>
-        <nav className="flex items-center space-x-4">
-          <Link
-            href="/about"
-            className="transition duration-300 hover:invert-[.5]"
-          >
-            About Us
-          </Link>
-          <Link
-            href="https://x.com/aiden_agents"
-            className="transition duration-300 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-            target="_blank"
-          >
-            <Twitter
-              size={28}
-              strokeWidth={2.5}
-            />
-          </Link>
-          {/* <Link
-            href="https://abop.ai/"
-            className="text-gray-500 hover:text-gray-700"
-            target="_blank"
-          >
-            <Image
-              className="transition duration-300 w-6 rounded-full hover:invert-[.8] dark:invert dark:hover:invert-[.2]"
-              src={AbopIcon}
-              alt="Abop"
-            />
-            <span className="sr-only">Abstract Operators</span>
-          </Link> */}
-          <Link
-            href="https://www.sei.io/"
-            className="text-gray-500 hover:text-gray-700"
-            target="_blank"
-          >
-            <Image
-              className="transition duration-300 w-6 rounded-full hover:invert-[.5]"
-              src={SeiIcon}
-              alt="Sei"
-            />
-            <span className="sr-only">Sei</span>
-          </Link>
-        </nav>
+        <SocialLinks />
       </div>
     </footer>
   )
