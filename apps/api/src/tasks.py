@@ -299,65 +299,76 @@ def update_runtime(
     aws_config_dict: dict,
     latest_revision: int,
 ) -> None:
-    # TODO: If the update fails then delete everything including aws and db entry.
-    aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
-    with Session() as session:
-        # Update agent running on the runtime to not have a runtime anymore.
-        runtime = crud.get_runtime(session, runtime_id)
-        if runtime is None:
-            raise ValueError(f"Runtime {runtime_id} does not exist")
-        agent = runtime.agent
-        if agent is not None:
-            agent_id = agent.id
-            crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
-        crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+    """
+    Updates a runtime to the latest revision of its task definition + latest container in ECR
+    Deletes the runtime entirely
+    """
+    try:
+        # TODO: If the update fails then delete everything including aws and db entry.
+        aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
+        with Session() as session:
+            # Update agent running on the runtime to not have a runtime anymore.
+            runtime = crud.get_runtime(session, runtime_id)
+            if runtime is None:
+                raise ValueError(f"Runtime {runtime_id} does not exist")
+            agent = runtime.agent
+            if agent is not None:
+                agent_id = agent.id
+                crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+            crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
 
-        # Force a redeployment of the runtime.
-        task_definition_arn = aws_config.task_definition_arn
-        ecs_client = get_role_session().client("ecs")
-        service = ecs_client.update_service(
-            cluster=aws_config.cluster,
-            service=aws_config.service_name,
-            taskDefinition=f"{task_definition_arn}:{latest_revision}",
-            forceNewDeployment=True,
-        )["service"]
+            # Force a redeployment of the runtime.
+            task_definition_arn = aws_config.task_definition_arn
+            ecs_client = get_role_session().client("ecs")
+            service = ecs_client.update_service(
+                cluster=aws_config.cluster,
+                service=aws_config.service_name,
+                taskDefinition=f"{task_definition_arn}:{latest_revision}",
+                forceNewDeployment=True,
+            )["service"]
 
-    # Poll the service until the deployment is stable (that is, old tasks are stopped, and new ones are running)
-    runtime_url = runtime.url
-    for i in range(1, 41):
-        logger.info(f"{i}/40: Polling service {aws_config.service_name} for stability")
-        service = ecs_client.describe_services(
-            cluster=aws_config.cluster,
-            services=[aws_config.service_name],
-        )["services"][0]
-        active_deployment_id = None
-        for deployment in service["deployments"]:
-            if deployment["status"] == "ACTIVE":
-                active_deployment_id = deployment["id"]
+        # Poll the service until the deployment is stable (that is, old tasks are stopped, and new ones are running)
+        runtime_url = runtime.url
+        for i in range(1, 41):
+            logger.info(
+                f"{i}/40: Polling service {aws_config.service_name} for stability"
+            )
+            service = ecs_client.describe_services(
+                cluster=aws_config.cluster,
+                services=[aws_config.service_name],
+            )["services"][0]
+            active_deployment_id = None
+            for deployment in service["deployments"]:
+                if deployment["status"] == "ACTIVE":
+                    active_deployment_id = deployment["id"]
+                    break
+            if active_deployment_id is None:
+                logger.info(f"{aws_config.service_name} is stable")
                 break
-        if active_deployment_id is None:
-            logger.info(f"{aws_config.service_name} is stable")
-            break
-        sleep(15)
-
-    # Poll runtime until it's online.
-    for i in range(1, 41):
-        try:
-            resp = requests.get(f"{runtime_url}/ping", timeout=3)
-            resp.raise_for_status()
-            logger.info(f"Runtime {runtime_id} is online")
-            with Session() as session:
-                crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-            break
-        except Exception as e:
-            logger.info(f"{i}/{40}: Runtime {runtime_id} is not online yet. {e}")
             sleep(15)
 
-    # Restart the agent (if any)
-    logger.info("Restarting agent (if any)")
-    if agent is not None:
-        logger.info(f"Restarting agent {agent_id}")
-        start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+        # Poll runtime until it's online.
+        for i in range(1, 41):
+            try:
+                resp = requests.get(f"{runtime_url}/ping", timeout=3)
+                resp.raise_for_status()
+                logger.info(f"Runtime {runtime_id} is online")
+                with Session() as session:
+                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+                break
+            except Exception as e:
+                logger.info(f"{i}/{40}: Runtime {runtime_id} is not online yet. {e}")
+                sleep(15)
+
+        # Restart the agent (if any)
+        logger.info("Restarting agent (if any)")
+        if agent is not None:
+            logger.info(f"Restarting agent {agent_id}")
+            start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+    except Exception as e:
+        logger.error(f"{e}: Deleting runtime - update failed")
+        delete_runtime(runtime_id=runtime_id, aws_config_dict=aws_config_dict)
+        raise Exception("Update failed - runtime deleted") from e
 
 
 @app.task()
