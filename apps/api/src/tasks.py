@@ -39,11 +39,16 @@ app.config_from_object("src.celeryconfig")
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
     sender.add_periodic_task(
-        60,
+        600,
         healthcheck_runtimes.s(),
-        name="ping every 10 seconds",
+        name="Healthcheck all runtimes every 10 minutes",
     )
     pass
+
+
+# TODO
+# Update polling tasks to be non-blocking on worker concurrency slots.
+# Maybe recursively call a polling task? not sure.
 
 
 @app.task
@@ -317,39 +322,36 @@ def update_runtime(
             forceNewDeployment=True,
         )["service"]
 
-        # Poll the service until the deployment is stable (that is, old tasks are stopped, and new ones are running)
-        runtime_url = runtime.url
-        for i in range(1, 41):
-            logger.info(
-                f"{i}/40: Polling service {aws_config.service_name} for stability"
-            )
-            service = ecs_client.describe_services(
-                cluster=aws_config.cluster,
-                services=[aws_config.service_name],
-            )["services"][0]
-            active_deployment_id = None
-            for deployment in service["deployments"]:
-                if deployment["status"] == "ACTIVE":
-                    active_deployment_id = deployment["id"]
-                    break
-            if active_deployment_id is None:
-                logger.info(f"{aws_config.service_name} is stable")
+    # Poll the service until the deployment is stable (that is, old tasks are stopped, and new ones are running)
+    runtime_url = runtime.url
+    for i in range(1, 41):
+        logger.info(f"{i}/40: Polling service {aws_config.service_name} for stability")
+        service = ecs_client.describe_services(
+            cluster=aws_config.cluster,
+            services=[aws_config.service_name],
+        )["services"][0]
+        active_deployment_id = None
+        for deployment in service["deployments"]:
+            if deployment["status"] == "ACTIVE":
+                active_deployment_id = deployment["id"]
                 break
-            sleep(15)
+        if active_deployment_id is None:
+            logger.info(f"{aws_config.service_name} is stable")
+            break
+        sleep(15)
 
-        # Poll runtime until it's online.
-        # Update this to be less blocking on concurrency.
-        # Maybe recursively call a polling task? not sure.
-        for i in range(1, 41):
-            try:
-                resp = requests.get(f"{runtime_url}/ping", timeout=3)
-                resp.raise_for_status()
-                logger.info(f"Runtime {runtime_id} is online")
+    # Poll runtime until it's online.
+    for i in range(1, 41):
+        try:
+            resp = requests.get(f"{runtime_url}/ping", timeout=3)
+            resp.raise_for_status()
+            logger.info(f"Runtime {runtime_id} is online")
+            with Session() as session:
                 crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-                break
-            except Exception as e:
-                logger.info(f"{i}/{40}: Runtime {runtime_id} is not online yet. {e}")
-                sleep(15)
+            break
+        except Exception as e:
+            logger.info(f"{i}/{40}: Runtime {runtime_id} is not online yet. {e}")
+            sleep(15)
 
     # Restart the agent (if any)
     logger.info("Restarting agent (if any)")
