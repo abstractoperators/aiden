@@ -1,5 +1,6 @@
 import os
 from time import sleep
+from typing import Sequence
 from uuid import UUID
 
 import requests
@@ -16,7 +17,7 @@ from src.aws_utils import (
     get_role_session,
 )
 from src.db import crud
-from src.db.models import AgentUpdate, RuntimeUpdate
+from src.db.models import Agent, AgentUpdate, Runtime, RuntimeUpdate
 from src.db.setup import SQLALCHEMY_DATABASE_URL, Session
 from src.models import AWSConfig
 
@@ -37,9 +38,81 @@ app.config_from_object("src.celeryconfig")
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
     sender.add_periodic_task(
-        120,
+        60,
+        healthcheck_runtimes.s(),
+        name="ping every 10 seconds",
     )
     pass
+
+
+@app.task
+def ping():
+    logger.info("ping")
+
+
+@app.task
+def healthcheck_runtimes():
+    """
+    Polls all runtimes to see if they are healthy.
+    If they are not healthy, then they are updated and restarted
+    """
+    with Session() as session:
+        runtimes: Sequence[Runtime] = crud.get_runtimes(session)
+        runtime_ids = [runtime.id for runtime in runtimes]
+
+    logger.info(f"\n\n{'\n'.join([str(runtime_id) for runtime_id in runtime_ids])}\n\n")
+
+    for runtime_id in runtime_ids:
+        healthcheck_runtime.delay(runtime_id)
+
+
+@app.task
+def healthcheck_runtime(runtime_id: UUID) -> None:
+    """
+    Healthchecks a single runtime to see if it is healthy.
+    If it is not healthy, then it is updated and restarted.
+    If it can't be updated and restarted, then it is deleted? Not sure about htis part.
+    """
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if runtime is None:
+            logger.warning(
+                "Runtime was deleted before healthcheck could be performed. Skipping."
+            )
+            return None
+        agent: Agent | None = runtime.agent
+
+    try:
+        # 1. Check if the runtime itself is healthy
+        # Unnecessary because AWS will do this anyways.
+        # resp = requests.get(f"{runtime.url}/ping", timeout=3)
+
+        # 2. Check if the fastapi controller is healthy
+        resp = requests.get(f"{runtime.url}/ping")
+        resp.raise_for_status()
+        # TODO: Update runtimes to have a ping endpoint (in runtime src code) instead of using nginx ping using /controller/ping # noqa
+        # TODO: Restart the runtime if the controller is not healthy.
+
+        # 3. Check if the character running on the runtime is healthy
+        if agent:
+            resp = requests.get(f"{runtime.url}/controller/character/status")
+            resp.raise_for_status()
+            character_status = resp.json()
+            # Make sure that the character matches the expected running agent.
+            agent_id = character_status.get("agent_id")
+            if not agent_id or agent_id != agent.eliza_agent_id:
+                logger.warning(
+                    f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But found {agent_id}"
+                )
+                # TODO: Restart the agent
+            else:
+                logger.info(
+                    f"Temp logging message. Agent {agent_id} is running on runtime {runtime.id}"
+                )
+    except Exception as e:
+        logger.error(e)
+        # TODO: Actually do something here lul
+        return
 
 
 @app.task
@@ -195,6 +268,7 @@ def update_runtime(
     aws_config_dict: dict,
     latest_revision: int,
 ) -> None:
+    # TODO: If the update fails then delete everything including aws and db entry.
     aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
     with Session() as session:
         # Update agent running on the runtime to not have a runtime anymore.
@@ -238,6 +312,8 @@ def update_runtime(
             sleep(15)
 
         # Poll runtime until it's online.
+        # Update this to be less blocking on concurrency.
+        # Maybe recursively call a polling task? not sure.
         for i in range(1, 41):
             try:
                 resp = requests.get(f"{runtime_url}/ping", timeout=3)
