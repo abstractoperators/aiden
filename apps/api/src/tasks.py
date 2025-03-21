@@ -83,8 +83,8 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
         agent: Agent | None = runtime.agent
 
     try:
-        # 1. Check if the runtime itself is healthy
-        # Unnecessary because AWS will do this anyways.
+        # 1. Check if the container itself is healthy
+        # Unnecessary because AWS will do this anyways (on the task and alb level)
         # resp = requests.get(f"{runtime.url}/ping", timeout=3)
 
         # 2. Check if the fastapi controller is healthy
@@ -94,25 +94,51 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
         # TODO: Restart the runtime if the controller is not healthy.
 
         # 3. Check if the character running on the runtime is healthy
+        # TODO: It's a little bit more complex than this.
+        # /character/status might not be enough for basic healthcheck, and it definitely only covers client-direct, but not other clients like slack-client.
+        # That is, the character might be running, but 1) you can't chat with it, 2) you can chat with it, but twitter (or smthn) doesn't work.
         if agent:
-            resp = requests.get(f"{runtime.url}/controller/character/status")
-            resp.raise_for_status()
-            character_status = resp.json()
-            # Make sure that the character matches the expected running agent.
-            agent_id = character_status.get("agent_id")
-            if not agent_id or agent_id != agent.eliza_agent_id:
-                logger.warning(
-                    f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But found {agent_id}"
-                )
-                # TODO: Restart the agent
-            else:
-                logger.info(
-                    f"Temp logging message. Agent {agent_id} is running on runtime {runtime.id}"
-                )
+            healthcheck_runtime_running_agent.delay(runtime_id)
     except Exception as e:
         logger.error(e)
         # TODO: Actually do something here lul
         return
+
+
+@app.task
+def healthcheck_runtime_running_agent(runtime_id: UUID) -> None:
+    """
+    Healthchecks a single runtime to see if the agent that is running on it is healthy.
+    """
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if runtime is None:
+            logger.warning(
+                "Runtime was deleted before healthcheck could be performed. Skipping."
+            )
+            return None
+        agent: Agent | None = runtime.agent
+        if agent is None:
+            logger.warning(
+                "Agent was deleted before healthcheck could be performed. Skipping."
+            )
+            return None
+
+    resp = requests.get(f"{runtime.url}/controller/character/status")
+    resp.raise_for_status()
+    character_status = resp.json()
+    # Make sure that the character matches the expected running agent.
+    agent_id = character_status.get("agent_id")
+    if not agent_id or agent_id != agent.eliza_agent_id:
+        logger.warning(
+            f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But found {agent_id}"
+        )
+        # TODO: Restart the agent
+    else:
+        logger.info(
+            f"Temp logging message. Agent {agent_id} is running on runtime {runtime.id}"
+        )
+    pass
 
 
 @app.task
