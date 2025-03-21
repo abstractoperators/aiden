@@ -13,11 +13,7 @@ from urllib3.exceptions import HTTPError
 
 # from pydantic import TypeAdapter
 from src import logger, tasks
-from src.aws_utils import (
-    get_aws_config,
-    get_latest_task_definition_revision,
-    get_role_session,
-)
+from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
     Agent,
@@ -763,20 +759,13 @@ def update_runtime(
                 status_code=500,
                 detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
             )
-        ecs_client = get_role_session().client("ecs")
-        runtime_task_definition_arn: str = aws_config.task_definition_arn
-        latest_revision: int = get_latest_task_definition_revision(
-            ecs_client, runtime_task_definition_arn
-        )
 
         logger.info(
-            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
+            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name}",
         )
 
         res = tasks.update_runtime.delay(
             runtime_id=runtime_id,
-            aws_config_dict=aws_config.model_dump(),
-            latest_revision=latest_revision,
         )
         runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(  #
             session,

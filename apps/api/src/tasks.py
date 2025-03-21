@@ -15,6 +15,8 @@ from src.aws_utils import (
     create_http_target_group,
     create_listener_rules,
     create_runtime_service,
+    get_aws_config,
+    get_latest_task_definition_revision,
     get_role_session,
 )
 from src.db import crud
@@ -104,10 +106,12 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
         resp.raise_for_status()
     except HTTPError as e:
         logger.info(e)
+
         update_runtime.delay(runtime_id)
         # Try to update the runtime.
         # Note that updating the runtime has the side effect of: restarting agent if any, and also deleting the runtime if it can't be updated. # noqa
         return
+        # Not raising an exception bcuz the task successfully detected that the task was unhealthy.
 
     # 3. Check if the character running on the runtime is healthy
     # That is, we expect an agent to be running on it.
@@ -296,15 +300,13 @@ def create_runtime(
         raise Exception("Runtime did not come online in time. Rolling back.")
     except (Exception, KeyboardInterrupt) as e:
         logger.error(f"{e}: Rolling back runtime")
-        delete_runtime(runtime_id=runtime_id, aws_config_dict=aws_config_dict)
+        delete_runtime(runtime_id=runtime_id)
         raise e
 
 
 @app.task()
 def update_runtime(
     runtime_id: UUID,
-    aws_config_dict: dict,
-    latest_revision: int,
 ) -> None:
     """
     Updates a runtime to the latest revision of its task definition + latest container in ECR
@@ -312,7 +314,6 @@ def update_runtime(
     """
     try:
         # TODO: If the update fails then delete everything including aws and db entry.
-        aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
         with Session() as session:
             # Update agent running on the runtime to not have a runtime anymore.
             runtime = crud.get_runtime(session, runtime_id)
@@ -324,9 +325,13 @@ def update_runtime(
                 crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
             crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
 
+            aws_config: AWSConfig = get_aws_config(runtime.service_no)
             # Force a redeployment of the runtime.
             task_definition_arn = aws_config.task_definition_arn
             ecs_client = get_role_session().client("ecs")
+            latest_revision = get_latest_task_definition_revision(
+                ecs_client, aws_config.task_definition_arn
+            )
             service = ecs_client.update_service(
                 cluster=aws_config.cluster,
                 service=aws_config.service_name,
@@ -374,20 +379,19 @@ def update_runtime(
             start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
     except Exception as e:
         logger.error(f"{e}: Deleting runtime - update failed")
-        delete_runtime(runtime_id=runtime_id, aws_config_dict=aws_config_dict)
+        delete_runtime(runtime_id=runtime_id)
         raise Exception("Update failed - runtime deleted") from e
 
 
 @app.task()
 def delete_runtime(
     runtime_id: UUID,
-    aws_config_dict: dict,
 ) -> None:
-    aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
     with Session() as session:
         runtime = crud.get_runtime(session, runtime_id)
         if runtime is None:
             raise ValueError(f"Runtime {runtime_id} does not exist")
+        aws_config = get_aws_config(runtime.service_no)
         ecs_client = get_role_session().client("ecs")
         elbv2_client = get_role_session().client("elbv2")
 
