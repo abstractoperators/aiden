@@ -9,6 +9,7 @@ from celery import Celery
 from celery.utils.log import get_task_logger
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
+from requests.exceptions import HTTPError
 
 from src.aws_utils import (
     create_http_target_group,
@@ -83,20 +84,17 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
         agent: Agent | None = runtime.agent
 
     try:
-        # 1. Check if the container itself is healthy
-        # Unnecessary because AWS will do this anyways (on the task and alb level)
+        # 1. Check if the service is reachable
+        # Unnecessary because AWS will do this at the ALB level
         # resp = requests.get(f"{runtime.url}/ping", timeout=3)
 
-        # 2. Check if the fastapi controller is healthy
-        resp = requests.get(f"{runtime.url}/ping")
-        resp.raise_for_status()
-        # TODO: Update runtimes to have a ping endpoint (in runtime src code) instead of using nginx ping using /controller/ping # noqa
-        # TODO: Restart the runtime if the controller is not healthy.
+        # 2. Check if the fastapi controller on the container is healthy
+        # Also unnecessary because there is a healthcheck configured on the container (in task definition)
+        # resp = requests.get(f"{runtime.url}/ping")
+        # resp.raise_for_status()
 
         # 3. Check if the character running on the runtime is healthy
-        # TODO: It's a little bit more complex than this.
-        # /character/status might not be enough for basic healthcheck, and it definitely only covers client-direct, but not other clients like slack-client.
-        # That is, the character might be running, but 1) you can't chat with it, 2) you can chat with it, but twitter (or smthn) doesn't work.
+        # That is, we expect an agent to be running on it.
         if agent:
             healthcheck_runtime_running_agent.delay(runtime_id)
     except Exception as e:
@@ -125,20 +123,22 @@ def healthcheck_runtime_running_agent(runtime_id: UUID) -> None:
             return None
 
     resp = requests.get(f"{runtime.url}/controller/character/status")
-    resp.raise_for_status()
-    character_status = resp.json()
-    # Make sure that the character matches the expected running agent.
-    agent_id = character_status.get("agent_id")
-    if not agent_id or agent_id != agent.eliza_agent_id:
-        logger.warning(
-            f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But found {agent_id}"
-        )
-        # TODO: Restart the agent
-    else:
-        logger.info(
-            f"Temp logging message. Agent {agent_id} is running on runtime {runtime.id}"
-        )
-    pass
+    try:
+        resp.raise_for_status()
+        character_status = resp.json()
+        # Make sure that the character matches the expected running agent.
+        running: bool = character_status.get("running")
+        agent_id: str = character_status.get("agent_id")
+        # TODO: Improve agent health check coverage - this isn't comprehensive
+        # Agent might be running, but not chattable.
+        # This only covers client-direct, but not other clients (e.g. what if twitter client is down?)
+        if not running or not agent_id or agent_id != agent.eliza_agent_id:
+            logger.info(
+                f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But either no agent was running, or the wrong agent was running."  # noqa
+            )
+            start_agent.delay(agent_id=agent.id, runtime_id=runtime.id)
+    except HTTPError as e:
+        logger.error(e)
 
 
 @app.task
