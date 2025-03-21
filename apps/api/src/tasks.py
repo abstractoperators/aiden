@@ -41,7 +41,7 @@ app.config_from_object("src.celeryconfig")
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
     sender.add_periodic_task(
-        600,
+        120,
         healthcheck_runtimes.s(),
         name="Healthcheck all runtimes every 10 minutes",
     )
@@ -67,7 +67,7 @@ def healthcheck_runtimes():
         runtimes: Sequence[Runtime] = crud.get_runtimes(session)
         runtime_ids = [runtime.id for runtime in runtimes]
 
-    logger.info(f"\n\n{'\n'.join([str(runtime_id) for runtime_id in runtime_ids])}\n\n")
+    # logger.info(f"\n\n{'\n'.join([str(runtime_id) for runtime_id in runtime_ids])}\n\n")
 
     for runtime_id in runtime_ids:
         healthcheck_runtime.delay(runtime_id)
@@ -105,7 +105,9 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
         resp = requests.get(f"{runtime.url}/controller/ping")
         resp.raise_for_status()
     except HTTPError as e:
-        logger.info(e)
+        logger.info(
+            f"{repr(e)}: Runtime {runtime_id} is unhealthy. Attempting to update and restart it."
+        )
 
         update_runtime.delay(runtime_id)
         # Try to update the runtime.
@@ -378,15 +380,17 @@ def update_runtime(
             logger.info(f"Restarting agent {agent_id}")
             start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
     except Exception as e:
-        logger.error(f"{e}: Deleting runtime - update failed")
-        delete_runtime(runtime_id=runtime_id)
-        raise Exception("Update failed - runtime deleted") from e
+        logger.info(f"{e}: Deleting runtime - update failed")
+        delete_runtime.delay(runtime_id=runtime_id)
+        return None
+        # don't raise an exception - the task was successful in detecting that the runtime should be deleted.
 
 
 @app.task()
 def delete_runtime(
     runtime_id: UUID,
 ) -> None:
+    logger.error(f"test error message: delete runtime {runtime_id}")
     with Session() as session:
         runtime = crud.get_runtime(session, runtime_id)
         if runtime is None:
@@ -414,24 +418,28 @@ def delete_runtime(
             elbv2_client.delete_target_group(
                 TargetGroupArn=runtime.target_group_arn,
             )
-
+    waiter = ecs_client.get_waiter("services_inactive")
+    waiter.wait(
+        cluster=aws_config.cluster,
+        services=[aws_config.service_name],
+    )  # error raised if service is not inactive or gone after 15s x 40 tries
     # Wait until the service is no longer draining.
-    for i in range(1, 41):
-        sleep(15)
-        logger.info(f"{i}/40: Polling service for draining")
+    # for i in range(1, 41):
+    #     sleep(15)
+    #     logger.info(f"{i}/40: Polling service for draining")
 
-        service = ecs_client.describe_services(
-            cluster=aws_config.cluster,
-            services=[aws_config.service_name],
-        )["services"][0]
-        deployments = service["deployments"]
-        if all(
-            deployment.get("runningCount", 0) == 0
-            and deployment.get("pendingCount", 0) == 0
-            for deployment in deployments
-        ):
-            logger.info(f"Service {aws_config.service_name} is drained")
-            break
+    #     service = ecs_client.describe_services(
+    #         cluster=aws_config.cluster,
+    #         services=[aws_config.service_name],
+    #     )["services"][0]
+    #     deployments = service["deployments"]
+    #     if all(
+    #         deployment.get("runningCount", 0) == 0
+    #         and deployment.get("pendingCount", 0) == 0
+    #         for deployment in deployments
+    #     ):
+    #         logger.info(f"Service {aws_config.service_name} is drained")
+    #         break
 
     # Delete the runtime in db
     with Session() as session:
