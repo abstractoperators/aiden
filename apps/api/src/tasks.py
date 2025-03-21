@@ -200,7 +200,7 @@ def update_runtime(
         crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
 
         # Force a redeployment of the runtime.
-        task_definition_arn = runtime.task_definition_arn
+        task_definition_arn = aws_config.task_definition_arn
         ecs_client = get_role_session().client("ecs")
         service = ecs_client.update_service(
             cluster=aws_config.cluster,

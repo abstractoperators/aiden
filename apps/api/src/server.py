@@ -775,8 +775,6 @@ def update_runtime(
         res = tasks.update_runtime.delay(
             runtime_id=runtime_id,
             aws_config_dict=aws_config.model_dump(),
-            service_arn=service_arn,
-            task_definition_arn=runtime_task_definition_arn,
             latest_revision=latest_revision,
         )
         runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(  #
