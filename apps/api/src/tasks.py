@@ -43,7 +43,6 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
         healthcheck_runtimes.s(),
         name="Healthcheck all runtimes every 10 minutes",
     )
-    pass
 
 
 # TODO
@@ -88,7 +87,6 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
             return None
         agent: Agent | None = runtime.agent
 
-    try:
         # 1. Check if the service is reachable
         # Unnecessary because AWS will do this at the ALB level
         # resp = requests.get(f"{runtime.url}/ping", timeout=3)
@@ -98,14 +96,23 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
         # resp = requests.get(f"{runtime.url}/ping")
         # resp.raise_for_status()
 
-        # 3. Check if the character running on the runtime is healthy
-        # That is, we expect an agent to be running on it.
-        if agent:
-            healthcheck_runtime_running_agent.delay(runtime_id)
-    except Exception as e:
-        logger.error(e)
-        # TODO: Actually do something here lul
+    # On second thought, 1 and 2 might be necessary because we might need to delete the entry in db.d
+    try:
+        resp = requests.get(f"{runtime.url}/ping")
+        resp.raise_for_status()
+        resp = requests.get(f"{runtime.url}/controller/ping")
+        resp.raise_for_status()
+    except HTTPError as e:
+        logger.info(e)
+        update_runtime.delay(runtime_id)
+        # Try to update the runtime.
+        # Note that updating the runtime has the side effect of: restarting agent if any, and also deleting the runtime if it can't be updated. # noqa
         return
+
+    # 3. Check if the character running on the runtime is healthy
+    # That is, we expect an agent to be running on it.
+    if agent:
+        healthcheck_runtime_running_agent.delay(runtime_id)
 
 
 @app.task
