@@ -10,4 +10,4 @@ RUN uv sync
 
 EXPOSE 80
 
-CMD ["uv", "run", "celery", "-A", "src.tasks", "worker", "--loglevel=info"]
+CMD ["uv", "run", "celery", "-A", "src.tasks", "worker", "--loglevel=info", "--beat"]   

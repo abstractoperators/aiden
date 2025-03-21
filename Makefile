@@ -90,6 +90,7 @@ aws-ecr-push-prometheus: aws-ecr-login
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 
 
+
 pytest:
 	(cd apps/api && uv run pytest src --log-cli-level=DEBUG)
 mypy:
