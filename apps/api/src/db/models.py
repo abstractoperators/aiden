@@ -153,8 +153,6 @@ class RuntimeBase(Base):
     service_no: int = Field(
         description="The service number of the runtime.", nullable=False
     )
-    # AWS does an actual heartbeat/healthcheck + restarts the runtime if it's down.
-    # This is a temp solution so that you can't attempt to start an agent until the runtime has been confirmed to have started at least once # noqa
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
         default=None,
