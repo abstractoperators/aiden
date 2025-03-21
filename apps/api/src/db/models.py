@@ -89,6 +89,7 @@ class UserUpdate(Base):
 
 
 class AgentBase(Base):
+    # TODO: Update to UUID type
     eliza_agent_id: str | None = Field(
         description="Eliza's agent id", nullable=True, default=None
     )
@@ -117,6 +118,7 @@ class AgentBase(Base):
 
 
 class AgentUpdate(Base):
+    # TODO: Update to UUID type
     eliza_agent_id: str | None = Field(
         description="Agent id of the eliza agent (different from Agent.id)",
         nullable=True,
