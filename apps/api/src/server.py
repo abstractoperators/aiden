@@ -1,5 +1,4 @@
 import os
-import re
 from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
@@ -30,6 +29,8 @@ from src.db.models import (
     RuntimeBase,
     RuntimeCreateTask,
     RuntimeCreateTaskBase,
+    RuntimeDeleteTask,
+    RuntimeDeleteTaskBase,
     RuntimeUpdate,
     RuntimeUpdateTask,
     RuntimeUpdateTaskBase,
@@ -320,29 +321,6 @@ def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
     )
 
 
-def create_runtime_local():
-    """
-    'Creates' a runtime locally.
-    Expects that runtime docker image is already running with make run-runtime
-    Just creates an entry in sqlite db.
-    """
-    if os.getenv("inside_docker") and os.getenv("ENV") == "dev":
-        url = "http://host.docker.internal:8000"
-    else:
-        url = "http://localhost:8000"
-
-    with Session() as session:
-        runtime = crud.create_runtime(
-            session,
-            RuntimeBase(
-                url=url,
-                started=True,
-            ),
-        )
-
-    return runtime
-
-
 @app.post("/runtimes")
 def create_runtime() -> RuntimeCreateTask:
     """
@@ -358,13 +336,13 @@ def create_runtime() -> RuntimeCreateTask:
         runtimes = crud.get_runtimes(
             session, limit=1000000
         )  # lul better hope you don't run out of memory
-        runtime_nums = []
+        runtime_nums = set()
         for runtime in runtimes:
-            match = re.search(r"aiden-runtime-(\d+)", runtime.url)
-            if match:
-                runtime_nums.append(int(match.group(1)))
+            runtime_nums.add(runtime.service_no)
 
-    next_runtime_number = max(runtime_nums) + 1 if runtime_nums else 1
+    next_runtime_number = 1
+    while next_runtime_number in runtime_nums:
+        next_runtime_number += 1
 
     aws_config: AWSConfig | None = get_aws_config(next_runtime_number)
     if not aws_config:
@@ -381,6 +359,7 @@ def create_runtime() -> RuntimeCreateTask:
             RuntimeBase(
                 url=url,
                 started=False,
+                service_no=next_runtime_number,
             ),
         )
         res = tasks.create_runtime.delay(
@@ -442,21 +421,29 @@ def get_task_status(task_id: UUID) -> TaskStatus:
         return TaskStatus(task["status"])
 
 
-@app.get("/agents/{agent_id}/start/{runtime_id}")
-def get_start_agent_task_status(
+@app.get("/tasks/start-agent")
+def get_agent_start_task_status(
     agent_id: UUID | None = None,
     runtime_id: UUID | None = None,
 ) -> TaskStatus | None:
     """
-    Returns the status of a task to start an agent on a runtime.
-    If not found, then it returns None instead of an HTTP 404.
+    Returns the latest status of a task to start an agent on a runtime.
+    If only one of agent_id or runtime_id is passed, it returns the status of the most recent task using that id.
+    If both are passed, it returns the status of the most recent task using both ids.
+    If not found, raises a 404
     Otherwise, it returns the status of the task.
     """
     if not agent_id and not runtime_id:
-        raise ValueError("Exactly one of agent_id or runtime_id must be provided")
+        raise ValueError("At least one of agent_id or runtime_id must be provided")
 
     with Session() as session:
-        if agent_id:
+        if agent_id and runtime_id:
+            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
+                session,
+                agent_id=agent_id,
+                runtime_id=runtime_id,
+            )
+        elif agent_id:
             agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
                 session,
                 agent_id=agent_id,
@@ -466,9 +453,14 @@ def get_start_agent_task_status(
                 session,
                 runtime_id=runtime_id,
             )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Should not reach here",
+            )
 
         if not agent_start_task:
-            return None
+            raise HTTPException(status_code=404, detail="Task not found")
 
         task_id = agent_start_task.celery_task_id
 
@@ -488,10 +480,10 @@ def start_agent(
     # Make sure that no task for starting an agent is already running.
     # Must block on both agent_id or runtime_id.
     # That is, there must not be a running task for either agent_id or runtime_id.
-    task_status_agent: TaskStatus | None = get_start_agent_task_status(
+    task_status_agent: TaskStatus | None = get_agent_start_task_status(
         agent_id=agent_id
     )
-    task_status_runtime: TaskStatus | None = get_start_agent_task_status(
+    task_status_runtime: TaskStatus | None = get_agent_start_task_status(
         runtime_id=runtime_id
     )
 
@@ -503,7 +495,8 @@ def start_agent(
             detail=f"There is already a {task_status_agent} task for agent {agent_id}",
         )
     if task_status_runtime and (
-        task_status_runtime == "PENDING" or task_status_runtime == "STARTED"
+        task_status_runtime == TaskStatus.PENDING
+        or task_status_runtime == TaskStatus.STARTED
     ):
         raise HTTPException(
             status_code=400,
@@ -539,6 +532,50 @@ def start_agent(
             celery_task_id=res.id,
         )
         return crud.create_agent_start_task(session, task_record)
+
+
+@app.post("/agents/{agent_id}/stop")
+def stop_agent(agent_id: UUID) -> Agent:
+    """
+    Stops agent running on a runtime.
+    """
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        runtime_id = agent.runtime_id
+        if not runtime_id:
+            raise HTTPException(status_code=404, detail="Agent is not running")
+
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Runtime not found")
+
+        stop_endpoint = f"{runtime.url}/stop_agent/{agent_id}"
+        resp = requests.post(stop_endpoint, timeout=3)
+        resp.raise_for_status()
+        stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+
+        return stopped_agent
+
+
+@app.delete("/agents/{agent_id}")
+def delete_agent(agent_id: UUID) -> None:
+    """
+    Deletes an agent by id.
+    Raises a 404 if the agent is not found.
+    """
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        if agent.runtime_id:
+            stop_agent(agent_id)
+        crud.delete_agent(session, agent)
+
+    return None
 
 
 @app.post("/wallets")
@@ -702,8 +739,6 @@ def update_runtime(
        1. Runtime image is updated (in ECR)
        2. Task definition is updated.
     """
-    # Get the session, and use it's URL to find the service
-    # TODO: Just track the service ARN in the DB so we don't have to do this shenanigans.
     with Session() as session:
         # Make sure that there isn't already a task running to update this runtime.
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
@@ -720,17 +755,8 @@ def update_runtime(
                     detail=f"There is already a {task_status} runtime update task for runtime {runtime_id}",
                 )
 
-        runtime_url = runtime.url
-        runtime_service_num_match = re.search(r"aiden-runtime-(\d+)", runtime_url)
-        if not runtime_service_num_match or not (
-            runtime_service_num := runtime_service_num_match.group(1)
-        ):
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to parse runtime number from runtime URL",
-            )
-        runtime_service_num = int(runtime_service_num)
-        aws_config = get_aws_config(runtime_service_num)
+        service_arn = runtime.service_arn
+        aws_config = get_aws_config(runtime.service_no)
         if not aws_config:
             raise HTTPException(
                 status_code=500,
@@ -741,11 +767,7 @@ def update_runtime(
         latest_revision: int = get_latest_task_definition_revision(
             ecs_client, runtime_task_definition_arn
         )
-        service = ecs_client.describe_services(
-            cluster=aws_config.cluster,
-            services=[aws_config.service_name],
-        )["services"][0]
-        service_arn = service["serviceArn"]
+
         logger.info(
             f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
         )
@@ -766,3 +788,28 @@ def update_runtime(
         )
 
         return runtime_update_task
+
+
+@app.delete("/runtimes/{runtime_id}")
+def delete_runtime(
+    runtime_id: UUID,
+) -> RuntimeDeleteTask:
+    """
+    Deletes a runtime by id.
+    Raises a 404 if the runtime is not found.
+    """
+    with Session() as session:
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        if not runtime:
+            raise HTTPException(status_code=404, detail="Runtime not found")
+
+        aws_config = get_aws_config(runtime.service_no)
+        res = tasks.delete_runtime.delay(runtime_id, aws_config.model_dump())
+        runtime_delete_task: RuntimeDeleteTask = crud.create_runtime_delete_task(
+            session,
+            RuntimeDeleteTaskBase(
+                runtime_id=runtime_id,
+                celery_task_id=res.id,
+            ),
+        )
+        return runtime_delete_task

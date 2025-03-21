@@ -16,6 +16,8 @@ from .models import (
     RuntimeBase,
     RuntimeCreateTask,
     RuntimeCreateTaskBase,
+    RuntimeDeleteTask,
+    RuntimeDeleteTaskBase,
     RuntimeUpdate,
     RuntimeUpdateTask,
     RuntimeUpdateTaskBase,
@@ -129,6 +131,10 @@ def get_agent(session: Session, agent_id: UUID) -> Agent | None:
     return session.exec(stmt).first()
 
 
+def delete_agent(session: Session, agent: Agent) -> None:
+    return delete_generic(session, agent)
+
+
 # endregion Agents
 # region Wallets
 
@@ -223,6 +229,10 @@ def get_token_by_address(session: Session, token_address: str) -> Token | None:
     return session.exec(stmt).first()
 
 
+def delete_token(session: Session, token: Token) -> None:
+    return delete_generic(session, token)
+
+
 # endregion Tokens
 
 
@@ -253,7 +263,7 @@ def get_agent_start_task(
     Returns the most recent task where agent_id and/or runtime_id match.
     """
     if not agent_id and not runtime_id:
-        raise ValueError("Must provide either agent_id or runtime_id")
+        raise ValueError("Must provide at least one of agent_id or runtime_id")
 
     stmt = select(AgentStartTask)
     if agent_id is not None:
@@ -284,6 +294,15 @@ def create_runtime_update_task(
 ):
     return create_generic(
         session, RuntimeUpdateTask(**runtime_update_task.model_dump())
+    )
+
+
+def create_runtime_delete_task(
+    session: Session,
+    runtime_delete_task: RuntimeDeleteTaskBase,
+):
+    return create_generic(
+        session, RuntimeDeleteTask(**runtime_delete_task.model_dump())
     )
 
 
