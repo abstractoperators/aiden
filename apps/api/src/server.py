@@ -413,6 +413,7 @@ def get_task_status(task_id: UUID) -> TaskStatus:
     Returns the status of a task by id.
     Raises a 404 if the task is not found.
     """
+    # TODO: Include more info like traceback if failed.
     with Session() as session:
         task = crud.get_task(session, task_id)
         if not task:
