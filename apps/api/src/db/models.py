@@ -185,7 +185,7 @@ class RuntimeUpdate(Base):
         description="Last healthcheck time.", nullable=True, default=None
     )
     failed_healthchecks: int = Field(
-        description="Number of failed healthchecks.", nullable=False, default=0
+        description="Number of failed healthchecks.", nullable=False
     )
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
