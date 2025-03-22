@@ -355,7 +355,7 @@ async def test_agents(client, user_factory, agent_factory, runtime_factory) -> N
 
     # Try chatting with it.
     response = client.post(
-        f"{runtime.url}/{agent.id}/message",
+        f"{runtime.url}/{agent.eliza_agent_id}/message",
         json={"user": "testuser", "text": "hello"},
     )
     assert response.status_code == 200

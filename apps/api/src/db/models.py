@@ -184,8 +184,9 @@ class RuntimeUpdate(Base):
     last_healthcheck: datetime | None = Field(
         description="Last healthcheck time.", nullable=True, default=None
     )
+    # Note, default = 0 won't be used in crud.update_generic becuase of the exclude_unset=True
     failed_healthchecks: int = Field(
-        description="Number of failed healthchecks.", nullable=False
+        description="Number of failed healthchecks.", nullable=False, default=0
     )
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",

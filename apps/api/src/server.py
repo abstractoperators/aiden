@@ -764,8 +764,7 @@ def delete_runtime(
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
-        aws_config = get_aws_config(runtime.service_no)
-        res = tasks.delete_runtime.delay(runtime_id, aws_config.model_dump())
+        res = tasks.delete_runtime.delay(runtime_id)
         runtime_delete_task: RuntimeDeleteTask = crud.create_runtime_delete_task(
             session,
             RuntimeDeleteTaskBase(
