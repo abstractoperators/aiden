@@ -155,10 +155,8 @@ class RuntimeBase(Base):
     service_no: int = Field(
         description="The service number of the runtime.", nullable=False
     )
-    started: bool | None = Field(
-        description="If the runtime has started. Proxies for a heartbeat.",
-        default=None,
-    )
+    last_healthcheck: datetime | None = Field()
+    failed_healthchecks: int = Field()
     service_arn: str | None = Field(
         description="ARN of the service that runs the runtime.",
         nullable=True,

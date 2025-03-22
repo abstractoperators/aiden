@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from time import sleep
 from typing import Sequence
 from uuid import UUID
@@ -23,6 +24,7 @@ from src.db import crud
 from src.db.models import Agent, AgentUpdate, Runtime, RuntimeUpdate
 from src.db.setup import SQLALCHEMY_DATABASE_URL, Session
 from src.models import AWSConfig
+from src.utils import obj_or_404
 
 logger = get_task_logger(__name__)
 db_password = os.getenv("POSTGRES_DB_PASSWORD")
@@ -67,8 +69,6 @@ def healthcheck_runtimes():
         runtimes: Sequence[Runtime] = crud.get_runtimes(session)
         runtime_ids = [runtime.id for runtime in runtimes]
 
-    # logger.info(f"\n\n{'\n'.join([str(runtime_id) for runtime_id in runtime_ids])}\n\n")
-
     for runtime_id in runtime_ids:
         healthcheck_runtime.delay(runtime_id)
 
@@ -80,65 +80,64 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
     If it is not healthy, then it is updated and restarted.
     If it can't be updated and restarted, then it is deleted? Not sure about htis part.
     """
+    MAX_FAILED_HEALTHCHECKS = 3
+
     with Session() as session:
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-        if runtime is None:
-            logger.warning(
-                "Runtime was deleted before healthcheck could be performed. Skipping."
-            )
-            return None
+        runtime: Runtime = obj_or_404(crud.get_runtime(session, runtime_id))
         agent: Agent | None = runtime.agent
 
-        # 1. Check if the service is reachable
-        # Unnecessary because AWS will do this at the ALB level
-        # resp = requests.get(f"{runtime.url}/ping", timeout=3)
-
-        # 2. Check if the fastapi controller on the container is healthy
-        # Also unnecessary because there is a healthcheck configured on the container (in task definition)
-        # resp = requests.get(f"{runtime.url}/ping")
-        # resp.raise_for_status()
-
-    # On second thought, 1 and 2 might be necessary because we might need to delete the entry in db.d
     try:
         resp = requests.get(f"{runtime.url}/ping")
         resp.raise_for_status()
         resp = requests.get(f"{runtime.url}/controller/ping")
         resp.raise_for_status()
+        with Session() as session:
+            crud.update_runtime(
+                session,
+                runtime,
+                RuntimeUpdate(
+                    last_healthcheck=datetime.now(),
+                    failed_healthchecks=0,
+                ),
+            )
+
     except HTTPError as e:
         logger.info(
             f"{repr(e)}: Runtime {runtime_id} is unhealthy. Attempting to update and restart it."
         )
 
-        update_runtime.delay(runtime_id)
-        # Try to update the runtime.
-        # Note that updating the runtime has the side effect of: restarting agent if any, and also deleting the runtime if it can't be updated. # noqa
-        return
-        # Not raising an exception bcuz the task successfully detected that the task was unhealthy.
+        with Session() as session:
+            runtime = obj_or_404(crud.get_runtime(session, runtime_id))
+            crud.update_runtime(
+                session,
+                runtime,
+                RuntimeUpdate(failed_healthchecks=runtime.failed_healthchecks + 1),
+            )
+
+        if runtime.failed_healthchecks > MAX_FAILED_HEALTHCHECKS:
+            delete_runtime.delay(runtime_id)
+            return "Runtime failed healthcheck too many times. Deleting it."
+        else:
+            update_runtime.delay(runtime_id)
+            return "Runtime is unhealthy. Attempting to update and restart it."
 
     # 3. Check if the character running on the runtime is healthy
-    # That is, we expect an agent to be running on it.
     if agent:
-        healthcheck_runtime_running_agent.delay(runtime_id)
+        healthcheck_runtime_running_agent.delay(agent.id)
+
+    return "Runtime is healthy."
 
 
 @app.task
-def healthcheck_runtime_running_agent(runtime_id: UUID) -> None:
+def healthcheck_runtime_running_agent(agent_id: UUID) -> None:
     """
-    Healthchecks a single runtime to see if the agent that is running on it is healthy.
+    Healthchecks an agent that should be running on a runtime.
     """
     with Session() as session:
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+        agent: Agent = obj_or_404(crud.get_agent(session, agent_id))
+        runtime: Runtime | None = agent.runtime
         if runtime is None:
-            logger.warning(
-                "Runtime was deleted before healthcheck could be performed. Skipping."
-            )
-            return None
-        agent: Agent | None = runtime.agent
-        if agent is None:
-            logger.warning(
-                "Agent was deleted before healthcheck could be performed. Skipping."
-            )
-            return None
+            return "Agent should not be running on any runtime."
 
     resp = requests.get(f"{runtime.url}/controller/character/status")
     try:
