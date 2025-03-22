@@ -89,6 +89,7 @@ class UserUpdate(Base):
 
 
 class AgentBase(Base):
+    # TODO: Update to UUID type
     eliza_agent_id: str | None = Field(
         description="Eliza's agent id", nullable=True, default=None
     )
@@ -117,6 +118,7 @@ class AgentBase(Base):
 
 
 class AgentUpdate(Base):
+    # TODO: Update to UUID type
     eliza_agent_id: str | None = Field(
         description="Agent id of the eliza agent (different from Agent.id)",
         nullable=True,
@@ -150,11 +152,26 @@ class TokenBase(Base):
 
 class RuntimeBase(Base):
     url: str = Field(description="URL of the agents runtime.")
-    # AWS does an actual heartbeat/healthcheck + restarts the runtime if it's down.
-    # This is a temp solution so that you can't attempt to start an agent until the runtime has been confirmed to have started at least once
+    service_no: int = Field(
+        description="The service number of the runtime.", nullable=False
+    )
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
         default=None,
+    )
+    service_arn: str | None = Field(
+        description="ARN of the service that runs the runtime.",
+        nullable=True,
+        default=None,
+    )
+    target_group_arn: str | None = Field(
+        description="ARN of the target group.", nullable=True, default=None
+    )
+    http_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTP listener rule.", nullable=True, default=None
+    )
+    https_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTPS listener rule.", nullable=True, default=None
     )
 
 
@@ -164,6 +181,26 @@ class RuntimeUpdate(Base):
     )
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
+        nullable=True,
+        default=None,
+    )
+    service_arn: str | None = Field(
+        description="ARN of the service that runs the runtime.",
+        nullable=True,
+        default=None,
+    )
+    target_group_arn: str | None = Field(
+        description="ARN of the target group pointing to the service.",
+        nullable=True,
+        default=None,
+    )
+    http_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTP listener rule.",
+        nullable=True,
+        default=None,
+    )
+    https_listener_rule_arn: str | None = Field(
+        description="ARN of the HTTPS listener rule.",
         nullable=True,
         default=None,
     )
@@ -181,6 +218,11 @@ class RuntimeCreateTaskBase(Base):
 
 
 class RuntimeUpdateTaskBase(Base):
+    runtime_id: UUID
+    celery_task_id: UUID
+
+
+class RuntimeDeleteTaskBase(Base):
     runtime_id: UUID
     celery_task_id: UUID
 
@@ -222,4 +264,8 @@ class RuntimeCreateTask(RuntimeCreateTaskBase, MetadataMixin, table=True):
 
 
 class RuntimeUpdateTask(RuntimeUpdateTaskBase, MetadataMixin, table=True):
+    pass
+
+
+class RuntimeDeleteTask(RuntimeDeleteTaskBase, MetadataMixin, table=True):
     pass

@@ -27,9 +27,10 @@ down-api:
 	docker compose -f docker-compose.yml down api
 build-api:
 	docker compose -f docker-compose.yml build api
-run-api: down-api build-api run-celery
+# Need to run celery. Not including it in the command cuz it's a bit non-intuitive
+run-api: down-api build-api
 	docker compose -f docker-compose.yml up -d api	
-run-api-nodocker: run-celery-nodocker
+run-api-nodocker: 
 	cd apps/api && \
 	uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8003
 aws-ecr-push-api: aws-ecr-login
@@ -57,7 +58,7 @@ build-celery:
 run-celery: down-celery build-celery run-redis
 	docker compose -f docker-compose.yml up -d celery
 run-celery-nodocker: run-redis
-	cd apps/api && uv run celery -A src.tasks worker --loglevel=info &
+	cd apps/api && uv run celery -A src.tasks worker --loglevel=info --beat
 aws-ecr-push-celery: aws-ecr-login
 	docker tag celery:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
@@ -89,8 +90,9 @@ aws-ecr-push-prometheus: aws-ecr-login
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 
 
+
 pytest:
-	(cd apps/api && uv run pytest src --capture=no --log-cli-level=INFO)
+	(cd apps/api && uv run pytest src --log-cli-level=DEBUG)
 mypy:
 	cd apps/api && uv run mypy src || true
 	cd apps/runtime && uv run mypy src || true
