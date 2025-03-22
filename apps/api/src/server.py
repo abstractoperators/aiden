@@ -9,7 +9,6 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from urllib3.exceptions import HTTPError
 
 from src import logger, tasks
 from src.aws_utils import get_aws_config
@@ -26,7 +25,6 @@ from src.db.models import (
     RuntimeCreateTaskBase,
     RuntimeDeleteTask,
     RuntimeDeleteTaskBase,
-    RuntimeUpdate,
     RuntimeUpdateTask,
     RuntimeUpdateTaskBase,
     Token,
@@ -439,20 +437,23 @@ def get_agent_start_task_status(
                     agent_id=agent_id,
                     runtime_id=runtime_id,
                 ),
+                AgentStartTask,
             )
         elif agent_id:
             agent_start_task = obj_or_404(
                 crud.get_agent_start_task(
                     session,
                     agent_id=agent_id,
-                )
+                ),
+                AgentStartTask,
             )
         elif runtime_id:
             agent_start_task = obj_or_404(
                 crud.get_agent_start_task(
                     session,
                     runtime_id=runtime_id,
-                )
+                ),
+                AgentStartTask,
             )
         if not agent_start_task:
             raise HTTPException(status_code=404, detail="Task not found")
@@ -498,27 +499,7 @@ def start_agent(
         )
 
     with Session() as session:
-        agent: Agent | None = crud.get_agent(session, agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-        if not runtime:
-            raise HTTPException(status_code=404, detail="Runtime not found")
-
-        ping_endpoint = f"{runtime.url}/ping"
-        resp = requests.get(ping_endpoint, timeout=3)
-        try:
-            resp.raise_for_status()
-            runtime_update = RuntimeUpdate(started=True)
-            crud.update_runtime(session, runtime, runtime_update)
-        except HTTPError as e:
-            logger.error(f"Runtime {runtime_id} is not online. {e}")
-            runtime_update = RuntimeUpdate(started=False)
-            crud.update_runtime(session, runtime, runtime_update)
-            runtime.started = False
-            raise HTTPException(status_code=500, detail="Runtime is not online.")
-
+        # Let the task manage everything
         res = tasks.start_agent.delay(agent_id, runtime_id)
         task_record = AgentStartTaskBase(
             agent_id=agent_id,

@@ -84,7 +84,7 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
     MAX_FAILED_HEALTHCHECKS = 3
 
     with Session() as session:
-        runtime: Runtime = obj_or_404(crud.get_runtime(session, runtime_id))
+        runtime: Runtime = obj_or_404(crud.get_runtime(session, runtime_id), Runtime)
         agent: Agent | None = runtime.agent
 
     try:
@@ -108,7 +108,7 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
         )
 
         with Session() as session:
-            runtime = obj_or_404(crud.get_runtime(session, runtime_id))
+            runtime = obj_or_404(crud.get_runtime(session, runtime_id), Runtime)
             crud.update_runtime(
                 session,
                 runtime,
@@ -135,7 +135,7 @@ def healthcheck_runtime_running_agent(agent_id: UUID) -> None | str:
     Healthchecks an agent that should be running on a runtime.
     """
     with Session() as session:
-        agent: Agent = obj_or_404(crud.get_agent(session, agent_id))
+        agent: Agent = obj_or_404(crud.get_agent(session, agent_id), Agent)
         runtime: Runtime | None = agent.runtime
         if runtime is None:
             return "Agent should not be running on any runtime."
