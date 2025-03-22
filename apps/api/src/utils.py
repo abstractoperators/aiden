@@ -1,7 +1,8 @@
 from typing import TypeVar
 
-from db.models import Base
 from fastapi import HTTPException
+
+from src.db.models import Base
 
 T = TypeVar("T", bound=Base)
 

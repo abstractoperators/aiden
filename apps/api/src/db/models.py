@@ -155,8 +155,12 @@ class RuntimeBase(Base):
     service_no: int = Field(
         description="The service number of the runtime.", nullable=False
     )
-    last_healthcheck: datetime | None = Field()
-    failed_healthchecks: int = Field()
+    last_healthcheck: datetime | None = Field(
+        description="Datetime of last healthcheck", nullable=True, default=None
+    )
+    failed_healthchecks: int = Field(
+        description="Number of failed healthchecks.", nullable=False, default=0
+    )
     service_arn: str | None = Field(
         description="ARN of the service that runs the runtime.",
         nullable=True,
@@ -176,6 +180,12 @@ class RuntimeBase(Base):
 class RuntimeUpdate(Base):
     url: str | None = Field(
         description="URL of the agents runtime.", nullable=True, default=None
+    )
+    last_healthcheck: datetime | None = Field(
+        description="Last healthcheck time.", nullable=True, default=None
+    )
+    failed_healthchecks: int = Field(
+        description="Number of failed healthchecks.", nullable=False, default=0
     )
     started: bool | None = Field(
         description="If the runtime has started. Proxies for a heartbeat.",
