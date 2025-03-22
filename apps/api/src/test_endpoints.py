@@ -1,4 +1,5 @@
 import asyncio
+import json
 from asyncio import sleep as asyncio_sleep
 from typing import Any, Callable, Coroutine, Generator
 from uuid import UUID, uuid4
@@ -161,9 +162,9 @@ def agent_factory(
             token = token_factory()
             token_id = token.id
         runtime_id = kwargs.get("runtime_id")
-        character_json = kwargs.get(
-            "character_json", {}
-        )  # TODO: Add a valid default character json
+        with open("./test.character.json") as f:
+            test_character_json = json.loads(f.read())
+        character_json = kwargs.get("character_json", test_character_json)
         env_file = kwargs.get("env_file", "env_var=env_val")
 
         agent_base = AgentBase(
