@@ -275,7 +275,7 @@ def test_tokens(client, token_factory) -> None:
 
 
 @pytest.mark.asyncio
-async def test_runtimes(client, runtime_factory) -> None:
+async def test_runtimes(client, runtime_factory, agent_factory) -> None:
     response = client.get("/runtimes")
     assert response.status_code == 200
     num_runtimes = len(response.json())
@@ -297,9 +297,31 @@ async def test_runtimes(client, runtime_factory) -> None:
     assert response.status_code == 200
     assert (
         len(response.json()) == 2 + num_runtimes
-    )  # uhhhh what happens when there are runtimes prior to this test?
+    )  # uhhhh what happens when there are runtimes created during this test?
     Runtime.model_validate(response.json()[0])
     Runtime.model_validate(response.json()[1])
+
+    agent = agent_factory()
+    assert agent is not None
+    response = client.post(f"/agents/{agent.id}/start/{runtime_1.id}")
+    assert response.status_code == 200
+    agent_start_task = AgentStartTask.model_validate(response.json())
+    assert agent_start_task.agent_id == agent.id
+    assert agent_start_task.runtime_id == runtime_1.id
+    celery_task_id = agent_start_task.celery_task_id
+
+    task_status = TaskStatus.PENDING
+    while task_status != TaskStatus.SUCCESS:
+        task_status = client.get(f"/tasks/{celery_task_id}").json()
+        assert task_status != TaskStatus.FAILURE
+        asyncio_sleep(5)
+
+    # Try chatting with it.
+    response = client.post(
+        f"{runtime_1.url}/{agent.eliza_agent_id}/message",
+        json={"user": "testuser", "text": "hello"},
+    )
+    assert response.status_code == 200
 
     return None
 
@@ -338,25 +360,4 @@ async def test_agents(client, user_factory, agent_factory, runtime_factory) -> N
     AgentPublic.model_validate(response_json[0])
     assert len(response_json) == 1
 
-    # Try starting an agent
-    runtime: Runtime = await runtime_factory()
-    response = client.post(f"/agents/{agent.id}/start?runtime_id={runtime.id}")
-    assert response.status_code == 200
-    agent_start_task = AgentStartTask.model_validate(response.json())
-    assert agent_start_task.agent_id == agent.id
-    assert agent_start_task.runtime_id == runtime.id
-    celery_task_id = agent_start_task.celery_task_id
-
-    task_status = TaskStatus.PENDING
-    while task_status != TaskStatus.SUCCESS:
-        task_status = client.get(f"/tasks/{celery_task_id}").json()
-        assert task_status != TaskStatus.FAILURE
-        asyncio_sleep(5)
-
-    # Try chatting with it.
-    response = client.post(
-        f"{runtime.url}/{agent.eliza_agent_id}/message",
-        json={"user": "testuser", "text": "hello"},
-    )
-    assert response.status_code == 200
     return None
