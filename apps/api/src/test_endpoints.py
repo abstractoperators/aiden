@@ -1,5 +1,6 @@
 import asyncio
 from asyncio import sleep as asyncio_sleep
+from typing import Any, Callable, Coroutine, Generator
 from uuid import UUID, uuid4
 
 import pytest
@@ -27,7 +28,9 @@ def test_ping(client):
 
 
 @pytest.fixture()
-def wallet_factory(client, user_factory):
+def wallet_factory(
+    client, user_factory
+) -> Generator[Callable[..., Wallet], None, None]:
     wallet_ids: list[UUID] = []
 
     def factory(**kwargs) -> Wallet:
@@ -53,7 +56,7 @@ def wallet_factory(client, user_factory):
 
 
 @pytest.fixture()
-def user_factory(client):
+def user_factory(client) -> Generator[Callable[..., User], None, None]:
     user_ids: list[UUID] = []
 
     def factory(**kwargs) -> User:
@@ -113,7 +116,9 @@ def token_factory(client):
 
 # TODO: Use the actual endpoint instead of directly through crud
 @pytest.fixture()
-def runtime_factory(client):
+def runtime_factory(
+    client,
+) -> Generator[Callable[[], Coroutine[Any, Any, Runtime]], None, None]:
     runtime_ids: list[UUID] = []
 
     async def factory() -> Runtime:
@@ -141,7 +146,9 @@ def runtime_factory(client):
 
 
 @pytest.fixture()
-def agent_factory(client, user_factory, token_factory):
+def agent_factory(
+    client, user_factory, token_factory
+) -> Generator[Callable[..., AgentPublic], None, None]:
     agent_ids: list[UUID] = []
 
     def factory(**kwargs) -> AgentPublic:

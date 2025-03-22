@@ -11,7 +11,6 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from urllib3.exceptions import HTTPError
 
-# from pydantic import TypeAdapter
 from src import logger, tasks
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -50,6 +49,9 @@ from src.models import (
 )
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
+
+# from pydantic import TypeAdapter
+from src.utils import obj_or_404
 
 
 @asynccontextmanager
@@ -340,12 +342,7 @@ def create_runtime() -> RuntimeCreateTask:
     while next_runtime_number in runtime_nums:
         next_runtime_number += 1
 
-    aws_config: AWSConfig | None = get_aws_config(next_runtime_number)
-    if not aws_config:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
-        )
+    aws_config: AWSConfig = get_aws_config(next_runtime_number)
 
     host = f"{aws_config.subdomain}.{aws_config.host}"
     url = f"https://{host}"
@@ -434,31 +431,31 @@ def get_agent_start_task_status(
         raise ValueError("At least one of agent_id or runtime_id must be provided")
 
     with Session() as session:
+        agent_start_task: AgentStartTask | None = None
         if agent_id and runtime_id:
-            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
-                session,
-                agent_id=agent_id,
-                runtime_id=runtime_id,
+            agent_start_task = obj_or_404(
+                crud.get_agent_start_task(
+                    session,
+                    agent_id=agent_id,
+                    runtime_id=runtime_id,
+                ),
             )
         elif agent_id:
-            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
-                session,
-                agent_id=agent_id,
+            agent_start_task = obj_or_404(
+                crud.get_agent_start_task(
+                    session,
+                    agent_id=agent_id,
+                )
             )
         elif runtime_id:
-            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(  # type: ignore[no-redef]
-                session,
-                runtime_id=runtime_id,
+            agent_start_task = obj_or_404(
+                crud.get_agent_start_task(
+                    session,
+                    runtime_id=runtime_id,
+                )
             )
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail="Should not reach here",
-            )
-
         if not agent_start_task:
             raise HTTPException(status_code=404, detail="Task not found")
-
         task_id = agent_start_task.celery_task_id
 
         return get_task_status(task_id)
@@ -754,11 +751,6 @@ def update_runtime(
 
         service_arn = runtime.service_arn
         aws_config = get_aws_config(runtime.service_no)
-        if not aws_config:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
-            )
 
         logger.info(
             f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name}",
@@ -801,11 +793,3 @@ def delete_runtime(
             ),
         )
         return runtime_delete_task
-
-
-def healthcheck_runtimes() -> list:
-    """
-    Checks the health of all runtimes.
-    Restarts them with their agents if they are down.
-    """
-    pass

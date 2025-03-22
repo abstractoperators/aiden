@@ -60,7 +60,7 @@ def ping():
 
 
 @app.task
-def healthcheck_runtimes():
+def healthcheck_runtimes() -> None | str:
     """
     Polls all runtimes to see if they are healthy.
     If they are not healthy, then they are updated and restarted
@@ -71,10 +71,11 @@ def healthcheck_runtimes():
 
     for runtime_id in runtime_ids:
         healthcheck_runtime.delay(runtime_id)
+    return None
 
 
 @app.task
-def healthcheck_runtime(runtime_id: UUID) -> None:
+def healthcheck_runtime(runtime_id: UUID) -> str:
     """
     Healthchecks a single runtime to see if it is healthy.
     If it is not healthy, then it is updated and restarted.
@@ -129,7 +130,7 @@ def healthcheck_runtime(runtime_id: UUID) -> None:
 
 
 @app.task
-def healthcheck_runtime_running_agent(agent_id: UUID) -> None:
+def healthcheck_runtime_running_agent(agent_id: UUID) -> None | str:
     """
     Healthchecks an agent that should be running on a runtime.
     """
@@ -139,23 +140,29 @@ def healthcheck_runtime_running_agent(agent_id: UUID) -> None:
         if runtime is None:
             return "Agent should not be running on any runtime."
 
-    resp = requests.get(f"{runtime.url}/controller/character/status")
-    try:
-        resp.raise_for_status()
-        character_status = resp.json()
-        # Make sure that the character matches the expected running agent.
-        running: bool = character_status.get("running")
-        agent_id: str = character_status.get("agent_id")
-        # TODO: Improve agent health check coverage - this isn't comprehensive
-        # Agent might be running, but not chattable.
-        # This only covers client-direct, but not other clients (e.g. what if twitter client is down?)
-        if not running or not agent_id or agent_id != agent.eliza_agent_id:
-            logger.info(
-                f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But either no agent was running, or the wrong agent was running."  # noqa
-            )
-            start_agent.delay(agent_id=agent.id, runtime_id=runtime.id)
-    except HTTPError as e:
-        logger.error(e)
+    resp = requests.get(f"{runtime.url}/controller/character/status", timeout=3)
+    resp.raise_for_status()
+    # An HTTP error here means either the runtime is down, or the fastapi controller is down
+    # This is unexpected, and should be handled by healthcheck_runtime. So, just raise an exception here.
+
+    character_status = resp.json()
+    # Make sure that the character matches the expected running agent.
+    running: bool = character_status.get("running")
+    running_character_agent_id: str = character_status.get("agent_id")
+    # TODO: Improve agent health check coverage - this isn't comprehensive
+    # Agent might be running, but not chattable.
+    # This only covers client-direct, but not other clients (e.g. what if twitter client is down?)
+    if (
+        not running
+        or not running_character_agent_id
+        or running_character_agent_id != agent.eliza_agent_id
+    ):
+        logger.info(
+            f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But either no agent was running, or the wrong agent was running."  # noqa
+        )
+        #
+        start_agent.delay(agent_id=agent.id, runtime_id=runtime.id)
+    return None
 
 
 @app.task
@@ -383,6 +390,7 @@ def update_runtime(
         logger.info(f"{e}: Deleting runtime - update failed")
         delete_runtime.delay(runtime_id=runtime_id)
         return "Update failed. Deleted runtime."
+    return "Update successful."
 
 
 @app.task()
