@@ -162,7 +162,8 @@ def agent_factory(
             token = token_factory()
             token_id = token.id
         runtime_id = kwargs.get("runtime_id")
-        with open("./test.character.json") as f:
+
+        with open("./src/test.character.json") as f:
             test_character_json = json.loads(f.read())
         character_json = kwargs.get("character_json", test_character_json)
         env_file = kwargs.get("env_file", "env_var=env_val")
