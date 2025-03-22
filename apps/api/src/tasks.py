@@ -309,11 +309,12 @@ def create_runtime(
 @app.task()
 def update_runtime(
     runtime_id: UUID,
-) -> None:
+) -> str:
     """
     Updates a runtime to the latest revision of its task definition + latest container in ECR
     Deletes the runtime entirely
     """
+    logger.warning("test warning message: update_runtime")
     try:
         # TODO: If the update fails then delete everything including aws and db entry.
         with Session() as session:
@@ -382,8 +383,7 @@ def update_runtime(
     except Exception as e:
         logger.info(f"{e}: Deleting runtime - update failed")
         delete_runtime.delay(runtime_id=runtime_id)
-        return None
-        # don't raise an exception - the task was successful in detecting that the runtime should be deleted.
+        return "Update failed. Deleted runtime."
 
 
 @app.task()
@@ -391,55 +391,37 @@ def delete_runtime(
     runtime_id: UUID,
 ) -> None:
     logger.error(f"test error message: delete runtime {runtime_id}")
+    ecs_client = get_role_session().client("ecs")
+    elbv2_client = get_role_session().client("elbv2")
     with Session() as session:
-        runtime = crud.get_runtime(session, runtime_id)
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if runtime is None:
             raise ValueError(f"Runtime {runtime_id} does not exist")
         aws_config = get_aws_config(runtime.service_no)
-        ecs_client = get_role_session().client("ecs")
-        elbv2_client = get_role_session().client("elbv2")
 
-        # Stop the runtime
-        if runtime.service_arn:
-            ecs_client.delete_service(
-                cluster=aws_config.cluster,
-                service=aws_config.service_name,
-                force=True,
-            )
+    if runtime.service_arn:
+        ecs_client.delete_service(
+            cluster=aws_config.cluster,
+            service=aws_config.service_name,
+            force=True,
+        )
+        waiter = ecs_client.get_waiter("services_inactive")
+        waiter.wait(
+            cluster=aws_config.cluster,
+            services=[aws_config.service_name],
+        )
 
-        # Delete the listener rules
-        if runtime.http_listener_rule_arn:
-            elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
-        if runtime.https_listener_rule_arn:
-            elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
+    # Delete the listener rules
+    if runtime.http_listener_rule_arn:
+        elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
+    if runtime.https_listener_rule_arn:
+        elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
 
-        # Delete the target group
-        if runtime.target_group_arn:
-            elbv2_client.delete_target_group(
-                TargetGroupArn=runtime.target_group_arn,
-            )
-    waiter = ecs_client.get_waiter("services_inactive")
-    waiter.wait(
-        cluster=aws_config.cluster,
-        services=[aws_config.service_name],
-    )  # error raised if service is not inactive or gone after 15s x 40 tries
-    # Wait until the service is no longer draining.
-    # for i in range(1, 41):
-    #     sleep(15)
-    #     logger.info(f"{i}/40: Polling service for draining")
-
-    #     service = ecs_client.describe_services(
-    #         cluster=aws_config.cluster,
-    #         services=[aws_config.service_name],
-    #     )["services"][0]
-    #     deployments = service["deployments"]
-    #     if all(
-    #         deployment.get("runningCount", 0) == 0
-    #         and deployment.get("pendingCount", 0) == 0
-    #         for deployment in deployments
-    #     ):
-    #         logger.info(f"Service {aws_config.service_name} is drained")
-    #         break
+    # Delete the target group
+    if runtime.target_group_arn:
+        elbv2_client.delete_target_group(
+            TargetGroupArn=runtime.target_group_arn,
+        )
 
     # Delete the runtime in db
     with Session() as session:
