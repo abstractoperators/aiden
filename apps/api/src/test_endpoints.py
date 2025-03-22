@@ -8,6 +8,7 @@ import pytest
 from src.db import crud
 from src.db.models import (
     AgentBase,
+    AgentStartTask,
     Runtime,
     RuntimeCreateTask,
     Token,
@@ -160,7 +161,9 @@ def agent_factory(
             token = token_factory()
             token_id = token.id
         runtime_id = kwargs.get("runtime_id")
-        character_json = kwargs.get("character_json", {})
+        character_json = kwargs.get(
+            "character_json", {}
+        )  # TODO: Add a valid default character json
         env_file = kwargs.get("env_file", "env_var=env_val")
 
         agent_base = AgentBase(
@@ -299,7 +302,8 @@ async def test_runtimes(client, runtime_factory) -> None:
     return None
 
 
-def test_agents(client, user_factory, agent_factory) -> None:
+@pytest.mark.asyncio
+async def test_agents(client, user_factory, agent_factory, runtime_factory) -> None:
     agent: AgentPublic = agent_factory()
     assert agent is not None
     # Test getting agents by the user's dynamic id.
@@ -332,4 +336,25 @@ def test_agents(client, user_factory, agent_factory) -> None:
     AgentPublic.model_validate(response_json[0])
     assert len(response_json) == 1
 
+    # Try starting an agent
+    runtime: Runtime = await runtime_factory()
+    response = client.post(f"/agents/{agent.id}/start?runtime_id={runtime.id}")
+    assert response.status_code == 200
+    agent_start_task = AgentStartTask.model_validate(response.json())
+    assert agent_start_task.agent_id == agent.id
+    assert agent_start_task.runtime_id == runtime.id
+    celery_task_id = agent_start_task.celery_task_id
+
+    task_status = TaskStatus.PENDING
+    while task_status != TaskStatus.SUCCESS:
+        task_status = client.get(f"/tasks/{celery_task_id}").json()
+        assert task_status != TaskStatus.FAILURE
+        asyncio_sleep(5)
+
+    # Try chatting with it.
+    response = client.post(
+        f"{runtime.url}/{agent.id}/message",
+        json={"user": "testuser", "text": "hello"},
+    )
+    assert response.status_code == 200
     return None
