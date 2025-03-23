@@ -2,6 +2,7 @@ import Logo from "@/public/brand_assets/dark-ghost.svg"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "./ui/button"
+import DynamicWaitlistButton from "./dynamic-waitlist-button"
 
 export default function Hero() {
   return (
@@ -24,21 +25,21 @@ export default function Hero() {
       </div>
       <div className="flex justify-center items-center gap-8 m-8">
         <Button
-          className="text-xl p-8 bg-anakiwa-darker dark:bg-anakiwa-darker hover:bg-anakiwa-dark dark:hover:bg-anakiwa text-white dark:hover:text-black rounded-lg transition font-bold"
+          className="text-xl px-8 py-8 bg-anakiwa-darker dark:bg-anakiwa-darker hover:bg-anakiwa-dark dark:hover:bg-anakiwa text-white dark:hover:text-black rounded-lg transition font-bold"
           asChild
         >
           <Link href="/agents">
             Chat with an Agent
           </Link>
         </Button>
-        <button
-          style={{
-            background: "radial-gradient(276.98% 284.46% at 25.31% 13.8%, rgba(213, 210, 255, .8) 0%, rgba(6, 109, 255, .8) 100%)",
-          }}
-          className="font-bold text-xl px-8 py-4 text-black rounded-lg transition hover:opacity-80"
+        <DynamicWaitlistButton
+          width={8}
+          height={8}
+          connectHeight={5}
+          textSize="xl"
         >
           Join the Waitlist
-        </button>
+        </DynamicWaitlistButton>
       </div>
     </section>
   )

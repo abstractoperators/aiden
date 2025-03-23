@@ -78,7 +78,13 @@ export default function Header({ variant }: variantProp) {
             About Us
           </Link>
           <div className="flex items-center justify-between space-x-2 font-medium">
-            <DynamicWaitlistButton cta="Join the Waitlist" />
+            <DynamicWaitlistButton
+              width={4}
+              height={2}
+              connectHeight={2}
+            >
+              Join the Waitlist
+            </DynamicWaitlistButton>
             {
               user &&
               primaryWallet &&
