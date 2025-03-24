@@ -111,7 +111,6 @@ def token_factory(client):
             crud.delete_token(session, token)
 
 
-# TODO: Use the actual endpoint instead of directly through crud
 @pytest.fixture()
 def runtime_factory(client):
     runtime_ids: list[UUID] = []

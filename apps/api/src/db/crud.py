@@ -318,4 +318,16 @@ def get_runtime_update_task(
     return session.exec(stmt).first()
 
 
+def get_runtime_delete_task(
+    session: Session, runtime_id: UUID
+) -> RuntimeDeleteTask | None:
+    """
+    Returns the latest delete task for a given runtime_id
+    """
+    stmt = select(RuntimeDeleteTask).where(RuntimeDeleteTask.runtime_id == runtime_id)
+    if RuntimeDeleteTask.created_at:
+        stmt = stmt.order_by(col(RuntimeDeleteTask.created_at).desc())
+    return session.exec(stmt).first()
+
+
 # endregion Tasks

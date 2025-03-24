@@ -488,7 +488,8 @@ def start_agent(
     )
 
     if task_status_agent and (
-        task_status_agent == "PENDING" or task_status_agent == "STARTED"
+        task_status_agent == TaskStatus.PENDING
+        or task_status_agent == TaskStatus.STARTED
     ):
         raise HTTPException(
             status_code=400,
@@ -749,10 +750,10 @@ def update_runtime(
         )
         if existing_runtime_update_task:
             task_status = get_task_status(existing_runtime_update_task.celery_task_id)
-            if task_status == "PENDING" or task_status == "STARTED":
+            if task_status == TaskStatus.PENDING or task_status == TaskStatus.STARTED:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"There is already a {task_status} runtime update task for runtime {runtime_id}",
+                    detail=f"There is already an active {task_status} runtime update task for runtime {runtime_id}",
                 )
 
         service_arn = runtime.service_arn
@@ -788,6 +789,28 @@ def update_runtime(
         return runtime_update_task
 
 
+@app.get("/tasks/runtime-delete")
+def get_delete_runtime_task_status(
+    runtime_id: UUID,
+) -> TaskStatus:
+    """
+    Returns the latest status of a task to delete a runtime.
+    Throws a 404 if no task is found.
+    Note that the task may have already completed, and the associated runtime will have been deleted already.
+    """
+    with Session() as session:
+        runtime_delete_task: RuntimeDeleteTask | None = crud.get_runtime_delete_task(
+            session,
+            runtime_id,
+        )
+        if not runtime_delete_task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        task_id = runtime_delete_task.celery_task_id
+
+        return get_task_status(task_id)
+
+
 @app.delete("/runtimes/{runtime_id}")
 def delete_runtime(
     runtime_id: UUID,
@@ -796,6 +819,7 @@ def delete_runtime(
     Deletes a runtime by id.
     Raises a 404 if the runtime is not found.
     """
+
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
