@@ -1,4 +1,3 @@
-import AbopIcon from "@/public/abstractoperators_favicon.jpg"
 import DiscordIcon from "@/public/discord.svg"
 import SeiIcon from "@/public/sei.svg"
 import XIcon from "@/public/x.svg"
@@ -15,11 +14,6 @@ const socials = [
     href: "http://discord.gg/xYqe2JAu6K",
     src: DiscordIcon,
     alt: "Discord",
-  },
-  {
-    href: "https://abop.ai/",
-    src: AbopIcon,
-    alt: "Abstract Operators",
   },
   {
     href: "https://www.sei.io/",
@@ -39,7 +33,7 @@ export function SocialLinks() {
           target="_blank"
         >
           <Image
-            className="transition duration-300 w-6 rounded-full hover:invert-[.8] dark:invert dark:hover:invert-[.2]"
+            className="transition duration-300 w-6 rounded-full hover:invert-[.4] dark:invert dark:hover:invert-[.7]"
             src={src}
             alt={alt}
           />

@@ -41,7 +41,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
         href={`/agents/${row.original.id}`}
       >
         <hgroup>
-          <h2>{row.getValue("name")}</h2>
+          <h2 className="text-base">{row.getValue("name")}</h2>
           { row.original.ticker && <h3>${row.original.ticker}</h3> }
         </hgroup>
       </Link>
