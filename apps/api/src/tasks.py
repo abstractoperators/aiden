@@ -45,7 +45,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     sender.add_periodic_task(
         300,
         healthcheck_runtimes.s(),
-        name="Healthcheck all runtimes every 10 minutes",
+        name="Healthcheck all runtimes every 5 minutes",
     )
 
 
