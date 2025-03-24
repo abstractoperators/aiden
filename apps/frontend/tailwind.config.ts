@@ -9,6 +9,24 @@ export default {
   ],
   theme: {
   	extend: {
+			fontSize: {
+				d1: ['4.5rem', '120%'],
+				d2: ['3.25rem', '120%'],
+				d3: ['2.75rem', '120%'],
+				d4: ['2.25rem', '130%'],
+				d5: ['1.75rem', '140%'],
+				d6: ['1.375rem', '140%'],
+				m1: ['2.75rem', '120%'],
+				m2: ['2.5rem', '120%'],
+				m3: ['2rem', '120%'],
+				m4: ['1.5rem', '130%'],
+				m5: ['1.25rem', '140%'],
+				m6: ['1.125rem', '140%'],
+			},
+			fontFamily: {
+				sans: ['var(--font-inter)'],
+				serif: ['var(--font-aldrich)'],
+			},
   		colors: {
 				anakiwa: {
 					lightest: '#f5f8ff',

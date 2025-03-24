@@ -1,13 +1,22 @@
 import "./globals.css"
 import type { Metadata } from "next"
-import { Aldrich } from "next/font/google"
+import { Aldrich, Inter } from "next/font/google"
 import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import DynamicProviderWrapper from "@/components/dynamic-wrapper"
 
-// const inter = Inter({ subsets: ["latin"] })
-const aldrich = Aldrich({ weight: "400", subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: '--font-inter',
+  display: 'swap',
+})
+const aldrich = Aldrich({
+  weight: "400",
+  subsets: ["latin"],
+  variable: '--font-aldrich',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: "AIDEN - Web3 Agents",
@@ -20,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${aldrich.className} w-screen min-h-screen`}>
+    <html lang="en" className={`${aldrich.variable} ${inter.variable}`}>
+      <body className="w-screen min-h-screen">
         <DynamicProviderWrapper>
           <ThemeProvider
             attribute="class"
