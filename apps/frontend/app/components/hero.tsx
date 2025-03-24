@@ -6,7 +6,7 @@ import DynamicWaitlistButton from "./dynamic-waitlist-button"
 
 export default function Hero() {
   return (
-    <section className="container flex flex-col items-center justify-center space-y-32 text-center">
+    <section className="container flex flex-col items-center justify-center space-y-8 text-center">
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
         <Image
           priority={true}
@@ -14,18 +14,18 @@ export default function Hero() {
           src={Logo}
           alt="AIDEN"
         />
-        <h1 className="text-3xl tracking-widest font-bold sm:text-4xl md:text-5xl lg:text-6xl text-neutral-800">
+        <h1 className="tracking-widest font-bold sm:text-d3 md:text-d2 lg:text-d1 text-neutral-800">
           AIDEN
         </h1>
       </div>
-      <div className="flex flex-col space-y-4 items-center justify-center">
-        <h1 className="text-2xl tracking-wide sm:text-2xl md:text-3xl lg:text-4xl text-neutral-800">
+      <div className="flex flex-col items-center justify-center space-y-8">
+        <h2 className="tracking-wide sm:text-d4 md:text-d3 lg:text-d2 text-neutral-800">
           High Performance Onchain Agents
-        </h1>
+        </h2>
       </div>
       <div className="flex justify-center items-center gap-8 m-8">
         <Button
-          className="text-xl px-8 py-8 bg-anakiwa-darker dark:bg-anakiwa-darker hover:bg-anakiwa-dark dark:hover:bg-anakiwa text-white dark:hover:text-black rounded-lg transition font-bold"
+          className="text-xl px-8 py-8 bg-anakiwa-darker dark:bg-anakiwa-darker hover:bg-anakiwa-dark dark:hover:bg-anakiwa text-white dark:hover:text-black rounded-lg transition duration-300 font-bold"
           asChild
         >
           <Link href="/agents">
@@ -35,7 +35,6 @@ export default function Hero() {
         <DynamicWaitlistButton
           width={8}
           height={8}
-          connectHeight={5}
           textSize="xl"
         >
           Join the Waitlist

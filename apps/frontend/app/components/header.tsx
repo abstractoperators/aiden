@@ -30,7 +30,7 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
       return {
         headerStyle: headerStyles.landing,
         aidenImage: <Image
-          className="w-6 transition duration-300 hover:invert-[.5]"
+          className="w-6 transition duration-300 hover:invert-[.7]"
           src={LightGhost}
           alt="AIDEN"
         />,
@@ -40,7 +40,7 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
       return {
         headerStyle: headerStyles.main,
         aidenImage: <ThemeImage
-          className="w-6 transition duration-300 hover:invert-[.5]"
+          className="w-6 transition duration-300 hover:invert-[.7]"
           lightSrc={LightGhost}
           darkSrc={DarkGhost}
           alt="AIDEN"
@@ -81,7 +81,6 @@ export default function Header({ variant }: variantProp) {
             <DynamicWaitlistButton
               width={4}
               height={2}
-              connectHeight={2}
             >
               Join the Waitlist
             </DynamicWaitlistButton>
