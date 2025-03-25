@@ -71,12 +71,6 @@ export default function Header({ variant }: variantProp) {
           >
             Agents
           </Link>
-          <Link
-            href="/about"
-            className="transition duration-300 hover:invert-[.5]"
-          >
-            About Us
-          </Link>
           <div className="flex items-center justify-between space-x-2 font-medium">
             <DynamicWaitlistButton
               width={4}

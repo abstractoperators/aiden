@@ -6,7 +6,7 @@ import DynamicWaitlistButton from "./dynamic-waitlist-button"
 
 export default function Hero() {
   return (
-    <section className="container flex flex-col items-center justify-center space-y-8 text-center">
+    <section className="container flex flex-col items-center justify-center space-y-8 text-center py-52">
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
         <Image
           priority={true}
