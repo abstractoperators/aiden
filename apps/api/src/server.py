@@ -9,7 +9,6 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-
 from src import logger, tasks
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -570,6 +569,7 @@ async def get_wallets(
     wallet_id: UUID | None = None,
     owner_id: UUID | None = None,
     public_key: str | None = None,
+    chain: str = "EVM",
 ) -> Sequence[Wallet] | Wallet:
     """
     Returns wallet(s) by query parameter.
@@ -593,6 +593,7 @@ async def get_wallets(
             wallet = crud.get_wallet_by_public_key(
                 session,
                 public_key,
+                chain,
             )  # no-redef
             if not wallet:
                 raise HTTPException(status_code=404, detail="Wallet not found")
