@@ -1,6 +1,6 @@
 "use client"
 
-import { DynamicConnectButton, DynamicUserProfile, useDynamicContext } from "@dynamic-labs/sdk-react-core"
+import { DynamicConnectButton, useDynamicContext } from "@dynamic-labs/sdk-react-core"
 import { Button, buttonVariants } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
@@ -56,10 +56,9 @@ function DynamicConnectButtonHero({
       asChild
     >
       <Link href="/agents">
-        Chat with an Agent
+        Explore Agents
       </Link>
     </Button>
-    <DynamicUserProfile />
   </DynamicConnectButtonBase>
 }
 
