@@ -55,11 +55,6 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
 
 
 @app.task
-def ping():
-    logger.info("ping")
-
-
-@app.task
 def healthcheck_runtimes() -> None | str:
     """
     Polls all runtimes to see if they are healthy.
