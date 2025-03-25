@@ -314,7 +314,7 @@ async def test_runtimes(client, runtime_factory, agent_factory) -> None:
     while task_status != TaskStatus.SUCCESS:
         task_status = client.get(f"/tasks/{celery_task_id}").json()
         assert task_status != TaskStatus.FAILURE
-        asyncio_sleep(5)
+        await asyncio_sleep(5)
 
     # Try chatting with it.
     response = client.post(

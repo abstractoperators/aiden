@@ -119,13 +119,13 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
 
     # 3. Check if the character running on the runtime is healthy
     if agent:
-        healthcheck_runtime_running_agent.delay(agent.id)
+        healthcheck_running_agent.delay(agent.id)
 
     return "Runtime is healthy."
 
 
 @app.task
-def healthcheck_runtime_running_agent(agent_id: UUID) -> None | str:
+def healthcheck_running_agent(agent_id: UUID) -> None | str:
     """
     Healthchecks an agent that should be running on a runtime.
     """
