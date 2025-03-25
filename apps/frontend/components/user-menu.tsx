@@ -13,18 +13,12 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
+import AppearanceMenu from "./appearance-menu";
+import { LayoutDashboard, LogOut, Settings2 } from "lucide-react";
 
 export default function UserMenu({
   logout,
@@ -37,12 +31,11 @@ export default function UserMenu({
 }) {
   const displayName = user.username || user.email || wallet.address
   const { setShowDynamicUserProfile } = useDynamicContext()
-  const { setTheme, theme } = useTheme()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid transition-[color,drop-shadow] hover:bg-destructive/100">
+        <Avatar className="cursor-pointer dark:text-white focus:outline-solid hover:outline-solid hover:opacity-60 transition duration-300">
           <AvatarFallback>{displayName.substring(0, 2)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -52,41 +45,22 @@ export default function UserMenu({
         <DropdownMenuGroup>
           <Link href="/user">
             <DropdownMenuItem>
-              Control Center
+              <LayoutDashboard className="h-[1.2rem] w-[1.2rem]" />
+              <span>Control Center</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout}>
-            Log out
+            <LogOut className="h-[1.2rem] w-[1.2rem]" />
+            <span>Logout</span>
           </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-              Appearance
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
-                  <DropdownMenuRadioItem value="light">
-                    Light
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="dark">
-                    Dark
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="system">
-                    System
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
+          <AppearanceMenu />
           <DropdownMenuItem onClick={() => setShowDynamicUserProfile(true)}>
-            User Settings
+            <Settings2 className="h-[1.2rem] w-[1.2rem]" />
+            <span>User Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

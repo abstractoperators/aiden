@@ -26,7 +26,7 @@ export default async function UserLayout({
       <div className="flex flex-col w-full min-h-screen">
         <Header />
         <div className="flex-1 flex">
-          <UserSidebar className="top-14" collapsible="none" userAgents={userAgents}/>
+          <UserSidebar className="top-16" collapsible="none" userAgents={userAgents}/>
             <main>
               {children}
             </main>

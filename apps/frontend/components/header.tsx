@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { DarkModeToggle } from './dark-mode-toggle'
 import LightGhost from '@/public/brand_assets/light-ghost.svg'
 import DarkGhost from '@/public/brand_assets/dark-ghost.svg'
 import ThemeImage from '@/components/ui/theme-image'
 import { DynamicConnectButtonHeader } from './dynamic/connect-button'
 import Image from 'next/image'
 import { ReactElement } from 'react'
+import VisitorMenu from './visitor-menu'
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
 
 const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full {}"
 enum headerStyles {
@@ -49,12 +50,13 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
 
 export default function Header({ variant }: variantProp) {
   const { headerStyle, aidenImage, } = getVariantOutputs(variant)
+  const isLoggedIn = useIsLoggedIn();
 
   return (
     <header
       className={headerStyle}
     >
-      <div className="container flex h-14 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between">
         <Link
           href="/"
           className="mr-6 flex items-center space-x-2"
@@ -73,7 +75,10 @@ export default function Header({ variant }: variantProp) {
               width={4}
               height={2}
             />
-            <DarkModeToggle />
+            {
+              !isLoggedIn &&
+              <VisitorMenu />
+            }
           </div>
         </nav>
       </div>

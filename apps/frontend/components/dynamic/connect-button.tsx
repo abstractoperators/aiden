@@ -55,8 +55,8 @@ function DynamicConnectButtonHero({
       className={`${getCommon({width, height, textSize})} ${bg}`}
       asChild
     >
-      <Link href="/agents">
-        Explore Agents
+      <Link href="/user/agents/creation">
+        Create an Agent
       </Link>
     </Button>
   </DynamicConnectButtonBase>
