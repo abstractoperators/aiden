@@ -315,7 +315,6 @@ def update_runtime(
     Updates a runtime to the latest revision of its task definition + latest container in ECR
     Deletes the runtime entirely
     """
-    logger.warning("test warning message: update_runtime")
     try:
         # TODO: If the update fails then delete everything including aws and db entry.
         with Session() as session:
@@ -392,7 +391,6 @@ def update_runtime(
 def delete_runtime(
     runtime_id: UUID,
 ) -> None:
-    logger.error(f"test error message: delete runtime {runtime_id}")
     ecs_client = get_role_session().client("ecs")
     elbv2_client = get_role_session().client("elbv2")
     with Session() as session:
