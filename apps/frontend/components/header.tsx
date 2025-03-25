@@ -5,11 +5,9 @@ import { DarkModeToggle } from './dark-mode-toggle'
 import LightGhost from '@/public/brand_assets/light-ghost.svg'
 import DarkGhost from '@/public/brand_assets/dark-ghost.svg'
 import ThemeImage from '@/components/ui/theme-image'
-import DynamicWaitlistButton from './dynamic-waitlist-button'
+import { DynamicConnectButtonHeader } from './dynamic/connect-button'
 import Image from 'next/image'
 import { ReactElement } from 'react'
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core'
-import UserMenu from './user-menu'
 
 const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full {}"
 enum headerStyles {
@@ -51,7 +49,6 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
 
 export default function Header({ variant }: variantProp) {
   const { headerStyle, aidenImage, } = getVariantOutputs(variant)
-  const { handleLogOut, primaryWallet, user } = useDynamicContext()
 
   return (
     <header
@@ -64,29 +61,18 @@ export default function Header({ variant }: variantProp) {
         >
           {aidenImage}
         </Link>
-        <nav className="flex items-center justify-between space-x-8 font-medium">
+        <nav className="flex items-center justify-between space-x-4 font-medium">
           <Link
             className="transition duration-300 hover:invert-[.5]"
             href='/agents'
           >
             Agents
           </Link>
-          <div className="flex items-center justify-between space-x-2 font-medium">
-            <DynamicWaitlistButton
+          <div className="flex items-center justify-between space-x-2">
+            <DynamicConnectButtonHeader
               width={4}
               height={2}
-            >
-              Join the Waitlist
-            </DynamicWaitlistButton>
-            {
-              user &&
-              primaryWallet &&
-              <UserMenu
-                logout={handleLogOut}
-                user={user}
-                wallet={primaryWallet}
-              />
-            }
+            />
             <DarkModeToggle />
           </div>
         </nav>

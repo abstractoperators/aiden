@@ -4,7 +4,7 @@ import { Aldrich, Inter } from "next/font/google"
 import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
-import DynamicProviderWrapper from "@/components/dynamic-wrapper"
+import DynamicProvider from "@/components/dynamic/provider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${aldrich.variable} ${inter.variable}`}>
       <body className="w-screen min-h-screen">
-        <DynamicProviderWrapper>
+        <DynamicProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -41,7 +41,7 @@ export default function RootLayout({
             {children}
             <Toaster />
           </ThemeProvider>
-        </DynamicProviderWrapper>
+        </DynamicProvider>
       </body>
     </html>
   )

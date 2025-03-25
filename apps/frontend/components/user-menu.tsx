@@ -1,5 +1,7 @@
+'use client'
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserProfile, Wallet } from "@dynamic-labs/sdk-react-core";
+import { useDynamicContext, UserProfile, Wallet } from "@dynamic-labs/sdk-react-core";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +23,7 @@ export default function UserMenu({
   wallet: Wallet,
 }) {
   const displayName = user.username || user.email || wallet.address
+  const { setShowDynamicUserProfile } = useDynamicContext()
 
   return (
     <DropdownMenu>
@@ -43,6 +46,10 @@ export default function UserMenu({
           <DropdownMenuItem onClick={logout}>
             Log out
           </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setShowDynamicUserProfile(true)}>
+          Settings
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

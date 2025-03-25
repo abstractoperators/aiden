@@ -1,8 +1,6 @@
 import Logo from "@/public/brand_assets/dark-ghost.svg"
 import Image from "next/image"
-import Link from "next/link"
-import { Button } from "./ui/button"
-import DynamicWaitlistButton from "./dynamic-waitlist-button"
+import { DynamicConnectButtonHero } from "./dynamic/connect-button"
 
 export default function Hero() {
   return (
@@ -23,23 +21,10 @@ export default function Hero() {
           High Performance Onchain Agents
         </h2>
       </div>
-      <div className="flex justify-center items-center gap-8 m-8">
-        <Button
-          className="text-xl px-8 py-8 bg-anakiwa-darker dark:bg-anakiwa-darker hover:bg-anakiwa-dark dark:hover:bg-anakiwa text-white dark:hover:text-black rounded-lg transition duration-300 font-bold"
-          asChild
-        >
-          <Link href="/agents">
-            Chat with an Agent
-          </Link>
-        </Button>
-        <DynamicWaitlistButton
-          width={8}
-          height={8}
-          textSize="xl"
-        >
-          Join the Waitlist
-        </DynamicWaitlistButton>
-      </div>
+      <DynamicConnectButtonHero
+        width={8}
+        textSize="xl"
+      />
     </section>
   )
 }

@@ -20,7 +20,7 @@ import {
   updateOrCreateWallet,
 } from "@/lib/api/wallet";
 
-export default function DynamicProviderWrapper({ children }: React.PropsWithChildren) {
+export default function DynamicProvider({ children }: React.PropsWithChildren) {
   return (
     <DynamicContextProvider
       settings={{
