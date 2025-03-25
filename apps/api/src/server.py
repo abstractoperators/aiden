@@ -483,7 +483,8 @@ def start_agent(
     )
 
     if task_status_agent and (
-        task_status_agent == "PENDING" or task_status_agent == "STARTED"
+        task_status_agent == TaskStatus.PENDING
+        or task_status_agent == TaskStatus.STARTED
     ):
         raise HTTPException(
             status_code=400,
@@ -724,10 +725,10 @@ def update_runtime(
         )
         if existing_runtime_update_task:
             task_status = get_task_status(existing_runtime_update_task.celery_task_id)
-            if task_status == "PENDING" or task_status == "STARTED":
+            if task_status == TaskStatus.PENDING or task_status == TaskStatus.STARTED:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"There is already a {task_status} runtime update task for runtime {runtime_id}",
+                    detail=f"There is already an active {task_status} runtime update task for runtime {runtime_id}",
                 )
 
         service_arn = runtime.service_arn
