@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   description: "AIDEN is a Web3 AI Agent platform powered by SEI that connects you to a community of powerful agents and creators.",
 }
 
-const bgImages = "bg-no-repeat bg-[url(/brand_assets/background-sky.png)] dark:bg-[url(/brand_assets/background-orbit.png)]"
-const lightBg = "bg-[length:275vw] bg-fixed bg-right-top bg-anakiwa-lighter"
-const darkBg = "dark:bg-[length:250vw] dark:bg-right dark:bg-anakiwa-darkest"
+const bgImages = "bg-cover bg-fixed bg-no-repeat bg-[url(/brand_assets/background-sky.png)] dark:bg-[url(/brand_assets/background-orbit.png)]"
+const lightBg = "bg-right-top bg-anakiwa-lighter"
+const darkBg = "dark:bg-right dark:bg-anakiwa-darkest"
 
 export default function RootLayout({
   children,
