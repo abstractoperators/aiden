@@ -9,7 +9,6 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-
 from src import logger, tasks
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
