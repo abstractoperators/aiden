@@ -35,7 +35,7 @@ export default function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer dark:text-white focus:outline-solid hover:outline-solid hover:opacity-60 transition duration-300">
+        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:opacity-60 transition duration-300">
           <AvatarFallback>{displayName.substring(0, 2)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>

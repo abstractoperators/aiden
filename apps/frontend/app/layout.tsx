@@ -1,7 +1,6 @@
 import "./globals.css"
 import type { Metadata } from "next"
 import { Aldrich, Inter } from "next/font/google"
-import type React from "react" // Import React
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import DynamicProvider from "@/components/dynamic/provider"
@@ -23,6 +22,10 @@ export const metadata: Metadata = {
   description: "AIDEN is a Web3 AI Agent platform powered by SEI that connects you to a community of powerful agents and creators.",
 }
 
+const bgImages = "bg-no-repeat bg-[url(/brand_assets/background-sky.png)] dark:bg-[url(/brand_assets/background-orbit.png)]"
+const lightBg = "bg-[length:275vw] bg-fixed bg-right-top bg-anakiwa-lighter"
+const darkBg = "dark:bg-[length:250vw] dark:bg-right dark:bg-anakiwa-darkest"
+
 export default function RootLayout({
   children,
 }: {
@@ -30,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${aldrich.variable} ${inter.variable}`}>
-      <body className="w-screen min-h-screen">
+      <body className={`w-screen min-h-screen ${lightBg} ${darkBg} ${bgImages}`}>
         <DynamicProvider>
           <ThemeProvider
             attribute="class"

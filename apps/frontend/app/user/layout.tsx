@@ -1,4 +1,4 @@
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { UserSidebar } from "@/components/user-sidebar";
 import Footer from "@/components/footer";
 import Header from "@/components/header";
@@ -22,14 +22,22 @@ export default async function UserLayout({
   ).sort((a, b) => (a.name < b.name) ? -1 : 1);
 
   return (
+    // TODO: figure out sidebar options
     <SidebarProvider>
       <div className="flex flex-col w-full min-h-screen">
         <Header />
         <div className="flex-1 flex">
-          <UserSidebar className="top-16" collapsible="none" userAgents={userAgents}/>
+          <UserSidebar
+            className="top-16 bg-anakiwa-light/30 dark:bg-anakiwa-darker/60 max-h-full"
+            collapsible="none"
+            variant="floating"
+            userAgents={userAgents}
+          />
+          <SidebarInset className="bg-opacity-0">
             <main>
               {children}
             </main>
+          </SidebarInset>
         </div>
         <Footer />
       </div>

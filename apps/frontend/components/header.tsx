@@ -10,10 +10,10 @@ import { ReactElement } from 'react'
 import VisitorMenu from './visitor-menu'
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
 
-const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full {}"
+const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full"
 enum headerStyles {
   landing = `${baseHeaderStyle}`,
-  main = `${baseHeaderStyle} bg-background/10 backdrop-blur supports-[backdrop-filter]:bg-background/10`,
+  main = `${baseHeaderStyle} bg-background/10 backdrop-blur`,
 }
 
 interface variantOutputs {

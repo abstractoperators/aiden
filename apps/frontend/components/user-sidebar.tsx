@@ -16,7 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  // SidebarRail,
+  SidebarRail,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -117,6 +117,7 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
           </Button>
         </Link>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }

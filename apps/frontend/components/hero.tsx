@@ -12,12 +12,12 @@ export default function Hero() {
           src={Logo}
           alt="AIDEN"
         />
-        <h1 className="tracking-widest font-bold sm:text-d3 md:text-d2 lg:text-d1 text-neutral-800">
+        <h1 className="tracking-widest font-bold sm:text-d3 md:text-d2 lg:text-d1">
           AIDEN
         </h1>
       </div>
       <div className="flex flex-col items-center justify-center space-y-8">
-        <h2 className="tracking-wide sm:text-d4 md:text-d3 lg:text-d2 text-neutral-800">
+        <h2 className="tracking-wide sm:text-d4 md:text-d3 lg:text-d2">
           High Performance Onchain Agents
         </h2>
       </div>

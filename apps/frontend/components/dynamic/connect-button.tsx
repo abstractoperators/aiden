@@ -11,10 +11,9 @@ interface DynamicConnectButtonProps {
   textSize?: string,
 }
 
-const radialGradient = "bg-[radial-gradient(276.98%_284.46%_at_25.31%_13.8%,rgba(213,210,255,.8)_0%,rgba(6,109,255,.8)_100%)]"
 const getTextSize = (textSize?: string) => textSize ? `text-${textSize}` : ""
 const getCommon = ({width, height, textSize}: DynamicConnectButtonProps) => (
-  `px-${width} py-${height ?? width} ${getTextSize(textSize)} font-bold rounded-lg duration-300`
+  `px-${width} py-${height ?? width} ${getTextSize(textSize)} font-bold text-black dark:text-neutral-100 rounded-lg transition duration-300`
 )
 
 function DynamicConnectButtonBase({
@@ -23,15 +22,17 @@ function DynamicConnectButtonBase({
   height,
   textSize,
 }: React.PropsWithChildren<DynamicConnectButtonProps>) {
+  const bg = "bg-gradient-to-br from-anakiwa from-10% to-carnation to-90% hover:hue-rotate-60"
   const { primaryWallet, user } = useDynamicContext()
+
   return (primaryWallet && user) ? (
     <div>
       {children}
     </div>
   ) : (
     <DynamicConnectButton>
-      <div className={`${buttonVariants()} ${getCommon({width, height, textSize})} ${radialGradient} duration-300 hover:hue-rotate-60`}>
-        <div className="font-bold text-black">
+      <div className={`${buttonVariants()} ${getCommon({width, height, textSize})} ${bg} duration-300`}>
+        <div className="font-bold text-black dark:text-white">
           Join the Waitlist
         </div>
       </div>
@@ -44,7 +45,7 @@ function DynamicConnectButtonHero({
   height,
   textSize,
 }: DynamicConnectButtonProps) {
-  const bg = "bg-anakiwa-darker dark:bg-anakiwa-darker hover:bg-anakiwa-dark dark:hover:bg-anakiwa text-white dark:hover:text-black"
+  const bg = "bg-gradient-to-br from-anakiwa-dark from-10% to-carnation-dark to-90% hover:hue-rotate-60"
 
   return <DynamicConnectButtonBase
     width={width}
