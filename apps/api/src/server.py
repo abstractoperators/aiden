@@ -47,6 +47,7 @@ from src.models import (
 )
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
+from urllib3.exceptions import HTTPError
 
 # from pydantic import TypeAdapter
 from src.utils import obj_or_404
@@ -570,6 +571,7 @@ async def get_wallets(
     wallet_id: UUID | None = None,
     owner_id: UUID | None = None,
     public_key: str | None = None,
+    chain: str = "EVM",
 ) -> Sequence[Wallet] | Wallet:
     """
     Returns wallet(s) by query parameter.
@@ -593,6 +595,7 @@ async def get_wallets(
             wallet = crud.get_wallet_by_public_key(
                 session,
                 public_key,
+                chain,
             )  # no-redef
             if not wallet:
                 raise HTTPException(status_code=404, detail="Wallet not found")
