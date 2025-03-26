@@ -9,14 +9,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-
-# from pydantic import TypeAdapter
 from src import logger, tasks
-from src.aws_utils import (
-    get_aws_config,
-    get_latest_task_definition_revision,
-    get_role_session,
-)
+from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
     Agent,
@@ -30,7 +24,6 @@ from src.db.models import (
     RuntimeCreateTaskBase,
     RuntimeDeleteTask,
     RuntimeDeleteTaskBase,
-    RuntimeUpdate,
     RuntimeUpdateTask,
     RuntimeUpdateTaskBase,
     Token,
@@ -54,6 +47,9 @@ from src.models import (
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 from urllib3.exceptions import HTTPError
+
+# from pydantic import TypeAdapter
+from src.utils import obj_or_404
 
 
 @asynccontextmanager
@@ -344,12 +340,7 @@ def create_runtime() -> RuntimeCreateTask:
     while next_runtime_number in runtime_nums:
         next_runtime_number += 1
 
-    aws_config: AWSConfig | None = get_aws_config(next_runtime_number)
-    if not aws_config:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
-        )
+    aws_config: AWSConfig = get_aws_config(next_runtime_number)
 
     host = f"{aws_config.subdomain}.{aws_config.host}"
     url = f"https://{host}"
@@ -413,6 +404,7 @@ def get_task_status(task_id: UUID) -> TaskStatus:
     Returns the status of a task by id.
     Raises a 404 if the task is not found.
     """
+    # TODO: Include more info like traceback if failed.
     with Session() as session:
         task = crud.get_task(session, task_id)
         if not task:
@@ -437,31 +429,34 @@ def get_agent_start_task_status(
         raise ValueError("At least one of agent_id or runtime_id must be provided")
 
     with Session() as session:
+        agent_start_task: AgentStartTask | None = None
         if agent_id and runtime_id:
-            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
-                session,
-                agent_id=agent_id,
-                runtime_id=runtime_id,
+            agent_start_task = obj_or_404(
+                crud.get_agent_start_task(
+                    session,
+                    agent_id=agent_id,
+                    runtime_id=runtime_id,
+                ),
+                AgentStartTask,
             )
         elif agent_id:
-            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(
-                session,
-                agent_id=agent_id,
+            agent_start_task = obj_or_404(
+                crud.get_agent_start_task(
+                    session,
+                    agent_id=agent_id,
+                ),
+                AgentStartTask,
             )
         elif runtime_id:
-            agent_start_task: AgentStartTask | None = crud.get_agent_start_task(  # type: ignore[no-redef]
-                session,
-                runtime_id=runtime_id,
+            agent_start_task = obj_or_404(
+                crud.get_agent_start_task(
+                    session,
+                    runtime_id=runtime_id,
+                ),
+                AgentStartTask,
             )
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail="Should not reach here",
-            )
-
         if not agent_start_task:
             raise HTTPException(status_code=404, detail="Task not found")
-
         task_id = agent_start_task.celery_task_id
 
         return get_task_status(task_id)
@@ -505,27 +500,7 @@ def start_agent(
         )
 
     with Session() as session:
-        agent: Agent | None = crud.get_agent(session, agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-        if not runtime:
-            raise HTTPException(status_code=404, detail="Runtime not found")
-
-        ping_endpoint = f"{runtime.url}/ping"
-        resp = requests.get(ping_endpoint, timeout=3)
-        try:
-            resp.raise_for_status()
-            runtime_update = RuntimeUpdate(started=True)
-            crud.update_runtime(session, runtime, runtime_update)
-        except HTTPError as e:
-            logger.error(f"Runtime {runtime_id} is not online. {e}")
-            runtime_update = RuntimeUpdate(started=False)
-            crud.update_runtime(session, runtime, runtime_update)
-            runtime.started = False
-            raise HTTPException(status_code=500, detail="Runtime is not online.")
-
+        # Let the task manage everything
         res = tasks.start_agent.delay(agent_id, runtime_id)
         task_record = AgentStartTaskBase(
             agent_id=agent_id,
@@ -760,25 +735,13 @@ def update_runtime(
 
         service_arn = runtime.service_arn
         aws_config = get_aws_config(runtime.service_no)
-        if not aws_config:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to get AWS config. Check ENV environment variable (probably it's dev)",
-            )
-        ecs_client = get_role_session().client("ecs")
-        runtime_task_definition_arn: str = aws_config.task_definition_arn
-        latest_revision: int = get_latest_task_definition_revision(
-            ecs_client, runtime_task_definition_arn
-        )
 
         logger.info(
-            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name} to task revision {latest_revision}"  # noqa
+            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name}",
         )
 
         res = tasks.update_runtime.delay(
             runtime_id=runtime_id,
-            aws_config_dict=aws_config.model_dump(),
-            latest_revision=latest_revision,
         )
         runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(  #
             session,
@@ -791,28 +754,6 @@ def update_runtime(
         return runtime_update_task
 
 
-@app.get("/tasks/runtime-delete")
-def get_delete_runtime_task_status(
-    runtime_id: UUID,
-) -> TaskStatus:
-    """
-    Returns the latest status of a task to delete a runtime.
-    Throws a 404 if no task is found.
-    Note that the task may have already completed, and the associated runtime will have been deleted already.
-    """
-    with Session() as session:
-        runtime_delete_task: RuntimeDeleteTask | None = crud.get_runtime_delete_task(
-            session,
-            runtime_id,
-        )
-        if not runtime_delete_task:
-            raise HTTPException(status_code=404, detail="Task not found")
-
-        task_id = runtime_delete_task.celery_task_id
-
-        return get_task_status(task_id)
-
-
 @app.delete("/runtimes/{runtime_id}")
 def delete_runtime(
     runtime_id: UUID,
@@ -821,14 +762,12 @@ def delete_runtime(
     Deletes a runtime by id.
     Raises a 404 if the runtime is not found.
     """
-
     with Session() as session:
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
-        aws_config = get_aws_config(runtime.service_no)
-        res = tasks.delete_runtime.delay(runtime_id, aws_config.model_dump())
+        res = tasks.delete_runtime.delay(runtime_id)
         runtime_delete_task: RuntimeDeleteTask = crud.create_runtime_delete_task(
             session,
             RuntimeDeleteTaskBase(

@@ -27,7 +27,7 @@ services:
     ports:
       - "8003:80"
 
-  agent-runtime1:
+  agent-runtime:
     build: 
       # Needs to be in root folder to access the eliza directory
       context: .

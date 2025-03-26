@@ -2,6 +2,7 @@ import os
 from typing import cast
 
 import boto3
+from fastapi import HTTPException
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
 from mypy_boto3_elbv2.type_defs import RuleConditionTypeDef
@@ -10,7 +11,7 @@ from src import logger
 from src.models import AWSConfig
 
 
-def get_aws_config(num: int) -> AWSConfig | None:
+def get_aws_config(num: int) -> AWSConfig:
     """
     Gets env vars like vpc id
     num: Runtime number, and target group number, and service number, and subdomain number. All the same.
@@ -48,7 +49,9 @@ def get_aws_config(num: int) -> AWSConfig | None:
             subnets=["subnet-03609df324958be8e", "subnet-0643691ae2f5f1e32"],
             security_groups=["sg-08dd9f6f9ecc9bfe9"],
         )
-    return None
+    raise HTTPException(
+        status_code=500, detail="Failed to get AWS config (probably it's dev)"
+    )
 
 
 def get_role_session() -> boto3.Session:

@@ -167,4 +167,9 @@ def write_character(character: Character) -> None:
     return None
 
 
+@router.get("/ping")
+def ping() -> str:
+    return "pong"
+
+
 app.include_router(router, prefix="/controller")
