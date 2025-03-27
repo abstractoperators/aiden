@@ -1,10 +1,10 @@
-from typing import TypeVar
+from typing import Any, TypeVar
 
+import jwt
 from fastapi import HTTPException
+from jwt import PyJWKClient
 
 from src.db.models import Base
-import jwt
-from typing import Any
 
 T = TypeVar("T", bound=Base)
 
@@ -15,17 +15,16 @@ def obj_or_404(obj: T | None, T) -> T:
     return obj
 
 
-def decode_bearer_token(token: str) -> dict[str, Any]:
+def decode_bearer_token(jwt_token: str, pyjwk_client: PyJWKClient) -> dict[str, Any]:
     """
-    Decodes Dynamic's JWT token
+    Decodes a JWT token and returns its payload
     """
-    jwt_token: str = token
-    if token.startswith("Bearer "):
-        jwt_token = token.split(" ")[1]
-    print(f"jwt_token: {jwt_token}")
+    if jwt_token.startswith("Bearer "):
+        jwt_token = jwt_token.split(" ")[1]
 
-    with open("dynamic_pub_key.pub", "r") as f:
-        signing_key = f.read().strip()
+    signing_key = pyjwk_client.get_signing_key_from_jwt(jwt_token)
+    print(f"signing_key: {signing_key}")
+    print(f"jwt_token: {jwt_token}")
 
     decoded: dict[str, Any] = jwt.decode(
         jwt_token,
