@@ -49,8 +49,6 @@ from src.models import (
 )
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
-
-# from pydantic import TypeAdapter
 from src.utils import obj_or_404
 
 
@@ -678,9 +676,10 @@ async def get_user(
     user_id: UUID | None = None,
     public_key: str | None = None,
     dynamic_id: UUID | None = None,
+    chain: str = "EVM",
 ) -> UserPublic:
     """
-    Raises a 400 if more than one parameter is passed.
+    Raises a 400 if more than one of user_id, public_key, or dynamic_id are passed.
     Raises a 404 if the user is not found.
     Otherwise, returns the user by query parameter.
     """
@@ -692,13 +691,13 @@ async def get_user(
         )
 
     with Session() as session:
-        user: User | None = None
+        user: User | None
         if user_id:
             user = crud.get_user(session, user_id)
         elif public_key:
-            user = crud.get_user_by_public_key(session, public_key)  # no-redef
+            user = crud.get_user_by_public_key(session, public_key, chain)
         elif dynamic_id:
-            user = crud.get_user_by_dynamic_id(session, dynamic_id)  # no-redef
+            user = crud.get_user_by_dynamic_id(session, dynamic_id)
 
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
