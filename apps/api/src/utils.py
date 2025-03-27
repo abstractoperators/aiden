@@ -35,8 +35,9 @@ def decode_bearer_token(jwt_token: str, pyjwk_client: PyJWKClient) -> dict[str, 
     jwt_token (str): JWT token to decode - does not include the "Bearer " prefix
     pyjwk_client (PyJWKClient): PyJWKClient object to use for decoding the token
     """
+    print(jwt_token)
+
     signing_key = pyjwk_client.get_signing_key_from_jwt(jwt_token)
-    print(f"signing_key: {signing_key}")
-    print(f"jwt_token: {jwt_token}")
+    print(signing_key)
 
     return py_jwt.decode_complete(jwt_token, signing_key)
