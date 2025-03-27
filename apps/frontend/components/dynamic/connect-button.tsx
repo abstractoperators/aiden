@@ -4,6 +4,7 @@ import { DynamicConnectButton, useDynamicContext } from "@dynamic-labs/sdk-react
 import { Button, buttonVariants } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 interface DynamicConnectButtonProps {
   width: number,
@@ -40,13 +41,13 @@ function DynamicConnectButtonBase({
       {children}
     </div>
   ) : (
-    <div className={`${buttonVariants({ variant: 'default' })} ${getCommon({width, height, textSize})} ${bg} duration-300`}>
+    // <div className={`${buttonVariants({ variant: 'default' })} ${getCommon({width, height, textSize})} ${bg}`}>
       <DynamicConnectButton>
-          <div className={`font-semibold text-black dark:text-white ${getTextSize(textSize)}`}>
+          <div className={cn(getCommon({width, height, textSize}), bg)}>
             Join the Waitlist
           </div>
       </DynamicConnectButton>
-    </div>
+    // </div
   )
 }
 

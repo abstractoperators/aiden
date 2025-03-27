@@ -6,7 +6,6 @@ export default function AgentsDashboard() {
       <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
         Agents
       </h1>
-      {/* TODO: improve font colors on datatable */}
       <AgentsTabs />
     </main>
   )
