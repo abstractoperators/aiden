@@ -32,7 +32,7 @@ interface Wallet extends WalletBase {
 }
 
 async function getWallet(
-  query: { publicKey: string } | { walletId: string }
+  query: { publicKey: string, chain?: string } | { walletId: string }
 ): Promise<Wallet> {
   return getResource<Wallet>(
     baseUrlPath,
@@ -53,7 +53,7 @@ async function updateWallet(walletId: string, walletUpdate: WalletUpdate): Promi
 }
 
 async function updateOrCreateWallet(
-  id: { publicKey: string } | { walletId: string},
+  id: { publicKey: string, chain?: string } | { walletId: string},
   walletUpdate: WalletUpdate,
   wallet: WalletBase,
 ): Promise<Wallet> {

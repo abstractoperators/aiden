@@ -127,7 +127,10 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             if (!user)
               throw new Error(`User ${user} does not exist!`)
 
-            const apiWallet: ApiWallet | null = await getWallet({ publicKey: wallet.address }).catch(() => null)
+            const apiWallet: ApiWallet | null = await (
+              getWallet({ publicKey: wallet.address, chain: wallet.chain })
+              .catch(() => null)
+            )
 
             if (apiWallet) {
               updateWallet(apiWallet.id, { ownerId: user.id })
@@ -140,7 +143,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             }
           },
           onWalletRemoved: ({ wallet }) => {
-            getWallet({ publicKey: wallet.address })
+            getWallet({ publicKey: wallet.address, chain: wallet.chain })
             .then(apiWallet => deleteWallet(apiWallet.id))
             .catch(() => {
               // do nothing if it doesn't exist.
