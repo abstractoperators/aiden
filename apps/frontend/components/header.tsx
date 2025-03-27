@@ -17,7 +17,7 @@ enum headerStyles {
 
 interface variantOutputs {
   headerStyle: headerStyles,
-  aidenImage: ReactElement,
+  aidenImage?: ReactElement,
 }
 interface variantProp {
   variant?: "landing" | "main",
@@ -27,12 +27,6 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
     case "landing":
       return {
         headerStyle: headerStyles.landing,
-        aidenImage: <ThemeImage
-          className="w-6 transition duration-300 hover:invert-[.7]"
-          lightSrc={LightGhost}
-          darkSrc={DarkGhost}
-          alt="AIDEN"
-        />,
       }
     case "main":
     default:
