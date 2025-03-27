@@ -1,7 +1,7 @@
 "use client"
 
 import { DynamicConnectButton, useDynamicContext } from "@dynamic-labs/sdk-react-core"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -41,13 +41,17 @@ function DynamicConnectButtonBase({
       {children}
     </div>
   ) : (
-    // <div className={`${buttonVariants({ variant: 'default' })} ${getCommon({width, height, textSize})} ${bg}`}>
-      <DynamicConnectButton>
-          <div className={cn(getCommon({width, height, textSize}), bg)}>
-            Join the Waitlist
-          </div>
-      </DynamicConnectButton>
-    // </div
+    <DynamicConnectButton>
+      <div
+        className={cn(
+          buttonVariants(),
+          getCommon({width, height, textSize}),
+          bg,
+        )}
+      >
+        Join the Waitlist
+      </div>
+    </DynamicConnectButton>
   )
 }
 
@@ -62,13 +66,14 @@ function DynamicConnectButtonHero() {
     height={height}
     textSize={textSize}
   >
-    <Link href="/user/agents/creation">
-      <Button
-        className={`${getCommon({width, height, textSize})} ${bg}`}
-      >
+    <Button
+      className={`${getCommon({width, height, textSize})} ${bg}`}
+      asChild
+    >
+      <Link href="/user/agents/creation">
         Create an Agent
-      </Button>
-    </Link>
+      </Link>
+    </Button>
   </DynamicConnectButtonBase>
 }
 
