@@ -23,10 +23,7 @@ export default function Hero() {
           High Performance Onchain Agents
         </h2>
       </div>
-      <DynamicConnectButtonHero
-        width={8}
-        textSize="3xl"
-      />
+      <DynamicConnectButtonHero />
     </section>
   )
 }

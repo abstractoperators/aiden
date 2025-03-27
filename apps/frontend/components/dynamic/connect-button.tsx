@@ -51,26 +51,24 @@ function DynamicConnectButtonBase({
   )
 }
 
-function DynamicConnectButtonHero({
-  width,
-  height,
-  textSize,
-}: DynamicConnectButtonProps) {
+function DynamicConnectButtonHero() {
   const bg = "bg-gradient-to-br from-anakiwa-dark from-20% to-carnation-dark to-80% hover:hue-rotate-60"
+  const width = 8
+  const height = 8
+  const textSize = "3xl"
 
   return <DynamicConnectButtonBase
     width={width}
     height={height}
     textSize={textSize}
   >
-    <Button
-      className={`${getCommon({width, height, textSize})} ${bg}`}
-      asChild
-    >
-      <Link href="/user/agents/creation">
+    <Link href="/user/agents/creation">
+      <Button
+        className={`${getCommon({width, height, textSize})} ${bg}`}
+      >
         Create an Agent
-      </Link>
-    </Button>
+      </Button>
+    </Link>
   </DynamicConnectButtonBase>
 }
 
