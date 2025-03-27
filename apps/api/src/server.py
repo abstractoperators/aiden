@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
+
 from src import logger, tasks
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -46,7 +47,6 @@ from src.models import (
 )
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
-from urllib3.exceptions import HTTPError
 
 # from pydantic import TypeAdapter
 from src.utils import obj_or_404
