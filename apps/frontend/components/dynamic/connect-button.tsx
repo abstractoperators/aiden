@@ -18,7 +18,7 @@ const getCommon = ({width, height, textSize}: DynamicConnectButtonProps) => ([
     getTextSize(textSize),
     "font-semibold",
     "text-black",
-    "dark:text-neutral-100",
+    "dark:text-white",
     "rounded-xl",
     "transition",
     "duration-300",
@@ -32,7 +32,7 @@ function DynamicConnectButtonBase({
   height,
   textSize,
 }: React.PropsWithChildren<DynamicConnectButtonProps>) {
-  const bg = "bg-gradient-to-br from-anakiwa from-10% to-carnation to-90% hover:hue-rotate-60"
+  const bg = "bg-gradient-to-br from-anakiwa from-20% to-carnation to-80% hover:hue-rotate-60"
   const { primaryWallet, user } = useDynamicContext()
 
   return (primaryWallet && user) ? (
@@ -55,7 +55,7 @@ function DynamicConnectButtonHero({
   height,
   textSize,
 }: DynamicConnectButtonProps) {
-  const bg = "bg-gradient-to-br from-anakiwa-dark from-10% to-carnation-dark to-90% hover:hue-rotate-60"
+  const bg = "bg-gradient-to-br from-anakiwa-dark from-20% to-carnation-dark to-80% hover:hue-rotate-60"
 
   return <DynamicConnectButtonBase
     width={width}

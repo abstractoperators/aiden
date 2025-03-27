@@ -38,7 +38,7 @@ export default function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:hue-rotate-60 transition duration-300">
-          <AvatarFallback className="bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-10% to-carnation dark:to-carnation-dark to-90%">
+          <AvatarFallback className="bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%">
             {displayName.substring(0, 2)}
           </AvatarFallback>
         </Avatar>

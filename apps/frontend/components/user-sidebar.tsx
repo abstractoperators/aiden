@@ -37,6 +37,8 @@ interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
   userAgents: ClientAgent[]
 }
 
+const bg = "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%"
+
 export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
   const navigation: NavigationGroup[] = []
       // {
@@ -111,7 +113,10 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
       </SidebarContent>
       <SidebarFooter className="flex flex-col w-full justify-center items-center">
         <Link href="/user/agents/creation">
-          <Button>
+          <Button
+            className={`${bg} text-black dark:text-white transition duration-300 hover:hue-rotate-60`}
+            size='lg'
+          >
             <Plus strokeWidth={5}/>
             <span>Create an Agent</span>
           </Button>
