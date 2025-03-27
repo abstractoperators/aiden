@@ -14,7 +14,7 @@ interface DynamicConnectButtonProps {
 const getTextSize = (textSize?: string) => textSize ? `text-${textSize}` : ""
 const getCommon = ({width, height, textSize}: DynamicConnectButtonProps) => ([
     `px-${width}`,
-    `py-${height ?? width}`,
+    `!py-${height ?? width}`,
     getTextSize(textSize),
     "font-semibold",
     "text-black",
