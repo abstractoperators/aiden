@@ -40,13 +40,13 @@ function DynamicConnectButtonBase({
       {children}
     </div>
   ) : (
-    <DynamicConnectButton>
-      <div className={`${buttonVariants()} ${getCommon({width, height, textSize})} ${bg} duration-300`}>
-        <div className={`font-semibold text-black dark:text-white ${getTextSize(textSize)}`}>
-          Join the Waitlist
-        </div>
-      </div>
-    </DynamicConnectButton>
+    <div className={`${buttonVariants({ variant: 'default' })} ${getCommon({width, height, textSize})} ${bg} duration-300`}>
+      <DynamicConnectButton>
+          <div className={`font-semibold text-black dark:text-white ${getTextSize(textSize)}`}>
+            Join the Waitlist
+          </div>
+      </DynamicConnectButton>
+    </div>
   )
 }
 
