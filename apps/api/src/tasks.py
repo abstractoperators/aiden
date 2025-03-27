@@ -1,5 +1,7 @@
 import os
+from datetime import datetime
 from time import sleep
+from typing import Sequence
 from uuid import UUID
 
 import requests
@@ -8,17 +10,21 @@ from celery import Celery
 from celery.utils.log import get_task_logger
 from mypy_boto3_ecs.client import ECSClient
 from mypy_boto3_elbv2.client import ElasticLoadBalancingv2Client as ELBv2Client
+from requests.exceptions import HTTPError
 
 from src.aws_utils import (
     create_http_target_group,
     create_listener_rules,
     create_runtime_service,
+    get_aws_config,
+    get_latest_task_definition_revision,
     get_role_session,
 )
 from src.db import crud
-from src.db.models import AgentUpdate, RuntimeUpdate
+from src.db.models import Agent, AgentUpdate, Runtime, RuntimeUpdate
 from src.db.setup import SQLALCHEMY_DATABASE_URL, Session
 from src.models import AWSConfig
+from src.utils import obj_or_404
 
 logger = get_task_logger(__name__)
 db_password = os.getenv("POSTGRES_DB_PASSWORD")
@@ -32,6 +38,126 @@ app = Celery(
     backend=f"db+{BACKEND_DB_URL}?sslmode=disable",
 )
 app.config_from_object("src.celeryconfig")
+
+
+@app.on_after_configure.connect
+def setup_periodic_tasks(sender: Celery, **kwargs):
+    sender.add_periodic_task(
+        300,
+        healthcheck_runtimes.s(),
+        name="Healthcheck all runtimes every 5 minutes",
+    )
+
+
+# TODO
+# Update polling tasks to be non-blocking on worker concurrency slots.
+# Maybe recursively call a polling task? not sure.
+
+
+@app.task
+def healthcheck_runtimes() -> None | str:
+    """
+    Polls all runtimes to see if they are healthy.
+    If they are not healthy, then they are updated and restarted
+    """
+    with Session() as session:
+        runtimes: Sequence[Runtime] = crud.get_runtimes(session)
+        runtime_ids = [runtime.id for runtime in runtimes]
+
+    for runtime_id in runtime_ids:
+        healthcheck_runtime.delay(runtime_id)
+    return None
+
+
+@app.task
+def healthcheck_runtime(runtime_id: UUID) -> str:
+    """
+    Healthchecks a single runtime to see if it is healthy.
+    If it is not healthy, then it is updated and restarted.
+    If it can't be updated and restarted, then it is deleted? Not sure about htis part.
+    """
+    MAX_FAILED_HEALTHCHECKS = 3
+
+    with Session() as session:
+        runtime: Runtime = obj_or_404(crud.get_runtime(session, runtime_id), Runtime)
+        agent: Agent | None = runtime.agent
+
+    try:
+        resp = requests.get(f"{runtime.url}/ping")
+        resp.raise_for_status()
+        resp = requests.get(f"{runtime.url}/controller/ping")
+        resp.raise_for_status()
+        with Session() as session:
+            crud.update_runtime(
+                session,
+                runtime,
+                RuntimeUpdate(
+                    last_healthcheck=datetime.now(),
+                    failed_healthchecks=0,
+                ),
+            )
+
+    except HTTPError as e:
+        logger.info(
+            f"{repr(e)}: Runtime {runtime_id} is unhealthy. Attempting to update and restart it."
+        )
+
+        with Session() as session:
+            runtime = obj_or_404(crud.get_runtime(session, runtime_id), Runtime)
+            crud.update_runtime(
+                session,
+                runtime,
+                RuntimeUpdate(failed_healthchecks=runtime.failed_healthchecks + 1),
+            )
+
+        if runtime.failed_healthchecks > MAX_FAILED_HEALTHCHECKS:
+            delete_runtime.delay(runtime_id)
+            return "Runtime failed healthcheck too many times. Deleting it."
+        else:
+            update_runtime.delay(runtime_id)
+            return "Runtime is unhealthy. Attempting to update and restart it."
+
+    # 3. Check if the character running on the runtime is healthy
+    if agent:
+        healthcheck_running_agent.delay(agent.id)
+
+    return "Runtime is healthy."
+
+
+@app.task
+def healthcheck_running_agent(agent_id: UUID) -> None | str:
+    """
+    Healthchecks an agent that should be running on a runtime.
+    """
+    with Session() as session:
+        agent: Agent = obj_or_404(crud.get_agent(session, agent_id), Agent)
+        runtime: Runtime | None = agent.runtime
+        if runtime is None:
+            return "Agent should not be running on any runtime."
+
+    resp = requests.get(f"{runtime.url}/controller/character/status", timeout=3)
+    resp.raise_for_status()
+    # An HTTP error here means either the runtime is down, or the fastapi controller is down
+    # This is unexpected, and should be handled by healthcheck_runtime. So, just raise an exception here.
+
+    character_status = resp.json()
+    # Make sure that the character matches the expected running agent.
+    running: bool = character_status.get("running")
+    running_character_agent_id: str = character_status.get("agent_id")
+    # TODO: Improve agent health check coverage - this isn't comprehensive
+    # Agent might be running, but not chattable.
+    # This only covers client-direct, but not other clients (e.g. what if twitter client is down?)
+    if (
+        not running
+        or not running_character_agent_id
+        or running_character_agent_id != agent.eliza_agent_id
+    ):
+        logger.info(
+            f"Expected agent {agent.eliza_agent_id} to be running on runtime {runtime.id}. But either no agent was running, or the wrong agent was running."  # noqa
+        )
+        #
+        start_agent.delay(agent_id=agent.id, runtime_id=runtime.id)
+    return None
 
 
 @app.task
@@ -177,37 +303,44 @@ def create_runtime(
         raise Exception("Runtime did not come online in time. Rolling back.")
     except (Exception, KeyboardInterrupt) as e:
         logger.error(f"{e}: Rolling back runtime")
-        delete_runtime(runtime_id=runtime_id, aws_config_dict=aws_config_dict)
+        delete_runtime(runtime_id=runtime_id)
         raise e
 
 
 @app.task()
 def update_runtime(
     runtime_id: UUID,
-    aws_config_dict: dict,
-    latest_revision: int,
-) -> None:
-    aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
-    with Session() as session:
-        # Update agent running on the runtime to not have a runtime anymore.
-        runtime = crud.get_runtime(session, runtime_id)
-        if runtime is None:
-            raise ValueError(f"Runtime {runtime_id} does not exist")
-        agent = runtime.agent
-        if agent is not None:
-            agent_id = agent.id
-            crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
-        crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
+) -> str:
+    """
+    Updates a runtime to the latest revision of its task definition + latest container in ECR
+    Deletes the runtime entirely
+    """
+    try:
+        # TODO: If the update fails then delete everything including aws and db entry.
+        with Session() as session:
+            # Update agent running on the runtime to not have a runtime anymore.
+            runtime = crud.get_runtime(session, runtime_id)
+            if runtime is None:
+                raise ValueError(f"Runtime {runtime_id} does not exist")
+            agent = runtime.agent
+            if agent is not None:
+                agent_id = agent.id
+                crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+            crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
 
-        # Force a redeployment of the runtime.
-        task_definition_arn = aws_config.task_definition_arn
-        ecs_client = get_role_session().client("ecs")
-        service = ecs_client.update_service(
-            cluster=aws_config.cluster,
-            service=aws_config.service_name,
-            taskDefinition=f"{task_definition_arn}:{latest_revision}",
-            forceNewDeployment=True,
-        )["service"]
+            aws_config: AWSConfig = get_aws_config(runtime.service_no)
+            # Force a redeployment of the runtime.
+            task_definition_arn = aws_config.task_definition_arn
+            ecs_client = get_role_session().client("ecs")
+            latest_revision = get_latest_task_definition_revision(
+                ecs_client, aws_config.task_definition_arn
+            )
+            service = ecs_client.update_service(
+                cluster=aws_config.cluster,
+                service=aws_config.service_name,
+                taskDefinition=f"{task_definition_arn}:{latest_revision}",
+                forceNewDeployment=True,
+            )["service"]
 
         # Poll the service until the deployment is stable (that is, old tasks are stopped, and new ones are running)
         runtime_url = runtime.url
@@ -235,69 +368,60 @@ def update_runtime(
                 resp = requests.get(f"{runtime_url}/ping", timeout=3)
                 resp.raise_for_status()
                 logger.info(f"Runtime {runtime_id} is online")
-                crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
+                with Session() as session:
+                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
                 break
             except Exception as e:
                 logger.info(f"{i}/{40}: Runtime {runtime_id} is not online yet. {e}")
                 sleep(15)
 
-    # Restart the agent (if any)
-    logger.info("Restarting agent (if any)")
-    if agent is not None:
-        logger.info(f"Restarting agent {agent_id}")
-        start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+        # Restart the agent (if any)
+        logger.info("Restarting agent (if any)")
+        if agent is not None:
+            logger.info(f"Restarting agent {agent_id}")
+            start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+    except Exception as e:
+        logger.info(f"{e}: Deleting runtime - update failed")
+        delete_runtime.delay(runtime_id=runtime_id)
+        return "Update failed. Deleted runtime."
+    return "Update successful."
 
 
 @app.task()
 def delete_runtime(
     runtime_id: UUID,
-    aws_config_dict: dict,
 ) -> None:
-    aws_config: AWSConfig = AWSConfig.model_validate(aws_config_dict)
+    ecs_client = get_role_session().client("ecs")
+    elbv2_client = get_role_session().client("elbv2")
     with Session() as session:
-        runtime = crud.get_runtime(session, runtime_id)
+        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if runtime is None:
             raise ValueError(f"Runtime {runtime_id} does not exist")
-        ecs_client = get_role_session().client("ecs")
-        elbv2_client = get_role_session().client("elbv2")
+        aws_config = get_aws_config(runtime.service_no)
 
-        # Stop the runtime
-        if runtime.service_arn:
-            ecs_client.delete_service(
-                cluster=aws_config.cluster,
-                service=aws_config.service_name,
-                force=True,
-            )
-
-        # Delete the listener rules
-        if runtime.http_listener_rule_arn:
-            elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
-        if runtime.https_listener_rule_arn:
-            elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
-
-        # Delete the target group
-        if runtime.target_group_arn:
-            elbv2_client.delete_target_group(
-                TargetGroupArn=runtime.target_group_arn,
-            )
-
-    # Wait until the service is no longer draining.
-    for i in range(1, 41):
-        sleep(15)
-        logger.info(f"{i}/40: Polling service for draining")
-
-        service = ecs_client.describe_services(
+    if runtime.service_arn:
+        ecs_client.delete_service(
+            cluster=aws_config.cluster,
+            service=aws_config.service_name,
+            force=True,
+        )
+        waiter = ecs_client.get_waiter("services_inactive")
+        waiter.wait(
             cluster=aws_config.cluster,
             services=[aws_config.service_name],
-        )["services"][0]
-        deployments = service["deployments"]
-        if all(
-            deployment.get("runningCount", 0) == 0
-            and deployment.get("pendingCount", 0) == 0
-            for deployment in deployments
-        ):
-            logger.info(f"Service {aws_config.service_name} is drained")
-            break
+        )
+
+    # Delete the listener rules
+    if runtime.http_listener_rule_arn:
+        elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
+    if runtime.https_listener_rule_arn:
+        elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
+
+    # Delete the target group
+    if runtime.target_group_arn:
+        elbv2_client.delete_target_group(
+            TargetGroupArn=runtime.target_group_arn,
+        )
 
     # Delete the runtime in db
     with Session() as session:

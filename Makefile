@@ -58,7 +58,7 @@ build-celery:
 run-celery: down-celery build-celery run-redis
 	docker compose -f docker-compose.yml up -d celery
 run-celery-nodocker: run-redis
-	cd apps/api && uv run celery -A src.tasks worker --loglevel=info
+	cd apps/api && uv run celery -A src.tasks worker --loglevel=info --beat
 aws-ecr-push-celery: aws-ecr-login
 	docker tag celery:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
@@ -88,6 +88,7 @@ run-prometheus: down-prometheus build-prometheus
 aws-ecr-push-prometheus: aws-ecr-login
 	docker tag prometheus:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
+
 
 
 pytest:
