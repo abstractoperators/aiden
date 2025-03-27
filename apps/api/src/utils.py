@@ -32,10 +32,9 @@ py_jwt = PyJWT(options)
 def decode_bearer_token(jwt_token: str, pyjwk_client: PyJWKClient) -> dict[str, Any]:
     """
     Decodes a JWT token and returns its payload
+    jwt_token (str): JWT token to decode - does not include the "Bearer " prefix
+    pyjwk_client (PyJWKClient): PyJWKClient object to use for decoding the token
     """
-    if jwt_token.startswith("Bearer "):
-        jwt_token = jwt_token.split(" ")[1]
-
     signing_key = pyjwk_client.get_signing_key_from_jwt(jwt_token)
     print(f"signing_key: {signing_key}")
     print(f"jwt_token: {jwt_token}")

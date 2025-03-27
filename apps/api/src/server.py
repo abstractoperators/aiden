@@ -8,6 +8,7 @@ import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from jwt import PyJWTError
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
@@ -49,7 +50,7 @@ from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
 # from pydantic import TypeAdapter
-from src.utils import obj_or_404
+from src.utils import decode_bearer_token, obj_or_404
 
 
 @asynccontextmanager
@@ -98,8 +99,27 @@ async def auth_middleware(request: Request, call_next):
             )
 
         return await call_next(request)
-    else:
+    elif request.url.path == "/ping":
         pass
+    else:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401, content={"detail": "No authorization header provided"}
+            )
+
+        jwt_token = auth_header.split(" ")[1]
+
+        try:
+            payload = decode_bearer_token(jwt_token)  # noqa
+            # payload  idk do something with this guuy
+        except PyJWTError as e:
+            logger.error(e)
+            return JSONResponse(
+                status_code=401,
+                content={"detail": f"Authorization token is invalid {e}"},
+            )
+
     return await call_next(request)
 
 
