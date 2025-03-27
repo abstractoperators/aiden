@@ -5,14 +5,15 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from jwt import PyJWTError
+
+# from jwt import PyJWTError
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import decode_bearer_token
+from src.auth import get_user_from_token
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -100,24 +101,24 @@ async def auth_middleware(request: Request, call_next):
         return await call_next(request)
     elif request.url.path == "/ping":
         pass
-    elif request.url.path == "/auth/test":
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            return JSONResponse(
-                status_code=401, content={"detail": "No authorization header provided"}
-            )
+    # elif request.url.path == "/auth/test":
+    #     auth_header = request.headers.get("Authorization")
+    #     if not auth_header or not auth_header.startswith("Bearer "):
+    #         return JSONResponse(
+    #             status_code=401, content={"detail": "No authorization header provided"}
+    #         )
 
-        jwt_token = auth_header.split(" ")[1]
+    #     jwt_token = auth_header.split(" ")[1]
 
-        try:
-            payload = decode_bearer_token(jwt_token)  # noqa
-            # payload idk do something with this guy
-        except PyJWTError as e:
-            logger.error(e)
-            return JSONResponse(
-                status_code=401,
-                content={"detail": f"Authorization token is invalid {e}"},
-            )
+    #     try:
+    #         payload = decode_bearer_token(jwt_token)  # noqa
+    #         # payload idk do something with this guy
+    #     except PyJWTError as e:
+    #         logger.error(e)
+    #         return JSONResponse(
+    #             status_code=401,
+    #             content={"detail": f"Authorization token is invalid {e}"},
+    #         )
 
     return await call_next(request)
 
@@ -660,6 +661,9 @@ async def delete_wallet(wallet_id: UUID) -> None:
     return None
 
 
+# def require_user(
+#     user: dict = decode_bearer_token(),
+# )
 @app.post("/users")
 async def create_user(user: UserBase) -> User:
     """
@@ -706,7 +710,11 @@ async def get_user(
 
 
 @app.patch("/users/{user_id}")
-async def update_user(user_id: UUID, user_update: UserUpdate) -> User:
+async def update_user(
+    user_id: UUID,
+    user_update: UserUpdate,
+    user: User = Depends(get_user_from_token),
+) -> User:
     """
     Updates an existing in the database, and returns the full user.
     Returns a 404 if the user is not found.

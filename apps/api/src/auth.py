@@ -1,7 +1,14 @@
 import os
 from typing import Any
+from uuid import UUID
 
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPBearer  # OAuth2PasswordBearer
 from jwt import PyJWK, PyJWKClient, PyJWT
+
+from src.db import Session, crud
+from src.db.models import User
+from src.utils import obj_or_404
 
 options = {
     "verify_signature": True,
@@ -38,3 +45,46 @@ def decode_bearer_token(jwt_token: str) -> dict[str, Any]:
     signing_key: PyJWK = pyjwk_client.get_signing_key_from_jwt(jwt_token)
 
     return py_jwt.decode_complete(jwt_token, signing_key, leeway=10)
+
+
+# This guy basically just checks for Authorization header.
+auth_scheme = HTTPBearer(
+    bearerFormat="",
+    scheme_name="Bearer Token from Dynamic",
+    auto_error=False,
+)
+# tokenUrl="", auto_error=False
+# )  # Made by Dynamic - there is no tokenUrl
+
+
+def get_user_from_token(
+    request: Request,
+    token: str = Depends(auth_scheme),
+) -> User:
+    """
+    If the JWT token is valid, returns the User object associated with the token
+    Otherwise, raises an HTTPException with status code 401
+    request (Request): FastAPI Request object TODO Remove it after debugging
+    token (str): JWT token to decode representing a user claim.
+    """
+    print("request.headers:", request.headers)
+    print("token:", token)
+    if not token:
+        raise HTTPException("No token was provided", status_code=401)
+    decoded_token = decode_bearer_token(token.credentials)
+    payload = decoded_token.get("payload")
+    if not payload:
+        raise ValueError()
+    subject = payload.get("sub")
+    if not subject:
+        raise ValueError()
+    dynamic_user_id: UUID = UUID(subject)
+    print(f"dynamic_user_id: {dynamic_user_id}")
+
+    # For now, assume the user already exists
+    with Session() as session:
+        user: User = obj_or_404(
+            crud.get_user_by_dynamic_id(session, dynamic_id=dynamic_user_id), User
+        )
+
+    return user
