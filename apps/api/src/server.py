@@ -46,7 +46,7 @@ from src.models import (
     agent_to_agent_public,
     user_to_user_public,
 )
-from src.setup import test_db_connection
+from src.setup import pyjwk_client, test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
 # from pydantic import TypeAdapter
@@ -101,7 +101,7 @@ async def auth_middleware(request: Request, call_next):
         return await call_next(request)
     elif request.url.path == "/ping":
         pass
-    else:
+    elif request.url.path == "/auth/test":
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return JSONResponse(
@@ -111,7 +111,7 @@ async def auth_middleware(request: Request, call_next):
         jwt_token = auth_header.split(" ")[1]
 
         try:
-            payload = decode_bearer_token(jwt_token)  # noqa
+            payload = decode_bearer_token(jwt_token, pyjwk_client)  # noqa
             # payload  idk do something with this guuy
         except PyJWTError as e:
             logger.error(e)
@@ -154,6 +154,14 @@ app.add_middleware(
 
 @app.get("/ping")
 async def ping():
+    """
+    pong
+    """
+    return "pong"
+
+
+@app.get("/auth/test")
+async def auth_test(request: Request):
     """
     pong
     """
