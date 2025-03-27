@@ -12,6 +12,7 @@ from jwt import PyJWTError
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
+from src.auth import decode_bearer_token
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -46,11 +47,11 @@ from src.models import (
     agent_to_agent_public,
     user_to_user_public,
 )
-from src.setup import pyjwk_client, test_db_connection
+from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
 
 # from pydantic import TypeAdapter
-from src.utils import decode_bearer_token, obj_or_404
+from src.utils import obj_or_404
 
 
 @asynccontextmanager
@@ -111,8 +112,8 @@ async def auth_middleware(request: Request, call_next):
         jwt_token = auth_header.split(" ")[1]
 
         try:
-            payload = decode_bearer_token(jwt_token, pyjwk_client)  # noqa
-            # payload  idk do something with this guuy
+            payload = decode_bearer_token(jwt_token)  # noqa
+            # payload idk do something with this guy
         except PyJWTError as e:
             logger.error(e)
             return JSONResponse(
