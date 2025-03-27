@@ -75,22 +75,25 @@ async function getAgentStartTaskStatus(
 }
 
 async function getAgents(
+  auth_token: string,
   query?: { userId: string } | { userDynamicId: string }
 ): Promise<Agent[]> {
   return getResource<Agent[]>(
     baseUrlSegment,
+    auth_token,
     query ? { query: query } : undefined,
   )
 }
 
 async function getEnlightened(
+  auth_token: string,
   query?: (
     { userId: string } |
     { userDynamicId: string }
   )
 ): Promise<ClientAgent[]> {
   try {
-    const apiAgents = (!query) ? getAgents() : getAgents(query)
+    const apiAgents = (!query) ? getAgents(auth_token) : getAgents(auth_token, query)
 
     return Promise.all(
       (await apiAgents)
@@ -118,9 +121,9 @@ async function getEnlightened(
   throw new Error("Logic error, this should never be reached.")
 }
 
-async function getIncubating(): Promise<ClientAgent[]> {
+async function getIncubating(auth_token: string): Promise<ClientAgent[]> {
   // TODO: replace with API call
-  return getEnlightened()
+  return getEnlightened(auth_token)
 }
 
 export {
