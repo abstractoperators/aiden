@@ -23,7 +23,7 @@ export default function Hero() {
       </div>
       <DynamicConnectButtonHero
         width={8}
-        textSize="xl"
+        textSize="3xl"
       />
     </section>
   )

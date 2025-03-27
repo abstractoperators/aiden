@@ -20,6 +20,8 @@ import Link from "next/link";
 import AppearanceMenu from "./appearance-menu";
 import { LayoutDashboard, LogOut, Settings2 } from "lucide-react";
 
+const iconClassName = "h-[1.2rem] w-[1.2rem]"
+
 export default function UserMenu({
   logout,
   user,
@@ -35,8 +37,10 @@ export default function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:opacity-60 transition duration-300">
-          <AvatarFallback>{displayName.substring(0, 2)}</AvatarFallback>
+        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:hue-rotate-60 transition duration-300">
+          <AvatarFallback className="bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-10% to-carnation dark:to-carnation-dark to-90%">
+            {displayName.substring(0, 2)}
+          </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
@@ -45,21 +49,21 @@ export default function UserMenu({
         <DropdownMenuGroup>
           <Link href="/user">
             <DropdownMenuItem>
-              <LayoutDashboard className="h-[1.2rem] w-[1.2rem]" />
+              <LayoutDashboard className={iconClassName} />
               <span>Control Center</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout}>
-            <LogOut className="h-[1.2rem] w-[1.2rem]" />
+            <LogOut className={iconClassName} />
             <span>Logout</span>
           </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <AppearanceMenu />
           <DropdownMenuItem onClick={() => setShowDynamicUserProfile(true)}>
-            <Settings2 className="h-[1.2rem] w-[1.2rem]" />
+            <Settings2 className={iconClassName} />
             <span>User Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
