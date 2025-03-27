@@ -90,12 +90,7 @@ def get_user_by_public_key(
     public_key: str,
     chain: str = "EVM",
 ) -> User | None:
-    stmt = (
-        select(Wallet)
-        .where(Wallet.chain == chain)
-        .where(Wallet.public_key == public_key)
-    )
-    wallet = session.exec(stmt).first()
+    wallet = get_wallet_by_public_key(session, public_key, chain)
     if wallet:
         return get_user(session, wallet.owner_id)
     return None
