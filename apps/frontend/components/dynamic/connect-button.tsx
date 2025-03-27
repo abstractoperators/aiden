@@ -12,8 +12,18 @@ interface DynamicConnectButtonProps {
 }
 
 const getTextSize = (textSize?: string) => textSize ? `text-${textSize}` : ""
-const getCommon = ({width, height, textSize}: DynamicConnectButtonProps) => (
-  `px-${width} py-${height ?? width} ${getTextSize(textSize)} font-bold text-black dark:text-neutral-100 rounded-lg transition duration-300`
+const getCommon = ({width, height, textSize}: DynamicConnectButtonProps) => ([
+    `px-${width}`,
+    `py-${height ?? width}`,
+    getTextSize(textSize),
+    "font-semibold",
+    "text-black",
+    "dark:text-white",
+    "rounded-xl",
+    "transition",
+    "duration-300",
+  ]
+  .join(" ")
 )
 
 function DynamicConnectButtonBase({
@@ -32,7 +42,7 @@ function DynamicConnectButtonBase({
   ) : (
     <DynamicConnectButton>
       <div className={`${buttonVariants()} ${getCommon({width, height, textSize})} ${bg} duration-300`}>
-        <div className="font-bold text-black dark:text-white">
+        <div className={`font-semibold text-black dark:text-white ${getTextSize(textSize)}`}>
           Join the Waitlist
         </div>
       </div>
