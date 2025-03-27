@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
+
 from src import logger, tasks
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -46,9 +47,6 @@ from src.models import (
 )
 from src.setup import test_db_connection
 from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
-from urllib3.exceptions import HTTPError
-
-# from pydantic import TypeAdapter
 from src.utils import obj_or_404
 
 
@@ -649,9 +647,10 @@ async def get_user(
     user_id: UUID | None = None,
     public_key: str | None = None,
     dynamic_id: UUID | None = None,
+    chain: str = "EVM",
 ) -> UserPublic:
     """
-    Raises a 400 if more than one parameter is passed.
+    Raises a 400 if more than one of user_id, public_key, or dynamic_id are passed.
     Raises a 404 if the user is not found.
     Otherwise, returns the user by query parameter.
     """
@@ -667,7 +666,7 @@ async def get_user(
         if user_id:
             user = crud.get_user(session, user_id)
         elif public_key:
-            user = crud.get_user_by_public_key(session, public_key)  # no-redef
+            user = crud.get_user_by_public_key(session, public_key, chain)  # no-redef
         elif dynamic_id:
             user = crud.get_user_by_dynamic_id(session, dynamic_id)  # no-redef
 
