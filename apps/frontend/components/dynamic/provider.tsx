@@ -113,7 +113,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
           onWalletAdded: async ({ wallet, userWallets }) => {
             const user = await Promise.any(
               userWallets.map(
-                dynamicWallet => getUser({ publicKey: dynamicWallet.address })
+                dynamicWallet => getUser({ publicKey: dynamicWallet.address, chain: dynamicWallet.chain })
               )
             )
 
