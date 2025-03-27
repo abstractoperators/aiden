@@ -229,11 +229,21 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
 
 
 @app.patch("/agents/{agent_id}")
-async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> AgentPublic:
+async def update_agent(
+    agent_id: UUID,
+    agent_update: AgentUpdate,
+    current_user: User = Depends(get_user_from_token),
+) -> AgentPublic:
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
     """
+    # Prevent updating agent that doesn't belong to the user
+    if agent_update.owner_id and agent_update.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to update an agent that doesn't belong to you",
+        )
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
@@ -661,9 +671,6 @@ async def delete_wallet(wallet_id: UUID) -> None:
     return None
 
 
-# def require_user(
-#     user: dict = decode_bearer_token(),
-# )
 @app.post("/users")
 async def create_user(user: UserBase) -> User:
     """
