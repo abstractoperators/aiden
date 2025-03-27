@@ -107,15 +107,15 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
           onUserProfileUpdate: async user => {
             const auth_token = getAuthToken()
             console.log("auth_token", auth_token)
-            fetch( "http://localhost:8003/auth/test", {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${auth_token}`,
-              }});
+            // fetch( "http://localhost:8003/auth/test", {
+            //   method: "GET",
+            //   headers: {
+            //     Authorization: `Bearer ${auth_token}`,
+            //   }});
             if (!user.userId)
               throw new Error(`User ${user} has no userId!`)
-            const apiUser = await getUser({ dynamicId: user.userId })
-            updateUser(apiUser.id, await dynamicToApiUser(user))
+            const apiUser = await getUser({ dynamicId: user.userId }, { Authorization: `Bearer ${auth_token}` },)
+            updateUser(apiUser.id, await dynamicToApiUser(user), { Authorization: `Bearer ${auth_token}` })
           },
           onWalletAdded: async ({ wallet, userWallets }) => {
             const user = await Promise.any(
