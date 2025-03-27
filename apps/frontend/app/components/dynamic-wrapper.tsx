@@ -105,6 +105,13 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
             handleLogout();
           },
           onUserProfileUpdate: async user => {
+            const auth_token = getAuthToken()
+            console.log("auth_token", auth_token)
+            fetch( "http://localhost:8003/auth/test", {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${auth_token}`,
+              }});
             if (!user.userId)
               throw new Error(`User ${user} has no userId!`)
             const apiUser = await getUser({ dynamicId: user.userId })
