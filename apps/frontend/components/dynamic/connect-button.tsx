@@ -18,7 +18,7 @@ const getCommon = ({width, height, textSize}: DynamicConnectButtonProps) => ([
     getTextSize(textSize),
     "font-semibold",
     "text-black",
-    "dark:text-white",
+    "dark:text-neutral-100",
     "rounded-xl",
     "transition",
     "duration-300",
