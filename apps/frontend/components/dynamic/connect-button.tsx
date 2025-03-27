@@ -1,7 +1,7 @@
 "use client"
 
 import { DynamicConnectButton, useDynamicContext } from "@dynamic-labs/sdk-react-core"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
