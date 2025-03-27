@@ -5,7 +5,6 @@ import LightGhost from '@/public/brand_assets/light-ghost.svg'
 import DarkGhost from '@/public/brand_assets/dark-ghost.svg'
 import ThemeImage from '@/components/ui/theme-image'
 import { DynamicConnectButtonHeader } from './dynamic/connect-button'
-import Image from 'next/image'
 import { ReactElement } from 'react'
 import VisitorMenu from './visitor-menu'
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
@@ -28,9 +27,10 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
     case "landing":
       return {
         headerStyle: headerStyles.landing,
-        aidenImage: <Image
+        aidenImage: <ThemeImage
           className="w-6 transition duration-300 hover:invert-[.7]"
-          src={LightGhost}
+          lightSrc={LightGhost}
+          darkSrc={DarkGhost}
           alt="AIDEN"
         />,
       }

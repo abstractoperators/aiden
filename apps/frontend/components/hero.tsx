@@ -1,4 +1,4 @@
-import LightLogo from "@/public/brand_assets/dark-ghost.svg"
+import LightLogo from "@/public/brand_assets/blue-ghost.svg"
 import DarkLogo from "@/public/brand_assets/pink-ghost.svg"
 import { DynamicConnectButtonHero } from "./dynamic/connect-button"
 import ThemeImage from "./ui/theme-image"
