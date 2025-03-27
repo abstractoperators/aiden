@@ -713,12 +713,20 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_update: UserUpdate,
-    user: User = Depends(get_user_from_token),
+    current_user: User = Depends(get_user_from_token),
 ) -> User:
     """
     Updates an existing in the database, and returns the full user.
     Returns a 404 if the user is not found.
+    user_id: UUID of user to update
+    user_update: UserUpdate object with fields to update
+    current_user: User object of the currently signed in user making the request. Comes from Auth headers.
     """
+    if not user_id == current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to update a user another than your own",
+        )
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
