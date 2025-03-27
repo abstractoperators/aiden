@@ -4,14 +4,14 @@ import Link from 'next/link'
 import LightGhost from '@/public/brand_assets/light-ghost.svg'
 import DarkGhost from '@/public/brand_assets/dark-ghost.svg'
 import ThemeImage from '@/components/ui/theme-image'
-import { DynamicConnectButtonHeader } from './dynamic/connect-button'
+import { LoginButtonHeader } from './dynamic/login-button'
 import { ReactElement } from 'react'
 import VisitorMenu from './visitor-menu'
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
 
 const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full"
 enum headerStyles {
-  landing = `${baseHeaderStyle}`,
+  landing = baseHeaderStyle,
   main = `${baseHeaderStyle} bg-background/10 backdrop-blur`,
 }
 
@@ -65,10 +65,7 @@ export default function Header({ variant }: variantProp) {
             Agents
           </Link>
           <div className="flex items-center justify-between space-x-2">
-            <DynamicConnectButtonHeader
-              width={4}
-              height={2}
-            />
+            <LoginButtonHeader className="px-4 py-2" />
             {
               !isLoggedIn &&
               <VisitorMenu />

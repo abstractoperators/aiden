@@ -1,6 +1,6 @@
 import LightLogo from "@/public/brand_assets/blue-ghost.svg"
 import DarkLogo from "@/public/brand_assets/pink-ghost.svg"
-import { DynamicConnectButtonHero } from "./dynamic/connect-button"
+import { LoginButtonHero } from "./dynamic/login-button"
 import ThemeImage from "./ui/theme-image"
 
 export default function Hero() {
@@ -23,7 +23,7 @@ export default function Hero() {
           High Performance Onchain Agents
         </h2>
       </div>
-      <DynamicConnectButtonHero />
+      <LoginButtonHero className="px-8 py-8 text-3xl" />
     </section>
   )
 }
