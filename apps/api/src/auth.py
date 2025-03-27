@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer  # OAuth2PasswordBearer
 from jwt import PyJWK, PyJWKClient, PyJWT
+from jwt.exceptions import PyJWTError
 
 from src.db import Session, crud
 from src.db.models import User
@@ -70,8 +71,12 @@ def get_user_from_token(
     print("request.headers:", request.headers)
     print("token:", token)
     if not token:
-        raise HTTPException("No token was provided", status_code=401)
-    decoded_token = decode_bearer_token(token.credentials)
+        raise HTTPException(detail="No token was provided", status_code=401)
+    try:
+        decoded_token = decode_bearer_token(token.credentials)
+    except PyJWTError:
+        raise HTTPException(detail="Failed to decode token", status_code=401)
+
     payload = decoded_token.get("payload")
     if not payload:
         raise ValueError()
