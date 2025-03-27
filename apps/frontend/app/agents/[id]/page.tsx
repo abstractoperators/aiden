@@ -1,20 +1,21 @@
 // https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
-import AgentCard from "@/components/agent-card"
-import Chat from "@/components/chat"
-import { getAgent } from "@/lib/api/agent"
+import AgentCard from "@/components/agent-card";
+import Chat from "@/components/chat";
+import { getAgent } from "@/lib/api/agent";
 
 // TODO: start agent button
 
 export default async function AgentHome({
   params,
 }: {
-  params: Promise<{ id: string }>,
+  params: Promise<{ id: string }>;
 }) {
-  const id = (await params).id
-  const agent = await getAgent(id)
-  if (!agent.runtime)
-    console.log("Agent", agent, "has no runtime!")
-  const name = agent.characterJson.name || "Nameless"
+  const id = (await params).id;
+  const token = localStorage.getItem("dynamic_authentication_token") as string;
+  if (!token) console.error("No token found in local storage.");
+  const agent = await getAgent(id, token);
+  if (!agent.runtime) console.log("Agent", agent, "has no runtime!");
+  const name = agent.characterJson.name || "Nameless";
 
   return (
     <main className="w-full flex-1 grid grid-cols-12 gap-8 p-16 sm:m-4 md:m-8 lg:m-16">
@@ -24,17 +25,13 @@ export default async function AgentHome({
       </div>
       <div className="col-span-5 flex flex-row justify-center my-8">
         <div className="flex-1">
-          {
-            (agent.runtime && agent.elizaAgentId) ?
-            <Chat
-              elizaId={agent.elizaAgentId}
-              runtimeUrl={agent.runtime.url}
-            /> : <p className="text-center">
-              This agent has no chat.
-            </p>
-          }
+          {agent.runtime && agent.elizaAgentId ? (
+            <Chat elizaId={agent.elizaAgentId} runtimeUrl={agent.runtime.url} />
+          ) : (
+            <p className="text-center">This agent has no chat.</p>
+          )}
         </div>
       </div>
     </main>
-  )
+  );
 }

@@ -44,8 +44,9 @@ interface Agent extends AgentBase {
   token?: Token | null
 }
 
-async function getAgent(agentId: string): Promise<Agent> {
-  return getResource<Agent>(baseUrlSegment, { resourceId: agentId })
+async function getAgent(agentId: string, auth_token: string): Promise<Agent> {
+  return getResource<Agent>(baseUrlSegment, auth_token,
+    { resourceId: agentId })
 }
 
 async function createAgent(agentPayload: AgentBase): Promise<Agent> {
@@ -93,21 +94,21 @@ async function getEnlightened(
 
     return Promise.all(
       (await apiAgents)
-      .map(async agent => {
-        const clientAgent = {
-          id: agent.id,
-          name: agent.characterJson.name || "Nameless",
-          ownerId: agent.ownerId,
-          // TODO: retrieve financial stats via API
-          marketCapitalization: 0,
-          holderCount: 0,
-        }
+        .map(async agent => {
+          const clientAgent = {
+            id: agent.id,
+            name: agent.characterJson.name || "Nameless",
+            ownerId: agent.ownerId,
+            // TODO: retrieve financial stats via API
+            marketCapitalization: 0,
+            holderCount: 0,
+          }
 
-        return (agent.tokenId) ? {
-          ticker: (await getToken(agent.tokenId)).ticker,
-          ...clientAgent,
-        } : clientAgent
-      })
+          return (agent.tokenId) ? {
+            ticker: (await getToken(agent.tokenId)).ticker,
+            ...clientAgent,
+          } : clientAgent
+        })
     )
   } catch (error) {
     // TODO: toast?
