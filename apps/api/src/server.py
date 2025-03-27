@@ -662,13 +662,13 @@ async def get_user(
         )
 
     with Session() as session:
-        user: User | None = None
+        user: User | None
         if user_id:
             user = crud.get_user(session, user_id)
         elif public_key:
-            user = crud.get_user_by_public_key(session, public_key, chain)  # no-redef
+            user = crud.get_user_by_public_key(session, public_key, chain)
         elif dynamic_id:
-            user = crud.get_user_by_dynamic_id(session, dynamic_id)  # no-redef
+            user = crud.get_user_by_dynamic_id(session, dynamic_id)
 
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
