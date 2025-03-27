@@ -1,15 +1,17 @@
-import Logo from "@/public/brand_assets/dark-ghost.svg"
-import Image from "next/image"
+import LightLogo from "@/public/brand_assets/dark-ghost.svg"
+import DarkLogo from "@/public/brand_assets/pink-ghost.svg"
 import { DynamicConnectButtonHero } from "./dynamic/connect-button"
+import ThemeImage from "./ui/theme-image"
 
 export default function Hero() {
   return (
     <section className="container flex flex-col items-center justify-center space-y-8 text-center py-52">
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
-        <Image
+        <ThemeImage
           priority={true}
-          className="w-1/2"
-          src={Logo}
+          className="w-64"
+          lightSrc={LightLogo}
+          darkSrc={DarkLogo}
           alt="AIDEN"
         />
         <h1 className="tracking-widest font-bold sm:text-d3 md:text-d2 lg:text-d1">
