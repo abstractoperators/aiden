@@ -1,5 +1,6 @@
 import os
 
+import requests
 from jwt import PyJWKClient
 from sqlmodel import text
 
@@ -20,7 +21,12 @@ def test_db_connection() -> bool:
 dynamic_environment_id = os.getenv("DYNAMIC_ENVIRONMENT_ID", None)
 if not dynamic_environment_id:
     raise EnvironmentError("DYNAMIC_ENVIRONMENT_ID is not set")
-
+uri = (
+    f"https://app.dynamicauth.com/api/v0/sdk/{dynamic_environment_id}/.well-known/jwks"
+)
+print(uri)
+print(requests.get(uri).json())
 pyjwk_client: PyJWKClient = PyJWKClient(
-    uri=f"https://app.dynamicauth.com/api/v0/sdk/{dynamic_environment_id}/.well-known/jwks"
+    uri=uri,
+    headers={"User-Agent": "AidenBackend"},
 )
