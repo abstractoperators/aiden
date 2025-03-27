@@ -1,6 +1,7 @@
 import Link from "next/link"
 
-const linkClassName = "text-anakiwa-dark hover:text-anakiwa dark:text-carnation-light dark:hover:text-carnation-dark"
+const linkClassName = "text-anakiwa-lighter hover:text-white dark:text-carnation-light dark:hover:text-carnation-dark"
+
 export default function About() {
   return (
     <section className="container flex flex-col items-center justify-center space-y-16 py-72">
