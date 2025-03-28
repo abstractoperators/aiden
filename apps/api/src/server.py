@@ -650,8 +650,14 @@ async def get_wallets(
 async def update_wallet(
     wallet_id: UUID,
     wallet_update: WalletUpdate,
-    wallets: list[Wallet] = Depends(get_wallets_from_token),
+    current_wallets: list[Wallet] = Depends(get_wallets_from_token),
 ) -> Wallet:
+    # TODO: Verify user ownership
+    if wallet_id not in [wallet.id for wallet in current_wallets]:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to update a wallet that doesn't belong to you",
+        )
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
         if not wallet:
@@ -662,11 +668,19 @@ async def update_wallet(
 
 
 @app.delete("/wallets/{wallet_id}")
-async def delete_wallet(wallet_id: UUID) -> None:
+async def delete_wallet(
+    wallet_id: UUID,
+    current_wallets: list[Wallet] = Depends(get_wallets_from_token),
+) -> None:
     """
     Deletes a wallet.
     Returns a 404 if the wallet is not found.
     """
+    if wallet_id not in [wallet.id for wallet in current_wallets]:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete a wallet that doesn't belong to you",
+        )
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
         if not wallet:
