@@ -55,6 +55,13 @@ auth_scheme = HTTPBearer(
     auto_error=False,
 )
 
+# TODO: Use JWT payload to create users/wallets if they don't exist.
+# Maybe?
+
+# TODO: Auth endpoints that *don't* require the user to be logged in
+# For example, creating a new user.
+# Or updating a runtime - maybe we do the same pattern with backend-runtime.
+
 
 def get_user_from_token(
     request: Request,

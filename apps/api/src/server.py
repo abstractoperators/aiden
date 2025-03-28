@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import get_user_from_token
+from src.auth import get_user_from_token, get_wallets_from_token
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -647,7 +647,11 @@ async def get_wallets(
 
 
 @app.patch("/wallets/{wallet_id}")
-async def update_wallet(wallet_id: UUID, wallet_update: WalletUpdate) -> Wallet:
+async def update_wallet(
+    wallet_id: UUID,
+    wallet_update: WalletUpdate,
+    wallets: list[Wallet] = Depends(get_wallets_from_token),
+) -> Wallet:
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
         if not wallet:
