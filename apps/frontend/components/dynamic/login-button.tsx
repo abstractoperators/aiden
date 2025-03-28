@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { SessionProvider } from "next-auth/react"
 
 const common = (
   [
@@ -37,9 +36,9 @@ function LoginButton({
   const { primaryWallet, user, setShowAuthFlow } = useDynamicContext()
 
   return (primaryWallet && user) ? (
-    <SessionProvider>
+    <div>
       {children}
-    </SessionProvider>
+    </div>
   ) : (
     <Button
       className={cn(
