@@ -1,5 +1,4 @@
-import * as React from "react"
-import { ChevronRight, Plus } from "lucide-react"
+import { Bot, ChevronRight, LayoutDashboard, LucideIcon, Plus } from "lucide-react"
 
 import {
   Collapsible,
@@ -17,7 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  // SidebarRail,
+  SidebarRail,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -26,6 +25,7 @@ import { ClientAgent } from "@/lib/api/agent"
 interface NavigationGroup {
   title: string,
   url: string,
+  icon?: LucideIcon,
   items: {
     key: string,
     title: string,
@@ -36,6 +36,8 @@ interface NavigationGroup {
 interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
   userAgents: ClientAgent[]
 }
+
+const bg = "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%"
 
 export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
   const navigation: NavigationGroup[] = []
@@ -53,6 +55,7 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
   navigation.unshift({
     title: "Your Agents",
     url: "#",
+    icon: Bot,
     items: userAgents.map(agent => ({
       key: agent.id,
       title: agent.name,
@@ -64,8 +67,9 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
     <Sidebar
       {...props}
     >
-      <SidebarHeader>
-        Control Center
+      <SidebarHeader className="flex flex-row items-center font-bold text-lg">
+        <LayoutDashboard className="h-[1.2rem] w-[1.2rem]" />
+        <span>Control Center</span>
       </SidebarHeader>
       <SidebarContent className="gap-0">
         {/* We create a collapsible SidebarGroup for each parent. */}
@@ -79,11 +83,14 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
             <SidebarGroup>
               <SidebarGroupLabel
                 asChild
-                className="group/label text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="group/label text-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
-                <CollapsibleTrigger>
-                  {parent.title}{" "}
-                  <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton tooltip={parent.title}>
+                    {parent.icon && <parent.icon className="h-[1.2rem] w-[1.2rem]" />}
+                    <span>{parent.title}{" "}</span>
+                    <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
                 </CollapsibleTrigger>
               </SidebarGroupLabel>
               <CollapsibleContent>
@@ -106,12 +113,16 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
       </SidebarContent>
       <SidebarFooter className="flex flex-col w-full justify-center items-center">
         <Link href="/user/agents/creation">
-          <Button>
+          <Button
+            className={`${bg} text-black dark:text-white transition duration-300 hover:hue-rotate-60`}
+            size='lg'
+          >
             <Plus strokeWidth={5}/>
-            Create an Agent
+            <span>Create an Agent</span>
           </Button>
         </Link>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }
