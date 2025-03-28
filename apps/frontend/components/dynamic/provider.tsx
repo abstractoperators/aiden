@@ -19,8 +19,11 @@ import {
   deleteWallet,
   updateOrCreateWallet,
 } from "@/lib/api/wallet";
+import { useRouter } from "next/navigation";
 
 export default function DynamicProvider({ children }: React.PropsWithChildren) {
+  const router = useRouter()
+
   return (
     <DynamicContextProvider
       settings={{
@@ -31,6 +34,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
         ],
         events: {
           onAuthSuccess: async ({ user, primaryWallet }) => {
+            console.log("onAuthSuccess")
             const authToken = getAuthToken();
 
             if (!authToken) {
@@ -81,8 +85,12 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                 }
               )
             }
+
+            console.log("Refresh")
+            router.refresh()
           },
           onEmbeddedWalletCreated: async (jwtVerifiedCredential, user) => {
+            console.log("onEmbeddedWallet")
             if (!user)
               throw new Error(`User ${user} does not exist!`)
             if (!user.userId)
@@ -102,15 +110,18 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             })
           },
           onLogout: () => {
+            console.log("onLogout")
             handleLogout();
           },
           onUserProfileUpdate: async user => {
+            console.log("onUserProfileUpdate")
             if (!user.userId)
               throw new Error(`User ${user} has no userId!`)
             const apiUser = await getUser({ dynamicId: user.userId })
             updateUser(apiUser.id, await dynamicToApiUser(user))
           },
           onWalletAdded: async ({ wallet, userWallets }) => {
+            console.log("onWalletAdded")
             const user = await Promise.any(
               userWallets.map(
                 dynamicWallet => getUser({ publicKey: dynamicWallet.address, chain: dynamicWallet.chain })
@@ -143,6 +154,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             }
           },
           onWalletRemoved: ({ wallet }) => {
+            console.log("onWalletRemoved")
             getWallet({ publicKey: wallet.address, chain: wallet.chain })
             .then(apiWallet => deleteWallet(apiWallet.id))
             .catch(() => {

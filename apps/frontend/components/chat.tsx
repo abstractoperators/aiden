@@ -59,6 +59,7 @@ export default function Chat({
       }))
 
       // TODO: better wait indicator/feedback
+      // TODO: move to server side
       const response = await fetch(
         chatUrl,
         {
