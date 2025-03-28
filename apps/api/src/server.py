@@ -504,12 +504,24 @@ def get_agent_start_task_status(
 def start_agent(
     agent_id: UUID,
     runtime_id: UUID,
+    current_user: User = Depends(get_user_from_token),
 ) -> AgentStartTask:
     """
     Kicks off a task to start an agent on a runtime.
     Returns a task record that you can retrieve from.
     Returns a 404 if the agent or runtime is not found.
     """
+
+    # with Session() as session:
+    #     agent: Agent | None = crud.get_agent(session, agent_id)
+    #     if not agent:
+    #         raise HTTPException(status_code=404, detail="Agent not found")
+    #     if agent.owner_id != current_user.id:
+    #         raise HTTPException(
+    #             status_code=403,
+    #             detail="You do not have permission to start an agent that doesn't belong to you",
+    #         )
+
     # Make sure that no task for starting an agent is already running.
     # Must block on both agent_id or runtime_id.
     # That is, there must not be a running task for either agent_id or runtime_id.
@@ -575,15 +587,23 @@ def stop_agent(agent_id: UUID) -> Agent:
 
 
 @app.delete("/agents/{agent_id}")
-def delete_agent(agent_id: UUID) -> None:
+def delete_agent(
+    agent_id: UUID, current_user: User = Depends(get_user_from_token)
+) -> None:
     """
     Deletes an agent by id.
     Raises a 404 if the agent is not found.
+    Raises a 403 if the agent does not belong to the currently signed in user.
     """
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
+        if agent.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You may not delete an agent that doesn't belong to you",
+            )
 
         if agent.runtime_id:
             stop_agent(agent_id)
