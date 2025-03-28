@@ -50,6 +50,9 @@ from src.setup import test_db_connection
 from src.token_deployment import deploy_token
 from src.utils import obj_or_404
 
+# TODO: Change a ton of endpoints to not require information that is already in the JWT token.
+# For example, PATCH /users should just require the user_id in the JWT token, not in query params.
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
@@ -183,10 +186,13 @@ def create_agent(
         return agent_to_agent_public(agent)
 
 
+# TODO: Just update it to get the agent for whomever is signed in, instead of requiring the user to pass in the user_id AND be signed in
+# TODO: Auth getting all agents
 @app.get("/agents")
 async def get_agents(
     user_id: UUID | None = None,
     user_dynamic_id: UUID | None = None,
+    user: User = Depends(get_user_from_token),  # noqa
 ) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
@@ -203,12 +209,20 @@ async def get_agents(
 
     with Session() as session:
         if user_dynamic_id:
+            if not user_dynamic_id == user.dynamic_id:
+                raise HTTPException(
+                    status_code=403, detail="You may not access Agents not owned by you"
+                )
             user = crud.get_user_by_dynamic_id(session, user_dynamic_id)
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
             user_id = user.id
             agents = crud.get_agents_by_user_id(session, user_id)
         elif user_id:
+            if not user_id == user.id:
+                raise HTTPException(
+                    status_code=403, detail="You may not access Agents not owned by you"
+                )
             agents = crud.get_agents_by_user_id(session, user_id)
         else:
             agents = crud.get_agents(session)

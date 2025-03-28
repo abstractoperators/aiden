@@ -106,7 +106,7 @@ def get_wallets_from_token(
 ) -> list[Wallet]:
     """
     If the JWT token is valid, returns the wallets associated with the token
-    TODO: Associate wallets with user
+    TODO: Associate wallets with User object in crud
     Otherwise, raises an HTTPException with status code 401
     request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
