@@ -8,12 +8,10 @@ import requests
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-# from jwt import PyJWTError
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import decode_bearer_token, get_user_from_token, get_wallets_from_token
+from src.auth import get_user_from_token, get_wallets_from_token
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -171,7 +169,8 @@ async def auth_test(request: Request):
 @app.post("/agents")
 def create_agent(
     agent: AgentBase,
-    decoded_token=Depends(decode_bearer_token),
+    # Require that the user be signed in, but don't do any other verification
+    user: User = Depends(get_user_from_token),  # noqa
 ) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
