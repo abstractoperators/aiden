@@ -740,11 +740,19 @@ async def update_user(
 
 
 @app.delete("/users/{user_id}")
-async def delete_user(user_id: UUID) -> None:
+async def delete_user(
+    user_id: UUID,
+    current_user: User = Depends(get_user_from_token),
+) -> None:
     """
     Deletes a user from the database.
     Returns a 404 if the user is not found.
     """
+    if not user_id == current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete a user other than your own",
+        )
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
