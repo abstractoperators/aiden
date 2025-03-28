@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import get_user_from_token, get_wallets_from_token
+from src.auth import decode_bearer_token, get_user_from_token, get_wallets_from_token
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -49,7 +49,7 @@ from src.models import (
     user_to_user_public,
 )
 from src.setup import test_db_connection
-from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
+from src.token_deployment import deploy_token
 from src.utils import obj_or_404
 
 
@@ -99,8 +99,8 @@ async def auth_middleware(request: Request, call_next):
             )
 
         return await call_next(request)
-    elif request.url.path == "/ping":
-        pass
+    # elif request.url.path == "/ping":
+    #     pass
     # elif request.url.path == "/auth/test":
     #     auth_header = request.headers.get("Authorization")
     #     if not auth_header or not auth_header.startswith("Bearer "):
@@ -169,10 +169,14 @@ async def auth_test(request: Request):
 
 
 @app.post("/agents")
-def create_agent(agent: AgentBase) -> AgentPublic:
+def create_agent(
+    agent: AgentBase,
+    decoded_token=Depends(decode_bearer_token),
+) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
     Only stores it in db.
+    Requires that the user be signed in.
     """
     with Session() as session:
         agent = crud.create_agent(session, agent)
@@ -239,6 +243,7 @@ async def update_agent(
     Raises a 404 if the agent is not found.
     """
     # Prevent updating agent that doesn't belong to the user
+    # You can, however, transfer ownership.
     if agent_update.owner_id and agent_update.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
@@ -306,53 +311,6 @@ async def get_token(token_id: UUID) -> Token:
         raise HTTPException(status_code=404, detail="Token not found")
 
     return token
-
-
-@app.get("/tokens/{token_id}/sell_txn")
-def get_sell_txn(token_id: UUID, user_address: str, amount_tokens: int) -> dict:
-    """
-    Returns an unsigned transaction to sell tokens for SEI.
-
-    contract_address: Address of the token contract
-    user_address: Address of the user selling the tokens
-    amount: Amount of tokens to sell
-    """
-    with Session() as session:
-        token = crud.get_token(session, token_id)
-
-        if not token:
-            raise ValueError(f"Token {token_id} not found")
-
-        contract_address = token.evm_contract_address
-        contract_abi = token.abi
-
-    return sell_token_unsigned(
-        amount_tokens,
-        contract_abi,
-        contract_address,
-        user_address,
-    )
-
-
-@app.get("/tokens/{token_id}/buy_txn")
-def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
-    """
-    Returns an unsigned transaction buy tokens with Sei
-    TODO: Change amount_sei -> amount_tokens
-    """
-    with Session() as session:
-        token = crud.get_token(session, token_id)
-
-        if not token:
-            raise ValueError(f"Token {token_id} not found")
-
-        contract_address = token.evm_contract_address
-
-    return buy_token_unsigned(
-        amount_sei,
-        contract_address,
-        user_address,
-    )
 
 
 @app.post("/runtimes")

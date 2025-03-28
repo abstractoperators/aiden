@@ -3,7 +3,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import HTTPBearer  # OAuth2PasswordBearer
+from fastapi.security import HTTPBearer
 from jwt import PyJWK, PyJWKClient, PyJWT
 from jwt.exceptions import PyJWTError
 
