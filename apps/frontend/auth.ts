@@ -49,7 +49,8 @@ export const config = {
   callbacks: {
     authorized: ({ request, auth }) => {
       const { pathname } = request.nextUrl;
-      console.log(`pathname: ${pathname}`)
+      console.log("pathname:", pathname)
+      console.log("cookies", request.cookies.getAll())
       console.log("auth:", auth)
       if (!auth) {
         console.log("unauthorized attempt to access path, returning to origin")
