@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import get_user_from_token, get_wallets_from_token
+from src.auth import decode_bearer_token, get_user_from_token, get_wallets_from_token
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -681,10 +681,21 @@ async def delete_wallet(
 
 
 @app.post("/users")
-async def create_user(user: UserBase) -> User:
+async def create_user(
+    user: UserBase,
+    decoded_token: dict = Depends(decode_bearer_token),
+) -> User:
     """
     Creates a new user in the database, and returns the full user.
     """
+    # Make sure the currently signed in user is the same as the user being created.
+    subject = decoded_token.get("sub")
+
+    if not UUID(subject) == user.dynamic_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to create a user that doesn't belong to you",
+        )
     with Session() as session:
         user = crud.create_user(session, user)
 
