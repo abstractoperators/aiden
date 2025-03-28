@@ -20,7 +20,7 @@ export default function Hero() {
       </div>
       <div className="flex flex-col items-center justify-center space-y-8">
         <h2 className="tracking-wide sm:text-d4 md:text-d3 lg:text-d2">
-          High Performance Onchain Agents
+          High Performance Onchain AI Agents
         </h2>
       </div>
       <LoginButtonHero className="px-8 py-8 text-3xl" />

@@ -31,7 +31,11 @@ export default function UserMenu({
   user: UserProfile,
   wallet: Wallet,
 }) {
-  const displayName = user.username || user.email || wallet.address
+  const displayName = (
+    (user.username && user.username[0]) ||
+    (user.email && user.email[0]) ||
+    wallet.address.substring(0, 2)
+  )
   const { setShowDynamicUserProfile } = useDynamicContext()
 
   return (
