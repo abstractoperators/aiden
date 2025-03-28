@@ -8,7 +8,7 @@ from jwt import PyJWK, PyJWKClient, PyJWT
 from jwt.exceptions import PyJWTError
 
 from src.db import Session, crud
-from src.db.models import User
+from src.db.models import User, Wallet
 from src.utils import obj_or_404
 
 options = {
@@ -41,7 +41,7 @@ def decode_bearer_token(jwt_token: str) -> dict[str, Any]:
     """
     Decodes a JWT token and returns its payload
     jwt_token (str): JWT token to decode - does not include the "Bearer " prefix
-    Raises an jwt.exceptions.PyJWTError if the token is invalid
+    Raises an jwt.exceptions.PyJWTError if the token is invalid (that is, if it either can't be decoded or standard claims as defined by options can't be verified) # noqa
     """
     signing_key: PyJWK = pyjwk_client.get_signing_key_from_jwt(jwt_token)
 
@@ -54,8 +54,6 @@ auth_scheme = HTTPBearer(
     scheme_name="Bearer Token from Dynamic",
     auto_error=False,
 )
-# tokenUrl="", auto_error=False
-# )  # Made by Dynamic - there is no tokenUrl
 
 
 def get_user_from_token(
@@ -93,3 +91,47 @@ def get_user_from_token(
         )
 
     return user
+
+
+def get_wallets_from_token(
+    request: Request,
+    token: str = Depends(auth_scheme),
+) -> list[Wallet]:
+    """
+    If the JWT token is valid, returns the wallets associated with the token
+    TODO: Associate wallets with user
+    Otherwise, raises an HTTPException with status code 401
+    request (Request): FastAPI Request object TODO Remove it after debugging
+    token (str): JWT token to decode representing a user claim.
+    """
+    print("request.headers:", request.headers)
+    print("token:", token)
+    if not token:
+        raise HTTPException(detail="No token was provided", status_code=401)
+    try:
+        decoded_token = decode_bearer_token(token.credentials)
+    except PyJWTError:
+        raise HTTPException(detail="Failed to decode token", status_code=401)
+
+    payload: dict | None = decoded_token.get("payload")
+    if not payload:
+        raise ValueError()
+
+    wallets: dict | None = payload.get("verified_credentials")
+    if not wallets:
+        raise ValueError()
+
+    address_and_chains = []
+    for wallet in wallets:
+        address_and_chains.append((wallet.get("address"), wallet.get("chain")))
+
+    # For now, assume the wallet already exists
+    print(address_and_chains)
+    crud_wallets: list[Wallet] = []
+    with Session() as session:
+        for address, chain in address_and_chains:
+            crud_wallet = obj_or_404(
+                crud.get_wallet_by_public_key(session, address, chain), Wallet
+            )
+            crud_wallets.append(crud_wallet)
+    return crud_wallets
