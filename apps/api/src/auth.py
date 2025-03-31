@@ -145,7 +145,7 @@ def get_wallets_from_token(
 
 
 def access_list(
-    required_permissions: set[str],
+    *required_permissions: str,
 ) -> Callable:
     """
     If the JWT token is valid, returns the access list associated with the token
@@ -157,7 +157,7 @@ def access_list(
     def helper(
         request: Request,
         token: str = Depends(auth_scheme),
-    ) -> list[dict[str, str]]:
+    ) -> None:
         print("request.headers:", request.headers)
         print("token:", token)
         if not token:
@@ -179,5 +179,7 @@ def access_list(
                 detail="User does not have the required permissions",
                 status_code=403,
             )
+
+        return None
 
     return helper
