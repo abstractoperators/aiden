@@ -1,6 +1,6 @@
 import { SocialLinks } from "./social-links"
 
-const baseFooterStyle = "w-full flex justify-center"
+const baseFooterStyle = "sticky bottom-0 z-50 w-full flex justify-center"
 enum footerStyles {
   landing = `${baseFooterStyle}`,
   main = `${baseFooterStyle} bg-background/10 backdrop-blur supports-[backdrop-filter]:bg-background/10`,
