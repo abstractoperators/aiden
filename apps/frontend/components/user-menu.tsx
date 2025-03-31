@@ -31,11 +31,7 @@ export default function UserMenu({
   user: UserProfile,
   wallet: Wallet,
 }) {
-  const displayName = (
-    (user.username && user.username[0]) ||
-    (user.email && user.email[0]) ||
-    wallet.address.substring(0, 2)
-  )
+  const displayName = user.username || user.email || wallet.address
   const { setShowDynamicUserProfile } = useDynamicContext()
 
   return (
@@ -43,7 +39,11 @@ export default function UserMenu({
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:hue-rotate-60 transition duration-300">
           <AvatarFallback className="bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%">
-            {displayName.substring(0, 2)}
+            {
+              (displayName == wallet.address) ?
+              displayName.substring(0, 2) :
+              displayName[0]
+            }
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
