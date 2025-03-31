@@ -1,11 +1,13 @@
 import asyncio
 import json
 from asyncio import sleep as asyncio_sleep
+from time import time
 from typing import Any, Callable, Coroutine, Generator
 from uuid import UUID, uuid4
 
 import pytest
 
+from src.auth import decode_bearer_token
 from src.db import crud
 from src.db.models import (
     AgentBase,
@@ -27,6 +29,24 @@ from src.server import Session
 def test_ping(client):
     response = client.get("/ping")
     assert response.status_code == 200
+
+
+def test_jwt(
+    mock_jwt_token,
+    helper_encode_jwt,
+) -> None:
+    payload = {
+        "sub": 1234,
+        "exp": time() + 3600,
+        "iat": 1234567890,
+    }
+    bearer_token = helper_encode_jwt(payload)
+    assert bearer_token is not None
+    decoded_payload = decode_bearer_token(bearer_token).get("payload")
+    assert decoded_payload is not None
+    assert decoded_payload["sub"] == payload["sub"]
+    assert decoded_payload["exp"] == payload["exp"]
+    assert decoded_payload["iat"] == payload["iat"]
 
 
 @pytest.fixture()

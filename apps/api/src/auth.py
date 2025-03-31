@@ -24,6 +24,8 @@ options = {
     "strict_iat": False,
     "require": ["exp", "iat"],
 }
+
+
 py_jwt = PyJWT(options)
 
 dynamic_environment_id = os.getenv("DYNAMIC_ENVIRONMENT_ID", None)
