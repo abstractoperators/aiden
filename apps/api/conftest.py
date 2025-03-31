@@ -44,8 +44,15 @@ def helper_encode_jwt() -> Callable:
         """
         Encodes a JWT token with the test secret key.
         """
+        default_payload = {
+            "iss": "test-issuer",
+            "sub": "test-subject",
+            "aud": "test-audience",
+            "iat": 0,
+            "exp": 9999999999,
+        }
         return py_jwt.encode(
-            payload,
+            default_payload | payload,
             test_secret,
             algorithm="HS256",
         )
