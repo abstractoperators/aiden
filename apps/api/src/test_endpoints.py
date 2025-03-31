@@ -32,7 +32,7 @@ def test_ping(client):
 
 
 def test_jwt(
-    mock_jwt_token,
+    mock_decode_bearer_token,
     helper_encode_jwt,
 ) -> None:
     payload = {
@@ -78,7 +78,9 @@ def wallet_factory(
 
 
 @pytest.fixture()
-def user_factory(client) -> Generator[Callable[..., User], None, None]:
+def user_factory(
+    client, mock_decode_bearer_token, helper_encode_jwt
+) -> Generator[Callable[..., User], None, None]:
     user_ids: list[UUID] = []
 
     def factory(**kwargs) -> User:
@@ -95,7 +97,13 @@ def user_factory(client) -> Generator[Callable[..., User], None, None]:
             username=username,
             dynamic_id=dynamic_id,
         )
-        response = client.post("/users", json=user_base.model_dump(mode="json"))
+        auth: str = helper_encode_jwt({"sub": str(dynamic_id)})
+
+        response = client.post(
+            "/users",
+            json=user_base.model_dump(mode="json"),
+            headers={"Authorization": f"Bearer {auth}"},
+        )
         assert response.status_code == 200
         user = User.model_validate(response.json())
         user_ids.append(user.id)

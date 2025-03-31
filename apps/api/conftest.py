@@ -54,7 +54,7 @@ def helper_encode_jwt() -> Callable:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def mock_jwt_token():
+def mock_decode_bearer_token():
     """
     Symmetrically signs a JWT token with secret key.
     Patches src.auth.decode_bearer_token
