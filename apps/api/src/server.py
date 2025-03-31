@@ -16,6 +16,7 @@ from src.auth import (  # decode_bearer_token,
     access_list,
     get_user_from_token,
     get_wallets_from_token,
+    optional_jwt,
     valid_jwt,
 )
 from src.aws_utils import get_aws_config
@@ -168,8 +169,11 @@ def get_agents_conditional_dep(
     request: Request,
     user_id: UUID | None = None,
     user_dynamic_id: UUID | None = None,
-    token: HTTPAuthorizationCredentials | None = Security(valid_jwt),
+    token: HTTPAuthorizationCredentials | None = Security(optional_jwt),
 ) -> User | None:
+    """
+    Makes token optional if neither user_id nor dynamic_id are passed.
+    """
     if user_id is None and user_dynamic_id is None:
         return None
     if not token:
@@ -202,19 +206,20 @@ async def get_agents(
             status_code=400,
             detail="Exactly one or zero of user_id or user_dynamic_id may be passed",
         )
-
     with Session() as session:
         if user_dynamic_id:
             if not user or user_dynamic_id != user.dynamic_id:
                 raise HTTPException(
-                    status_code=403, detail="You may not access Agents not owned by you"
+                    status_code=403,
+                    detail=f"You may not access Agents not owned by you. Wanted {user_dynamic_id}, logged in as {user.dynamic_id}",
                 )
             user_id = user.id
             agents = crud.get_agents_by_user_id(session, user_id)
         elif user_id:
             if not user or user_id != user.id:
                 raise HTTPException(
-                    status_code=403, detail="You may not access Agents not owned by you"
+                    status_code=403,
+                    detail=f"You may not access Agents not owned by you. Wanted {user_id}, logged in as {user.id}",
                 )
             agents = crud.get_agents_by_user_id(session, user_id)
         else:

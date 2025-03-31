@@ -59,6 +59,13 @@ auth_scheme = HTTPBearer(
 )
 
 
+def optional_jwt(
+    token: HTTPAuthorizationCredentials | None = Security(auth_scheme),
+) -> dict[str, Any] | None:
+    """ """
+    return token
+
+
 def valid_jwt(
     request: Request,
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
@@ -76,12 +83,14 @@ def valid_jwt(
         decoded_token = decode_bearer_token(token.credentials)
     except PyJWTError:
         raise HTTPException(detail="Failed to decode token", status_code=401)
+
     payload: dict | None = decoded_token.get("payload")
     if not payload:
-        raise ValueError()
-    subject = payload.get("sub")
-    if not subject:
-        raise ValueError()
+        raise HTTPException(
+            detail="Expected payload in token",
+            status_code=401,
+        )
+
     return payload
 
 
