@@ -5,17 +5,18 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import (
+from src.auth import (  # decode_bearer_token,
     access_list,
-    decode_bearer_token,
     get_user_from_token,
     get_wallets_from_token,
+    valid_jwt,
 )
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -105,27 +106,6 @@ async def auth_middleware(request: Request, call_next):
             )
 
         return await call_next(request)
-    # elif request.url.path == "/ping":
-    #     pass
-    # elif request.url.path == "/auth/test":
-    #     auth_header = request.headers.get("Authorization")
-    #     if not auth_header or not auth_header.startswith("Bearer "):
-    #         return JSONResponse(
-    #             status_code=401, content={"detail": "No authorization header provided"}
-    #         )
-
-    #     jwt_token = auth_header.split(" ")[1]
-
-    #     try:
-    #         payload = decode_bearer_token(jwt_token)  # noqa
-    #         # payload idk do something with this guy
-    #     except PyJWTError as e:
-    #         logger.error(e)
-    #         return JSONResponse(
-    #             status_code=401,
-    #             content={"detail": f"Authorization token is invalid {e}"},
-    #         )
-
     return await call_next(request)
 
 
@@ -170,7 +150,8 @@ async def ping():
 def create_agent(
     agent: AgentBase,
     # Require that the user be signed in, but don't do any other verification
-    user: User = Depends(get_user_from_token),  # noqa
+    user: User = Security(get_user_from_token),
+    # user: User = Depends(get_user_from_token),  # noqa
 ) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
@@ -183,13 +164,30 @@ def create_agent(
         return agent_to_agent_public(agent)
 
 
-# TODO: Just update it to get the agent for whomever is signed in, instead of requiring the user to pass in the user_id AND be signed in
-# TODO: Auth getting all agents
+def get_agents_conditional_dep(
+    request: Request,
+    user_id: UUID | None = None,
+    user_dynamic_id: UUID | None = None,
+    token: HTTPAuthorizationCredentials | None = Security(valid_jwt),
+) -> User | None:
+    if user_id is None and user_dynamic_id is None:
+        return None
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Token is required if user_id or user_dynamic_id is passed",
+        )
+    return get_user_from_token(
+        request=request,
+        token=token,
+    )
+
+
 @app.get("/agents")
 async def get_agents(
     user_id: UUID | None = None,
     user_dynamic_id: UUID | None = None,
-    # user: User = Depends(get_user_from_token),  # noqa
+    user: User | None = Depends(get_agents_conditional_dep),
 ) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
@@ -197,6 +195,7 @@ async def get_agents(
     If user_dynamic_id is passed, returns all agents owned by that user.
     If neither is passed, returns all agents.
     Raises a 400 if both user_id and user_dynamic_id are passed.
+    If user query params are passed, valid auth for that user must be provided.
     """
     if user_id and user_dynamic_id:
         raise HTTPException(
@@ -206,17 +205,14 @@ async def get_agents(
 
     with Session() as session:
         if user_dynamic_id:
-            # if not user_dynamic_id == user.dynamic_id:
-            #     raise HTTPException(
-            #         status_code=403, detail="You may not access Agents not owned by you"
-            #     )
-            user = crud.get_user_by_dynamic_id(session, user_dynamic_id)
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
+            if not user or user_dynamic_id != user.dynamic_id:
+                raise HTTPException(
+                    status_code=403, detail="You may not access Agents not owned by you"
+                )
             user_id = user.id
             agents = crud.get_agents_by_user_id(session, user_id)
         elif user_id:
-            if not user_id == user.id:
+            if not user or user_id != user.id:
                 raise HTTPException(
                     status_code=403, detail="You may not access Agents not owned by you"
                 )
@@ -248,7 +244,7 @@ async def get_agent(
 async def update_agent(
     agent_id: UUID,
     agent_update: AgentUpdate,
-    current_user: User = Depends(get_user_from_token),
+    user: User = Security(get_user_from_token),
 ) -> AgentPublic:
     """
     Updates an agent by id.
@@ -256,7 +252,7 @@ async def update_agent(
     """
     # Prevent updating agent that doesn't belong to the user
     # You can, however, transfer ownership.
-    if agent_update.owner_id and agent_update.owner_id != current_user.id:
+    if agent_update.owner_id and agent_update.owner_id != user.id:
         raise HTTPException(
             status_code=403,
             detail="You do not have permission to update an agent that doesn't belong to you",
@@ -276,7 +272,7 @@ async def update_agent(
 @app.post("/tokens")
 async def deploy_token_api(
     token_request: TokenCreationRequest,
-    user=Depends(get_user_from_token),  # noqa: TODO access list from JWT
+    user: User = Security(get_user_from_token),  # noqa: TODO access list from JWT
 ) -> Token:
     """
     Deploys a token smart contract to the block chain.
@@ -331,7 +327,7 @@ async def get_token(token_id: UUID) -> Token:
 # TODO: Admin page for creating this.
 @app.post(
     "/runtimes",
-    dependencies=[Depends(access_list("admin"))],
+    dependencies=[Security(access_list("admin"))],
 )
 def create_runtime() -> RuntimeCreateTask:
     """
@@ -385,7 +381,6 @@ def create_runtime() -> RuntimeCreateTask:
         return runtime_create_task
 
 
-# TODO: Access list
 @app.get("/runtimes")
 def get_runtimes(
     unused: bool = False,
@@ -484,7 +479,7 @@ def get_agent_start_task_status(
 def start_agent(
     agent_id: UUID,
     runtime_id: UUID,
-    current_user: User = Depends(get_user_from_token),
+    current_user: User = Security(get_user_from_token),
 ) -> AgentStartTask:
     """
     Kicks off a task to start an agent on a runtime.
@@ -543,7 +538,7 @@ def start_agent(
 @app.post("/agents/{agent_id}/stop")
 def stop_agent(
     agent_id: UUID,
-    user: User = Depends(get_user_from_token),  # noqa
+    user: User = Security(get_user_from_token),  # noqa
 ) -> Agent:
     """
     Stops agent running on a runtime.
@@ -578,7 +573,7 @@ def stop_agent(
 @app.delete("/agents/{agent_id}")
 def delete_agent(
     agent_id: UUID,
-    current_user: User = Depends(get_user_from_token),
+    current_user: User = Security(get_user_from_token),
 ) -> None:
     """
     Deletes an agent by id.
@@ -602,6 +597,7 @@ def delete_agent(
     return None
 
 
+# TODO: Auth wallets by jwt token
 @app.post("/wallets")
 async def create_wallet(wallet: WalletBase) -> Wallet:
     """
@@ -660,7 +656,7 @@ async def get_wallets(
 async def update_wallet(
     wallet_id: UUID,
     wallet_update: WalletUpdate,
-    current_wallets: list[Wallet] = Depends(get_wallets_from_token),
+    current_wallets: list[Wallet] = Security(get_wallets_from_token),
 ) -> Wallet:
     # TODO: Verify user ownership
     if wallet_id not in [wallet.id for wallet in current_wallets]:
@@ -680,7 +676,7 @@ async def update_wallet(
 @app.delete("/wallets/{wallet_id}")
 async def delete_wallet(
     wallet_id: UUID,
-    current_wallets: list[Wallet] = Depends(get_wallets_from_token),
+    current_wallets: list[Wallet] = Security(get_wallets_from_token),
 ) -> None:
     """
     Deletes a wallet.
@@ -702,7 +698,7 @@ async def delete_wallet(
 @app.post("/users")
 async def create_user(
     user: UserBase,
-    decoded_token: dict = Depends(decode_bearer_token),
+    decoded_token: dict = Security(valid_jwt),
 ) -> User:
     """
     Creates a new user in the database, and returns the full user.
@@ -759,7 +755,7 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_update: UserUpdate,
-    current_user: User = Depends(get_user_from_token),
+    current_user: User = Security(get_user_from_token),
 ) -> User:
     """
     Updates an existing in the database, and returns the full user.
@@ -785,7 +781,7 @@ async def update_user(
 @app.delete("/users/{user_id}")
 async def delete_user(
     user_id: UUID,
-    current_user: User = Depends(get_user_from_token),
+    current_user: User = Security(get_user_from_token),
 ) -> None:
     """
     Deletes a user from the database.
