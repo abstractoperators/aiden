@@ -2,8 +2,9 @@ import os
 from typing import Any, Callable
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request, Security
 from fastapi.security import HTTPBearer
+from fastapi.security.http import HTTPAuthorizationCredentials
 from jwt import PyJWK, PyJWKClient, PyJWT
 from jwt.exceptions import PyJWTError
 
@@ -55,6 +56,33 @@ auth_scheme = HTTPBearer(
     auto_error=False,
 )
 
+
+def valid_jwt(
+    request: Request,
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
+) -> dict[str, Any]:
+    """
+    If the JWT token is valid, returns None
+    Otherwise, raises an HTTPException with status code 401
+    request (Request): FastAPI Request object TODO Remove it after debugging
+    token (str): JWT token to decode representing a user claim.
+    Returns the payload of the JWT token.
+    """
+    if not token:
+        raise HTTPException(detail="No token was provided", status_code=401)
+    try:
+        decoded_token = decode_bearer_token(token.credentials)
+    except PyJWTError:
+        raise HTTPException(detail="Failed to decode token", status_code=401)
+    payload: dict | None = decoded_token.get("payload")
+    if not payload:
+        raise ValueError()
+    subject = payload.get("sub")
+    if not subject:
+        raise ValueError()
+    return payload
+
+
 # TODO: Use JWT payload to create users/wallets if they don't exist.
 # Maybe?
 
@@ -65,7 +93,7 @@ auth_scheme = HTTPBearer(
 
 def get_user_from_token(
     request: Request,
-    token: str = Depends(auth_scheme),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> User:
     """
     If the JWT token is valid, returns the User object associated with the token
@@ -73,18 +101,8 @@ def get_user_from_token(
     request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
     """
-    print("request.headers:", request.headers)
-    print("token:", token)
-    if not token:
-        raise HTTPException(detail="No token was provided", status_code=401)
-    try:
-        decoded_token = decode_bearer_token(token.credentials)
-    except PyJWTError:
-        raise HTTPException(detail="Failed to decode token", status_code=401)
+    payload = valid_jwt(request, token)
 
-    payload = decoded_token.get("payload")
-    if not payload:
-        raise ValueError()
     subject = payload.get("sub")
     if not subject:
         raise ValueError()
@@ -102,7 +120,7 @@ def get_user_from_token(
 
 def get_wallets_from_token(
     request: Request,
-    token: str = Depends(auth_scheme),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> list[Wallet]:
     """
     If the JWT token is valid, returns the wallets associated with the token
@@ -111,18 +129,7 @@ def get_wallets_from_token(
     request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
     """
-    print("request.headers:", request.headers)
-    print("token:", token)
-    if not token:
-        raise HTTPException(detail="No token was provided", status_code=401)
-    try:
-        decoded_token = decode_bearer_token(token.credentials)
-    except PyJWTError:
-        raise HTTPException(detail="Failed to decode token", status_code=401)
-
-    payload: dict | None = decoded_token.get("payload")
-    if not payload:
-        raise ValueError()
+    payload = valid_jwt(request, token)
 
     wallets: dict | None = payload.get("verified_credentials")
     if not wallets:
@@ -156,20 +163,9 @@ def access_list(
 
     def helper(
         request: Request,
-        token: str = Depends(auth_scheme),
+        token: HTTPAuthorizationCredentials = Security(auth_scheme),
     ) -> None:
-        print("request.headers:", request.headers)
-        print("token:", token)
-        if not token:
-            raise HTTPException(detail="No token was provided", status_code=401)
-        try:
-            decoded_token = decode_bearer_token(token.credentials)
-        except PyJWTError:
-            raise HTTPException(detail="Failed to decode token", status_code=401)
-
-        payload: dict | None = decoded_token.get("payload")
-        if not payload:
-            raise ValueError()
+        payload = valid_jwt(request, token)
 
         # Access lists will be in lists field of payload
         # https://docs.dynamic.xyz/authentication-methods/auth-tokens
