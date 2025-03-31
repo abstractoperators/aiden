@@ -2,10 +2,11 @@ import LightLogo from "@/public/brand_assets/blue-ghost.svg"
 import DarkLogo from "@/public/brand_assets/pink-ghost.svg"
 import { LoginButtonHero } from "./dynamic/login-button"
 import ThemeImage from "./ui/theme-image"
+import { ChevronsDown } from "lucide-react"
 
 export default function Hero() {
   return (
-    <section className="container flex flex-col items-center justify-center space-y-8 text-center py-52">
+    <section className="container flex flex-col items-center justify-center space-y-8 text-center py-32">
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
         <ThemeImage
           priority={true}
@@ -23,7 +24,14 @@ export default function Hero() {
           High Performance Onchain AI Agents
         </h2>
       </div>
-      <LoginButtonHero className="px-8 py-8 text-3xl" />
+      <div className="h-48 flex flex-col items-center justify-between">
+        <LoginButtonHero className="px-8 py-8 text-3xl" />
+        <ChevronsDown
+          className="animate-bounce"
+          size={32}
+          strokeWidth={3}
+        />
+      </div>
     </section>
   )
 }
