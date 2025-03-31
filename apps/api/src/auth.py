@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, Callable
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
@@ -142,3 +142,42 @@ def get_wallets_from_token(
             )
             crud_wallets.append(crud_wallet)
     return crud_wallets
+
+
+def access_list(
+    required_permissions: set[str],
+) -> Callable:
+    """
+    If the JWT token is valid, returns the access list associated with the token
+    Otherwise, raises an HTTPException with status code 401
+    request (Request): FastAPI Request object TODO Remove it after debugging
+    token (str): JWT token to decode representing a user claim.
+    """
+
+    def helper(
+        request: Request,
+        token: str = Depends(auth_scheme),
+    ) -> list[dict[str, str]]:
+        print("request.headers:", request.headers)
+        print("token:", token)
+        if not token:
+            raise HTTPException(detail="No token was provided", status_code=401)
+        try:
+            decoded_token = decode_bearer_token(token.credentials)
+        except PyJWTError:
+            raise HTTPException(detail="Failed to decode token", status_code=401)
+
+        payload: dict | None = decoded_token.get("payload")
+        if not payload:
+            raise ValueError()
+
+        # Access lists will be in lists field of payload
+        # https://docs.dynamic.xyz/authentication-methods/auth-tokens
+        payload_access_list: list[str] = payload.get("lists", [])
+        if not set(payload_access_list) == set(required_permissions):
+            raise HTTPException(
+                detail="User does not have the required permissions",
+                status_code=403,
+            )
+
+    return helper
