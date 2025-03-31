@@ -202,11 +202,12 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
         if resp.status_code == 200 and resp.json()["running"]:
             eliza_agent_id = resp.json()["agent_id"]
             with Session() as session:
-                crud.update_agent(
+                agent = crud.update_agent(
                     session,
                     agent,
                     AgentUpdate(runtime_id=runtime_id, eliza_agent_id=eliza_agent_id),
                 )
+                logger.info(f"Agent started. Updated agent in db to {agent}")
             return
         sleep(10)
 

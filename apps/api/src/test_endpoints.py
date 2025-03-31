@@ -361,7 +361,9 @@ def test_tokens(client, token_factory) -> None:
 
 
 @pytest.mark.asyncio
-async def test_runtimes(client, runtime_factory, agent_factory) -> None:
+async def test_runtimes(
+    client, runtime_factory, agent_factory, user_factory, helper_encode_jwt
+) -> None:
     response = client.get("/runtimes")
     assert response.status_code == 200
     num_runtimes = len(response.json())
@@ -387,10 +389,15 @@ async def test_runtimes(client, runtime_factory, agent_factory) -> None:
     Runtime.model_validate(response.json()[0])
     Runtime.model_validate(response.json()[1])
 
-    agent = agent_factory()
+    owner: UserPublic = user_factory()
+    agent: AgentPublic = agent_factory(owner_id=owner.id)
     assert agent is not None
-    response = client.post(f"/agents/{agent.id}/start/{runtime_1.id}")
-    assert response.status_code == 200
+    auth = helper_encode_jwt({"sub": str(owner.dynamic_id)})
+    response = client.post(
+        f"/agents/{agent.id}/start/{runtime_1.id}",
+        headers={"Authorization": f"Bearer {auth}"},
+    )
+    assert response.status_code == 200, response.json()
     agent_start_task = AgentStartTask.model_validate(response.json())
     assert agent_start_task.agent_id == agent.id
     assert agent_start_task.runtime_id == runtime_1.id
@@ -403,11 +410,17 @@ async def test_runtimes(client, runtime_factory, agent_factory) -> None:
         await asyncio_sleep(5)
 
     # Try chatting with it.
+    # Get updated eliza_agent_id (from mock id eliza_agent_id_01)
+    response = client.get(f"/agents/{agent.id}")
+    assert response.status_code == 200
+    agent = AgentPublic.model_validate(response.json())
+    print(agent)
+
     response = client.post(
         f"{runtime_1.url}/{agent.eliza_agent_id}/message",
         json={"user": "testuser", "text": "hello"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
 
     return None
 
