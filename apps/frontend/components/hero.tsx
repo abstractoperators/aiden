@@ -3,10 +3,13 @@ import DarkLogo from "@/public/brand_assets/pink-ghost.svg"
 import { LoginButtonHero } from "./dynamic/login-button"
 import ThemeImage from "./ui/theme-image"
 import { ChevronsDown } from "lucide-react"
+import Link from "next/link"
+import { buttonVariants } from "./ui/button"
+import { cn } from "@/lib/utils"
 
 export default function Hero() {
   return (
-    <section className="container flex flex-col items-center justify-center space-y-8 text-center py-32">
+    <section id="hero" className="container flex flex-col items-center justify-center space-y-8 text-center py-32">
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
         <ThemeImage
           priority={true}
@@ -26,11 +29,21 @@ export default function Hero() {
       </div>
       <div className="h-48 flex flex-col items-center justify-between">
         <LoginButtonHero className="px-8 py-8 text-3xl" />
-        <ChevronsDown
-          className="animate-bounce"
-          size={32}
-          strokeWidth={3}
-        />
+          <Link
+            href="#about"
+            className={cn(
+              buttonVariants({
+                variant: "ghost",
+              }),
+              "h-12 w-12",
+            )}
+          >
+            <ChevronsDown
+              className="animate-bounce mt-2 !h-8 !w-8"
+              strokeWidth={3}
+            />
+            <span className="sr-only">Scroll Down</span>
+          </Link>
       </div>
     </section>
   )
