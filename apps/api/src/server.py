@@ -447,34 +447,25 @@ def get_agent_start_task_status(
         raise ValueError("At least one of agent_id or runtime_id must be provided")
 
     with Session() as session:
-        agent_start_task: AgentStartTask | None = None
+        agent_start_task: AgentStartTask | None
         if agent_id and runtime_id:
-            agent_start_task = obj_or_404(
-                crud.get_agent_start_task(
-                    session,
-                    agent_id=agent_id,
-                    runtime_id=runtime_id,
-                ),
-                AgentStartTask,
+            agent_start_task = crud.get_agent_start_task(
+                session,
+                agent_id=agent_id,
+                runtime_id=runtime_id,
             )
+
         elif agent_id:
-            agent_start_task = obj_or_404(
-                crud.get_agent_start_task(
-                    session,
-                    agent_id=agent_id,
-                ),
-                AgentStartTask,
+            agent_start_task = crud.get_agent_start_task(
+                session,
+                agent_id=agent_id,
             )
         elif runtime_id:
-            agent_start_task = obj_or_404(
-                crud.get_agent_start_task(
-                    session,
-                    runtime_id=runtime_id,
-                ),
-                AgentStartTask,
+            agent_start_task = crud.get_agent_start_task(
+                session,
+                runtime_id=runtime_id,
             )
-        if not agent_start_task:
-            raise HTTPException(status_code=404, detail="Task not found")
+        agent_start_task = obj_or_404(agent_start_task, AgentStartTask)
         task_id = agent_start_task.celery_task_id
 
         return get_task_status(task_id)
@@ -505,29 +496,35 @@ def start_agent(
     # Make sure that no task for starting an agent is already running.
     # Must block on both agent_id or runtime_id.
     # That is, there must not be a running task for either agent_id or runtime_id.
-    task_status_agent: TaskStatus | None = get_agent_start_task_status(
-        agent_id=agent_id
-    )
-    task_status_runtime: TaskStatus | None = get_agent_start_task_status(
-        runtime_id=runtime_id
-    )
+    try:
+        task_status_agent: TaskStatus = get_agent_start_task_status(agent_id=agent_id)
+        if (
+            task_status_agent == TaskStatus.PENDING
+            or task_status_agent == TaskStatus.STARTED
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"There is already a {task_status_agent} task for agent {agent_id}",
+            )
+    except HTTPException as e:
+        if e.status_code != 404:
+            raise e
 
-    if task_status_agent and (
-        task_status_agent == TaskStatus.PENDING
-        or task_status_agent == TaskStatus.STARTED
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail=f"There is already a {task_status_agent} task for agent {agent_id}",
+    try:
+        task_status_runtime: TaskStatus = get_agent_start_task_status(
+            runtime_id=runtime_id
         )
-    if task_status_runtime and (
-        task_status_runtime == TaskStatus.PENDING
-        or task_status_runtime == TaskStatus.STARTED
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail=f"There is already a {task_status_runtime} task for runtime {runtime_id}",
-        )
+        if (
+            task_status_runtime == TaskStatus.PENDING
+            or task_status_runtime == TaskStatus.STARTED
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"There is already a {task_status_runtime} task for runtime {runtime_id}",
+            )
+    except HTTPException as e:
+        if e.status_code != 404:
+            raise e
 
     with Session() as session:
         # Let the task manage everything
