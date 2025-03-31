@@ -11,7 +11,12 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import decode_bearer_token, get_user_from_token, get_wallets_from_token
+from src.auth import (
+    access_list,
+    decode_bearer_token,
+    get_user_from_token,
+    get_wallets_from_token,
+)
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -161,14 +166,6 @@ async def ping():
     return "pong"
 
 
-@app.get("/auth/test")
-async def auth_test(request: Request):
-    """
-    pong
-    """
-    return "pong"
-
-
 @app.post("/agents")
 def create_agent(
     agent: AgentBase,
@@ -192,7 +189,7 @@ def create_agent(
 async def get_agents(
     user_id: UUID | None = None,
     user_dynamic_id: UUID | None = None,
-    user: User = Depends(get_user_from_token),  # noqa
+    # user: User = Depends(get_user_from_token),  # noqa
 ) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
@@ -209,10 +206,10 @@ async def get_agents(
 
     with Session() as session:
         if user_dynamic_id:
-            if not user_dynamic_id == user.dynamic_id:
-                raise HTTPException(
-                    status_code=403, detail="You may not access Agents not owned by you"
-                )
+            # if not user_dynamic_id == user.dynamic_id:
+            #     raise HTTPException(
+            #         status_code=403, detail="You may not access Agents not owned by you"
+            #     )
             user = crud.get_user_by_dynamic_id(session, user_dynamic_id)
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
@@ -230,11 +227,9 @@ async def get_agents(
         return [agent_to_agent_public(agent) for agent in agents]
 
 
-# Require the user to be signed in, but no other verification.
 @app.get("/agents/{agent_id}")
 async def get_agent(
     agent_id: UUID,
-    user=Depends(get_user_from_token),  # noqa
 ) -> AgentPublic:
     """
     Returns an agent by id.
@@ -333,11 +328,12 @@ async def get_token(token_id: UUID) -> Token:
     return token
 
 
-# TODO: Access list
-@app.post("/runtimes")
-def create_runtime(
-    user: User = Depends(get_user_from_token),  # noqa
-) -> RuntimeCreateTask:
+# TODO: Admin page for creating this.
+@app.post(
+    "/runtimes",
+    dependencies=[Depends(access_list("admin"))],
+)
+def create_runtime() -> RuntimeCreateTask:
     """
     Attempts to create a new runtime.
     Returns a Runtime object immediately, with flag started=False.
@@ -393,7 +389,6 @@ def create_runtime(
 @app.get("/runtimes")
 def get_runtimes(
     unused: bool = False,
-    user: User = Depends(get_user_from_token),
 ) -> Sequence[Runtime]:
     """
     Returns a list of up to 100 runtimes.
@@ -497,15 +492,15 @@ def start_agent(
     Returns a 404 if the agent or runtime is not found.
     """
 
-    # with Session() as session:
-    #     agent: Agent | None = crud.get_agent(session, agent_id)
-    #     if not agent:
-    #         raise HTTPException(status_code=404, detail="Agent not found")
-    #     if agent.owner_id != current_user.id:
-    #         raise HTTPException(
-    #             status_code=403,
-    #             detail="You do not have permission to start an agent that doesn't belong to you",
-    #         )
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        if agent.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to start an agent that doesn't belong to you",
+            )
 
     # Make sure that no task for starting an agent is already running.
     # Must block on both agent_id or runtime_id.
@@ -809,7 +804,10 @@ async def delete_user(
     return None
 
 
-@app.patch("/runtimes/{runtime_id}")
+@app.patch(
+    "/runtimes/{runtime_id}",
+    dependencies=[Depends(access_list("admin"))],
+)
 def update_runtime(
     runtime_id: UUID,
 ) -> RuntimeUpdateTask:
@@ -857,7 +855,10 @@ def update_runtime(
         return runtime_update_task
 
 
-@app.delete("/runtimes/{runtime_id}")
+@app.delete(
+    "/runtimes/{runtime_id}",
+    dependencies=[Depends(access_list("admin"))],
+)
 def delete_runtime(
     runtime_id: UUID,
 ) -> RuntimeDeleteTask:
