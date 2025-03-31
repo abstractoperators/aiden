@@ -109,7 +109,6 @@ def get_user_from_token(
     if not subject:
         raise ValueError()
     dynamic_user_id: UUID = UUID(subject)
-    print(f"dynamic_user_id: {dynamic_user_id}")
 
     # For now, assume the user already exists
     with Session() as session:
@@ -142,7 +141,6 @@ def get_wallets_from_token(
         address_and_chains.append((wallet.get("address"), wallet.get("chain")))
 
     # For now, assume the wallet already exists
-    print(address_and_chains)
     crud_wallets: list[Wallet] = []
     with Session() as session:
         for address, chain in address_and_chains:

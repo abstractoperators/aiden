@@ -51,9 +51,10 @@ def test_jwt(
 
 @pytest.fixture()
 def wallet_factory(
-    client, user_factory
+    client, user_factory, helper_encode_jwt
 ) -> Generator[Callable[..., Wallet], None, None]:
-    wallet_ids: list[UUID] = []
+    # wallet_ids: list[UUID] = []
+    wallets: list[Wallet] = []
 
     def factory(**kwargs) -> Wallet:
         owner_id = kwargs.get("owner_id", user_factory().id)
@@ -65,23 +66,37 @@ def wallet_factory(
             chain_id="1",
             owner_id=owner_id,
         )
+        # POST /wallets is not yet authed.
         response = client.post("/wallets", json=wallet_base.model_dump(mode="json"))
         assert response.status_code == 200
         wallet = Wallet.model_validate(response.json())
-        wallet_ids.append(wallet.id)
+        wallets.append(wallet)
         return wallet
 
     yield factory
 
-    for wallet_id in wallet_ids:
-        client.delete(f"/wallets/{wallet_id}")
+    for wallet in wallets:
+        auth = helper_encode_jwt(
+            {
+                "verified_credentials": [
+                    {
+                        "address": wallet.public_key,
+                        "chain": wallet.chain,
+                    }
+                ],
+            }
+        )
+
+        client.delete(
+            f"/wallets/{wallet.id}", headers={"Authorization": f"Bearer {auth}"}
+        )
 
 
 @pytest.fixture()
 def user_factory(
     client, mock_decode_bearer_token, helper_encode_jwt
 ) -> Generator[Callable[..., User], None, None]:
-    user_ids: list[UUID] = []
+    users: list[User] = []
 
     def factory(**kwargs) -> User:
         email = kwargs.get("email", "email@email.com")
@@ -106,13 +121,14 @@ def user_factory(
         )
         assert response.status_code == 200
         user = User.model_validate(response.json())
-        user_ids.append(user.id)
+        users.append(user)
         return user
 
     yield factory
 
-    for user_id in user_ids:
-        client.delete(f"/users/{user_id}")
+    for user in users:
+        auth: str = helper_encode_jwt({"sub": str(user.dynamic_id)})
+        client.delete(f"/users/{user.id}", headers={"Authorization": f"Bearer {auth}"})
 
 
 # TODO: Use the actual endpoint instead of directly through crud
@@ -216,7 +232,12 @@ def agent_factory(
         client.delete(f"/agents/{agent_id}")
 
 
-def test_wallets(client, wallet_factory, user_factory) -> None:
+def test_wallets(
+    client,
+    wallet_factory,
+    user_factory,
+    helper_encode_jwt,
+) -> None:
     wallet: Wallet = wallet_factory()
     assert wallet is not None
 
@@ -238,16 +259,29 @@ def test_wallets(client, wallet_factory, user_factory) -> None:
     wallet_update = WalletUpdate(
         owner_id=new_owner.id,
     )
+    auth = helper_encode_jwt(
+        {
+            "verified_credentials": [
+                {
+                    "address": wallet.public_key,
+                    "chain": wallet.chain,
+                }
+            ],
+        }
+    )
     response = client.patch(
         f"/wallets/{wallet.id}",
         json=wallet_update.model_dump(mode="json"),
+        headers={"Authorization": f"Bearer {auth}"},
     )
     assert response.status_code == 200
     wallet = Wallet.model_validate(response.json())
     assert wallet.owner_id == new_owner.id
 
     # Try deleting it
-    response = client.delete(f"/wallets/{wallet.id}")
+    response = client.delete(
+        f"/wallets/{wallet.id}", headers={"Authorization": f"Bearer {auth}"}
+    )
     assert response.status_code == 200
     response = client.get(f"/wallets?wallet_id={wallet.id}")
     assert response.status_code == 404

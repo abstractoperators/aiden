@@ -658,7 +658,6 @@ async def update_wallet(
     wallet_update: WalletUpdate,
     current_wallets: list[Wallet] = Security(get_wallets_from_token),
 ) -> Wallet:
-    # TODO: Verify user ownership
     if wallet_id not in [wallet.id for wallet in current_wallets]:
         raise HTTPException(
             status_code=403,
