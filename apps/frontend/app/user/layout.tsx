@@ -15,6 +15,10 @@ export default async function UserLayout({
   const session = await auth()
   if (!session)
     throw new Error(`Session ${JSON.stringify(session)} does not exist!`)
+  if (!session.user)
+    throw new Error(`Session ${JSON.stringify(session)} does not have a user!`)
+  if (!session.user.id)
+    throw new Error(`Session user ${JSON.stringify(session.user)} does not have an ID!`)
 
   const apiUser = await getUser({dynamicId: session.user.id})
   const userAgents = (
