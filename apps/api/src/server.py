@@ -230,8 +230,12 @@ async def get_agents(
         return [agent_to_agent_public(agent) for agent in agents]
 
 
+# Require the user to be signed in, but no other verification.
 @app.get("/agents/{agent_id}")
-async def get_agent(agent_id: UUID) -> AgentPublic:
+async def get_agent(
+    agent_id: UUID,
+    user=Depends(get_user_from_token),  # noqa
+) -> AgentPublic:
     """
     Returns an agent by id.
     Raises a 404 if the agent is not found.
@@ -275,7 +279,10 @@ async def update_agent(
 
 
 @app.post("/tokens")
-async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
+async def deploy_token_api(
+    token_request: TokenCreationRequest,
+    user=Depends(get_user_from_token),  # noqa: TODO access list from JWT
+) -> Token:
     """
     Deploys a token smart contract to the block chain.
     Returns the token object.
@@ -326,8 +333,11 @@ async def get_token(token_id: UUID) -> Token:
     return token
 
 
+# TODO: Access list
 @app.post("/runtimes")
-def create_runtime() -> RuntimeCreateTask:
+def create_runtime(
+    user: User = Depends(get_user_from_token),  # noqa
+) -> RuntimeCreateTask:
     """
     Attempts to create a new runtime.
     Returns a Runtime object immediately, with flag started=False.
@@ -379,8 +389,12 @@ def create_runtime() -> RuntimeCreateTask:
         return runtime_create_task
 
 
+# TODO: Access list
 @app.get("/runtimes")
-def get_runtimes(unused: bool = False) -> Sequence[Runtime]:
+def get_runtimes(
+    unused: bool = False,
+    user: User = Depends(get_user_from_token),
+) -> Sequence[Runtime]:
     """
     Returns a list of up to 100 runtimes.
     """
@@ -532,7 +546,10 @@ def start_agent(
 
 
 @app.post("/agents/{agent_id}/stop")
-def stop_agent(agent_id: UUID) -> Agent:
+def stop_agent(
+    agent_id: UUID,
+    user: User = Depends(get_user_from_token),  # noqa
+) -> Agent:
     """
     Stops agent running on a runtime.
     """
@@ -540,6 +557,12 @@ def stop_agent(agent_id: UUID) -> Agent:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
+
+        if not agent.owner_id == user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to stop an agent that doesn't belong to you",
+            )
 
         runtime_id = agent.runtime_id
         if not runtime_id:
@@ -559,7 +582,8 @@ def stop_agent(agent_id: UUID) -> Agent:
 
 @app.delete("/agents/{agent_id}")
 def delete_agent(
-    agent_id: UUID, current_user: User = Depends(get_user_from_token)
+    agent_id: UUID,
+    current_user: User = Depends(get_user_from_token),
 ) -> None:
     """
     Deletes an agent by id.
