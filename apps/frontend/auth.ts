@@ -30,6 +30,7 @@ export const config = {
             name: jwtPayload.username,
             email: jwtPayload.email,
             scopes: jwtPayload.scope,
+            token: token.trim(),
             // Map other fields as needed
           };
           return user;
@@ -41,14 +42,17 @@ export const config = {
   ],
   callbacks: {
     jwt: ({ token, user }) => {
-      if (user)
+      if (user) {
         token.scopes = user.scopes
+        token.token = user.token
+      }
       return token
     },
     session: ({ session, token }) => {
       if (session.user) {
         session.user.id = token.sub ?? "" 
         session.user.scopes = token.scopes
+        session.user.token = token.token
       }
       return session
     }

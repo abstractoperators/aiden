@@ -1,6 +1,10 @@
 'use server'
 
-import { createResource, fromApiEndpoint, getResource } from "./common"
+import {
+  createResource,
+  fromApiEndpoint,
+  getResource,
+} from "./common"
 
 interface RuntimeBase {
   url: string
@@ -17,19 +21,19 @@ const baseUrlSegment = fromApiEndpoint(RUNTIME_SEGMENT)
 const baseUrlPath = fromApiEndpoint(RUNTIME_PATH)
 
 async function getRuntimes(unused: boolean = true): Promise<Runtime[]> {
-  return getResource<Runtime[]>(
-    baseUrlPath,
-    { query: { unused: unused }},
-  )
+  return getResource<Runtime[]>({
+    baseUrl: baseUrlPath,
+    query: { unused },
+  })
 }
 
 async function getRuntime(
   runtimeId: string,
 ): Promise<Runtime> {
-  return getResource<Runtime>(
-    baseUrlSegment,
-    { resourceId: runtimeId },
-  )
+  return getResource<Runtime>({
+    baseUrl: baseUrlSegment,
+    resourceId: runtimeId,
+  })
 }
 
 async function createRuntime(): Promise<Runtime> {
