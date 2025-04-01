@@ -1,6 +1,13 @@
 'use client'
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +44,30 @@ const formSchema = z.object({
     ),
     // TODO validate against Character JSON schema
   env: z.string(),
+  // character JSON schema
+  name: z.string(),
+  bio: z.string().array().min(1),
+  lore: z.string().array().min(1),
+  messageExamples: z.object({
+    user: z.string(),
+    content: z.object({
+      text: z.string(),
+      action: z.string().optional(),
+    })
+  }).array().min(1).array().min(1),
+  postExamples: z.string().array().min(1),
+  adjectives: z.string().array().min(1),
+  topics: z.string().array().min(1),
+  knowledge: z.object({
+    id: z.string(),
+    path: z.string(),
+    content: z.string(),
+  }).array().optional(),
+  style: z.object({
+    all: z.string().array().min(1),
+    chat: z.string().array().min(1),
+    post: z.string().array().min(1),
+  }),
 })
 
 export default function CreationForm() {
@@ -149,7 +180,7 @@ export default function CreationForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="character"
+          name="characterFile"
           render={({ field: { value, onChange, ...fieldProps } }) => ( // eslint-disable-line
             <FormItem>
               <FormLabel>Character JSON</FormLabel>
