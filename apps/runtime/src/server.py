@@ -72,7 +72,7 @@ def get_character_status() -> CharacterStatus:
             agents = requests.get("http://localhost:3000/agents").json().get("agents")
             agent_id = agents[0].get("id") if agents else ""
         except requests.exceptions.ConnectionError as e:
-            return CharacterStatus(running=False, msg=e)
+            return CharacterStatus(running=False, msg=str(e))
         return CharacterStatus(running=True, agent_id=agent_id)
     else:
         return CharacterStatus(running=False, agent_id="", msg="No agent running")
