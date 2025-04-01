@@ -48,7 +48,7 @@ async function dynamicToApiUser(
 async function getUser(
   query: (
     { userId: string } |
-    { publicKey: string } |
+    { publicKey: string, chain?: string } |
     { dynamicId: string }
   ),
   headers?: Record<string, string>

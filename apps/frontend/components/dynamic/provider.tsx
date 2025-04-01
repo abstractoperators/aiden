@@ -19,8 +19,11 @@ import {
   deleteWallet,
   updateOrCreateWallet,
 } from "@/lib/api/wallet";
+import { useRouter } from "next/navigation";
 
-export default function DynamicProviderWrapper({ children }: React.PropsWithChildren) {
+export default function DynamicProvider({ children }: React.PropsWithChildren) {
+  const router = useRouter()
+
   return (
     <DynamicContextProvider
       settings={{
@@ -81,6 +84,8 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
                 }
               )
             }
+
+            router.refresh()
           },
           onEmbeddedWalletCreated: async (jwtVerifiedCredential, user) => {
             if (!user)
@@ -120,7 +125,7 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
           onWalletAdded: async ({ wallet, userWallets }) => {
             const user = await Promise.any(
               userWallets.map(
-                dynamicWallet => getUser({ publicKey: dynamicWallet.address })
+                dynamicWallet => getUser({ publicKey: dynamicWallet.address, chain: dynamicWallet.chain })
               )
             )
 
@@ -134,7 +139,10 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
             if (!user)
               throw new Error(`User ${user} does not exist!`)
 
-            const apiWallet: ApiWallet | null = await getWallet({ publicKey: wallet.address }).catch(() => null)
+            const apiWallet: ApiWallet | null = await (
+              getWallet({ publicKey: wallet.address, chain: wallet.chain })
+              .catch(() => null)
+            )
 
             if (apiWallet) {
               updateWallet(apiWallet.id, { ownerId: user.id })
@@ -147,7 +155,7 @@ export default function DynamicProviderWrapper({ children }: React.PropsWithChil
             }
           },
           onWalletRemoved: ({ wallet }) => {
-            getWallet({ publicKey: wallet.address })
+            getWallet({ publicKey: wallet.address, chain: wallet.chain })
             .then(apiWallet => deleteWallet(apiWallet.id))
             .catch(() => {
               // do nothing if it doesn't exist.

@@ -34,14 +34,18 @@ export const columns: ColumnDef<ClientAgent>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Name" />
+      <DataTableColumnHeader
+        className="text-neutral-300"
+        column={column}
+        title="Name"
+      />
     ),
     cell: ({ row }) => (
       <Link
         href={`/agents/${row.original.id}`}
       >
         <hgroup>
-          <h2>{row.getValue("name")}</h2>
+          <h2 className="text-base">{row.getValue("name")}</h2>
           { row.original.ticker && <h3>${row.original.ticker}</h3> }
         </hgroup>
       </Link>
@@ -50,13 +54,21 @@ export const columns: ColumnDef<ClientAgent>[] = [
   {
     accessorKey: "marketCapitalization",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Market Capitalization" />
+      <DataTableColumnHeader
+        className="text-neutral-300"
+        column={column}
+        title="Market Capitalization"
+      />
     ),
   },
   {
     accessorKey: "holderCount",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Holders" />
+      <DataTableColumnHeader
+        className="text-neutral-300"
+        column={column}
+        title="Holders"
+      />
     )
   },
   {

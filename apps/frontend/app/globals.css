@@ -97,5 +97,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1 {
+    @apply font-serif;
+    @apply text-d1;
+  }
+  h2 {
+    @apply font-serif;
+    @apply text-d2;
+  }
 }
 
