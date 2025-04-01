@@ -1,6 +1,6 @@
 'use server'
 
-// import { auth } from "@/auth"
+import { auth } from "@/auth"
 import { camelize, snakify } from "@/lib/utils"
 
 class UrlResourceNotFoundError extends Error {
@@ -42,9 +42,8 @@ function checkResponseStatus(response: Response): void {
 async function getHeaders<RequestType>(
   body?: RequestType
 ): Promise<Headers | undefined> {
-  // const session = await auth()
-  // const authToken = session?.user?.token
-  const authToken = undefined
+  const session = await auth()
+  const authToken = session?.user?.token
   if (!authToken && !body)
     return undefined
 
