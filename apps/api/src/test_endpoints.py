@@ -6,6 +6,7 @@ from typing import Any, Callable, Coroutine, Generator
 from uuid import UUID, uuid4
 
 import pytest
+import requests
 
 from src.auth import decode_bearer_token
 from src.db import crud
@@ -417,7 +418,8 @@ async def test_runtimes(
     agent = AgentPublic.model_validate(response.json())
     print(agent)
 
-    response = client.post(
+    # omg im an idiot
+    response = requests.post(
         f"{runtime_1.url}/{agent.eliza_agent_id}/message",
         json={"user": "testuser", "text": "hello"},
     )
