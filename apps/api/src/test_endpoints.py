@@ -32,7 +32,6 @@ def test_ping(client):
 
 
 def test_jwt(
-    mock_decode_bearer_token,
     helper_encode_jwt,
 ) -> None:
     payload = {
