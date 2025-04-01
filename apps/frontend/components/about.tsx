@@ -4,7 +4,7 @@ const linkClassName = "text-anakiwa-lighter hover:text-white dark:text-carnation
 
 export default function About() {
   return (
-    <section className="container flex flex-col items-center justify-center space-y-16 py-72">
+    <section id="about" className="container flex flex-col items-center justify-center space-y-16 py-72">
       <h1 className="text-4xl tracking-widest font-bold sm:text-5xl md:text-6xl lg:text-7xl text-center">
         ABOUT US
       </h1>

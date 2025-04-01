@@ -34,10 +34,10 @@ interface Wallet extends WalletBase {
 async function getWallet(
   query: { publicKey: string, chain?: string } | { walletId: string }
 ): Promise<Wallet> {
-  return getResource<Wallet>(
-    baseUrlPath,
-    { query: query },
-  )
+  return getResource<Wallet>({
+    baseUrl: baseUrlPath,
+    query,
+  })
 }
 
 async function createWallet(wallet: WalletBase): Promise<Wallet> {
@@ -45,11 +45,11 @@ async function createWallet(wallet: WalletBase): Promise<Wallet> {
 }
 
 async function updateWallet(walletId: string, walletUpdate: WalletUpdate): Promise<Wallet> {
-  return updateResource(
-    baseUrlSegment,
-    walletId,
-    walletUpdate,
-  )
+  return updateResource({
+    baseUrl: baseUrlSegment,
+    resourceId: walletId,
+    body: walletUpdate,
+  })
 }
 
 async function updateOrCreateWallet(

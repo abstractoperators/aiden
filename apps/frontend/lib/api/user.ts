@@ -52,10 +52,10 @@ async function getUser(
     { dynamicId: string }
   )
 ): Promise<User> {
-  return getResource<User>(
-    baseUrlPath,
-    { query: query },
-  )
+  return getResource<User>({
+    baseUrl: baseUrlPath,
+    query,
+  })
 }
 
 async function createUser(userPayload: UserBase): Promise<User> {
@@ -63,11 +63,11 @@ async function createUser(userPayload: UserBase): Promise<User> {
 }
 
 async function updateUser(userId: string, userUpdate: UserUpdate): Promise<User> {
-  return updateResource(
-    baseUrlSegment,
-    userId,
-    userUpdate,
-  )
+  return updateResource({
+    baseUrl: baseUrlSegment,
+    resourceId: userId,
+    body: userUpdate,
+  })
 }
 
 async function getOrCreateUser(

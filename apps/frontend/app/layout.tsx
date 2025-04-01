@@ -22,18 +22,34 @@ export const metadata: Metadata = {
   description: "AIDEN is a Web3 AI Agent platform powered by SEI that connects you to a community of powerful agents and creators.",
 }
 
-const bgImages = "bg-cover bg-fixed bg-no-repeat bg-[url(/brand_assets/background-sky.png)] dark:bg-[url(/brand_assets/background-orbit.png)]"
-const lightBg = "bg-right-top bg-anakiwa-lighter"
-const darkBg = "dark:bg-right dark:bg-anakiwa-darkest"
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${aldrich.variable} ${inter.variable}`}>
-      <body className={`w-screen min-h-screen ${lightBg} ${darkBg} ${bgImages}`}>
+    <html
+      lang="en"
+      className={[
+        aldrich.variable,
+        inter.variable,
+        "scroll-smooth",
+      ].join(" ")}
+    >
+      <body
+        className={[
+          // common
+          "w-screen min-h-screen",
+          "bg-cover bg-fixed bg-no-repeat",
+          // backup light background
+          "bg-right-top bg-anakiwa-lighter",
+          // backup dark background
+          "dark:bg-right dark:bg-anakiwa-darkest",
+          // background images
+          "bg-[url(/brand_assets/background-sky.png)]",
+          "dark:bg-[url(/brand_assets/background-orbit.png)]",
+        ].join(" ")}
+      >
         <DynamicProvider>
           <ThemeProvider
             attribute="class"

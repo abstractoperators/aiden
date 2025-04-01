@@ -1,16 +1,8 @@
 // https://next-auth.js.org/configuration/options
 import NextAuth from "next-auth";
-import type { NextAuthConfig } from "next-auth";
+import type { NextAuthConfig, User } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { validateJWT } from "./lib/auth-helpers";
-import { NextResponse } from "next/server";
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  // Add other fields as needed
-};
 
 export const config = {
   providers: [
@@ -35,8 +27,10 @@ export const config = {
             throw new Error(`JWT ${jwtPayload} has no Dynamic ID!!!`)
           const user: User = {
             id: jwtPayload.sub, // Assuming 'sub' is the user ID
-            name: jwtPayload.name ?? "", // Replace with actual field from JWT payload
-            email: jwtPayload.email ?? "", // Replace with actual field from JWT payload
+            name: jwtPayload.username,
+            email: jwtPayload.email,
+            scopes: jwtPayload.scope,
+            token: token.trim(),
             // Map other fields as needed
           };
           return user;
@@ -47,26 +41,23 @@ export const config = {
     }),
   ],
   callbacks: {
-    authorized: ({ request, auth }) => {
-      const { pathname } = request.nextUrl;
-      console.log("pathname:", pathname)
-      console.log("auth:", auth)
-      if (!auth) {
-        console.log("unauthorized attempt to access path, returning to origin")
-        return NextResponse.redirect(request.nextUrl.origin);
+    jwt: ({ token, user }) => {
+      if (user) {
+        token.scopes = user.scopes
+        token.token = user.token
       }
-      return !!auth;
+      return token
     },
     session: ({ session, token }) => {
-      session.user.id = token.sub ?? "" 
+      if (session.user) {
+        session.user.id = token.sub ?? "" 
+        session.user.scopes = token.scopes
+        session.user.token = token.token
+      }
       return session
     }
   },
   trustHost: true,
 } satisfies NextAuthConfig
-
-export type {
-  User as SessionUser
-}
 
 export const { handlers, auth, signIn, signOut } = NextAuth(config)
