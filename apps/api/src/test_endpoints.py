@@ -167,6 +167,7 @@ def runtime_factory(
     helper_encode_jwt,
 ) -> Generator[Callable[[], Coroutine[Any, Any, Runtime]], None, None]:
     runtime_ids: list[UUID] = []
+
     auth = helper_encode_jwt({"lists": ["admin"]})
 
     async def factory() -> Runtime:
@@ -194,9 +195,18 @@ def runtime_factory(
     yield factory
 
     for runtime_id in runtime_ids:
-        client.delete(
-            f"/runtimes/{runtime_id}", headers={"Authorization": f"Bearer {auth}"}
-        )
+        with Session() as session:
+            runtime: Runtime = crud.get_runtime(session, runtime_id)
+
+            if runtime.agent:
+                auth = helper_encode_jwt(
+                    {"lists": ["admin"], "sub": str(runtime.agent.dynamic_id)}
+                )
+            if runtime.agent:
+                auth
+            client.delete(
+                f"/runtimes/{runtime_id}", headers={"Authorization": f"Bearer {auth}"}
+            )
 
 
 @pytest.fixture()
@@ -416,7 +426,6 @@ async def test_runtimes(
     response = client.get(f"/agents/{agent.id}")
     assert response.status_code == 200
     agent = AgentPublic.model_validate(response.json())
-    print(agent)
 
     # omg im an idiot
     response = requests.post(
