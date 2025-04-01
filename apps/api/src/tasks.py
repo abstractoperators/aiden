@@ -76,7 +76,8 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
     If it is not healthy, then it is updated and restarted.
     If it can't be updated and restarted, then it is deleted? Not sure about htis part.
     """
-    MAX_FAILED_HEALTHCHECKS = 3
+    FAILED_HEALTHCHECKS_BEFORE_UPDATE = 3
+    FAILED_HEALTHCHECKS_BEFORE_DELETE = 5
 
     with Session() as session:
         runtime: Runtime = obj_or_404(crud.get_runtime(session, runtime_id), Runtime)
@@ -110,10 +111,10 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
                 RuntimeUpdate(failed_healthchecks=runtime.failed_healthchecks + 1),
             )
 
-        if runtime.failed_healthchecks > MAX_FAILED_HEALTHCHECKS:
+        if runtime.failed_healthchecks > FAILED_HEALTHCHECKS_BEFORE_DELETE:
             delete_runtime.delay(runtime_id)
             return "Runtime failed healthcheck too many times. Deleting it."
-        else:
+        elif runtime.failed_healthchecks > FAILED_HEALTHCHECKS_BEFORE_UPDATE:
             update_runtime.delay(runtime_id)
             return "Runtime is unhealthy. Attempting to update and restart it."
 
@@ -286,7 +287,7 @@ def create_runtime(
             logger.info(f"{i}/40: Polling runtime for health check")
             sleep(15)
             try:
-                url = f"{runtime.url}/ping"
+                url = f"{runtime.url}/controller/ping"  # fastapi server not nginx
                 resp = requests.get(
                     url=url,
                     timeout=3,
