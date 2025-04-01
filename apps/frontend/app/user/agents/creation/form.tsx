@@ -24,7 +24,7 @@ import { TaskStatus } from "@/lib/api/task";
 
 const MAX_FILE_SIZE = 5000000;
 const formSchema = z.object({
-  character: z
+  characterFile: z
     .instanceof(File)
     .refine(file => file.size !== 0, "File may not be empty.")
     .refine(file => file.size < MAX_FILE_SIZE, "Max file size is 5MB.")
@@ -56,8 +56,8 @@ export default function CreationForm() {
 
   async function onSubmit(formData: z.infer<typeof formSchema>) {
     try {
-      const character = await formData.character.text()
-      const characterJson = JSON.parse(character) // TODO: catch SyntaxError
+      const characterFile = await formData.characterFile.text()
+      const characterJson = JSON.parse(characterFile) // TODO: catch SyntaxError
       console.debug(characterJson)
 
       const env = formData.env
