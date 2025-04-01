@@ -21,9 +21,17 @@ from src.aws_utils import (
     get_role_session,
 )
 from src.db import crud
-from src.db.models import Agent, AgentUpdate, Runtime, RuntimeUpdate
+from src.db.models import (
+    Agent,
+    AgentUpdate,
+    Runtime,
+    RuntimeCreateTask,
+    RuntimeDeleteTask,
+    RuntimeUpdate,
+    RuntimeUpdateTask,
+)
 from src.db.setup import SQLALCHEMY_DATABASE_URL, Session
-from src.models import AWSConfig
+from src.models import AWSConfig, TaskStatus
 from src.utils import obj_or_404
 
 logger = get_task_logger(__name__)
@@ -79,6 +87,37 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
     FAILED_HEALTHCHECKS_BEFORE_UPDATE = 3
     FAILED_HEALTHCHECKS_BEFORE_DELETE = 5
 
+    # Don't do the healthcheck if:
+    # There is a running runtime task already (e.g. starting, updating, deleting, healthchecking)
+    with Session() as session:
+        runtime_create_task: RuntimeCreateTask | None
+        runtime_update_task: RuntimeUpdateTask | None
+        runtime_delete_task: RuntimeDeleteTask | None
+        task_status: TaskStatus | None
+        runtime_task: RuntimeCreateTask | RuntimeUpdateTask | RuntimeDeleteTask | None
+        runtime_create_task = crud.get_runtime_create_task(session, runtime_id)
+        if runtime_create_task := crud.get_runtime_create_task(session, runtime_id):
+            runtime_task = runtime_create_task
+        elif runtime_update_task := crud.get_runtime_update_task(session, runtime_id):
+            runtime_task = runtime_update_task
+        elif runtime_delete_task := crud.get_runtime_delete_task(session, runtime_id):
+            runtime_task = runtime_delete_task
+        else:
+            runtime_task = None
+        if runtime_task:
+            task = crud.get_task(session, runtime_task.celery_task_id)
+            if not task:
+                raise ValueError(
+                    "Task not found. Most likely it is pending and a worker has not picked it up yet."
+                )
+            task_status = TaskStatus(task["status"])
+
+        if task_status == TaskStatus.PENDING or TaskStatus.STARTED:
+            logger.info(
+                f"Runtime {runtime_id} is already being created, updated, or deleted. Skipping healthcheck."
+            )
+            return "Runtime is already being created, updated, or deleted. Skipping healthcheck."
+
     with Session() as session:
         runtime: Runtime = obj_or_404(crud.get_runtime(session, runtime_id), Runtime)
         agent: Agent | None = runtime.agent
@@ -99,9 +138,7 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
             )
 
     except HTTPError as e:
-        logger.info(
-            f"{repr(e)}: Runtime {runtime_id} is unhealthy. Attempting to update and restart it."
-        )
+        logger.info(f"{repr(e)}: Runtime {runtime_id} is unhealthy.")
 
         with Session() as session:
             runtime = obj_or_404(crud.get_runtime(session, runtime_id), Runtime)
@@ -129,6 +166,7 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
 def healthcheck_running_agent(agent_id: UUID) -> None | str:
     """
     Healthchecks an agent that should be running on a runtime.
+    Restarts if it is down.
     """
     with Session() as session:
         agent: Agent = obj_or_404(crud.get_agent(session, agent_id), Agent)
