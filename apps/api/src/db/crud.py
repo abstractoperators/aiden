@@ -301,6 +301,18 @@ def create_runtime_delete_task(
     )
 
 
+def get_runtime_create_task(
+    session: Session, runtime_id: UUID
+) -> RuntimeCreateTask | None:
+    """
+    Returns the latest create task for a given runtime_id
+    """
+    stmt = select(RuntimeCreateTask).where(RuntimeCreateTask.runtime_id == runtime_id)
+    if RuntimeCreateTask.created_at:
+        stmt = stmt.order_by(col(RuntimeCreateTask.created_at).desc())
+    return session.exec(stmt).first()
+
+
 def get_runtime_update_task(
     session: Session, runtime_id: UUID
 ) -> RuntimeUpdateTask | None:
