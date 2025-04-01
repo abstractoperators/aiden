@@ -172,7 +172,9 @@ def runtime_factory(
         runtime_resp = client.post(
             "/runtimes", headers={"Authorization": f"Bearer {auth}"}
         )
-        runtime_create_task = RuntimeCreateTask.model_validate(runtime_resp.json())
+        runtime_create_task: RuntimeCreateTask = RuntimeCreateTask.model_validate(
+            runtime_resp.json()
+        )
         runtime_ids.append(runtime_create_task.runtime_id)
 
         # Wait for the runtime to be created

@@ -3,10 +3,12 @@ import os
 import signal
 import subprocess
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 import fastapi
 import requests
 from dotenv import dotenv_values, load_dotenv
+from fastapi import Body
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, SecretStr
@@ -39,10 +41,13 @@ class Env(BaseModel):
 
 
 class Character(BaseModel):
-    character_json: dict = Field({}, description="Character json for an eliza agent")
+    character_json: dict = Field(
+        {}, description="Character json for an eliza agent", required=True
+    )
     envs: str = Field(
         "",
         description="A string representing an env file containing environment variables for the eliza agent",
+        required=True,
     )
 
 
@@ -67,19 +72,28 @@ def get_character_status() -> CharacterStatus:
     """
     global agent_runtime_subprocess
 
-    if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
+    exit_code = None
+    if agent_runtime_subprocess:
+        exit_code = agent_runtime_subprocess.poll()
+    if agent_runtime_subprocess and exit_code is None:
         try:
             agents = requests.get("http://localhost:3000/agents").json().get("agents")
             agent_id = agents[0].get("id") if agents else ""
         except requests.exceptions.ConnectionError as e:
             return CharacterStatus(running=False, msg=str(e))
         return CharacterStatus(running=True, agent_id=agent_id)
-    else:
-        return CharacterStatus(running=False, agent_id="", msg="No agent running")
+
+    return CharacterStatus(
+        running=False,
+        agent_id="",
+        msg=f"No agent running. {exit_code if exit_code else ''}",
+    )
 
 
 @router.post("/character/start")
-def start_character(character: Character) -> CharacterStatus:
+def start_character(
+    character: Character = Annotated[Character, Body(..., embed=True)],
+) -> CharacterStatus:
     """
     Attempts to start a character and returns its status after a wait.
     """
