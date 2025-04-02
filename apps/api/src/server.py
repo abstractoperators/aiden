@@ -8,7 +8,6 @@ import requests
 from fastapi import Depends, FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
@@ -16,7 +15,6 @@ from src.auth import (  # decode_bearer_token,
     access_list,
     get_user_from_token,
     get_wallets_from_token,
-    optional_jwt,
     valid_jwt,
 )
 from src.aws_utils import get_aws_config
@@ -164,32 +162,10 @@ def create_agent(
         return agent_to_agent_public(agent)
 
 
-def get_agents_conditional_dep(
-    request: Request,
-    user_id: UUID | None = None,
-    user_dynamic_id: UUID | None = None,
-    token: HTTPAuthorizationCredentials | None = Security(optional_jwt),
-) -> User | None:
-    """
-    Makes token optional if neither user_id nor dynamic_id are passed.
-    """
-    if user_id is None and user_dynamic_id is None:
-        return None
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="Token is required if user_id or user_dynamic_id is passed",
-        )
-    return get_user_from_token(
-        token=token,
-    )
-
-
 @app.get("/agents")
 async def get_agents(
     user_id: UUID | None = None,
     user_dynamic_id: UUID | None = None,
-    user: User | None = Depends(get_agents_conditional_dep),
 ) -> Sequence[AgentPublic]:
     """
     Returns a list of Agents.
@@ -206,19 +182,15 @@ async def get_agents(
         )
     with Session() as session:
         if user_dynamic_id:
-            if not user or user_dynamic_id != user.dynamic_id:  # noqa
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"You may not access Agents not owned by you. Wanted {user_dynamic_id}. Got {user.dynamic_id if user else 'no token passed'}",
-                )
-            user_id = user.id  # noqa
-            agents = crud.get_agents_by_user_id(session, user_id)
+            user: User = obj_or_404(
+                session,
+                crud.get_user_by_dynamic_id(
+                    user_dynamic_id=user_dynamic_id,
+                ),
+                User,
+            )
+            agents = crud.get_agents_by_user_id(session, user.id)
         elif user_id:
-            if not user or user_id != user.id:
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"You may not access Agents not owned by you. Wanted {user_id}. Got {user.id if user else 'no token passed'}",
-                )
             agents = crud.get_agents_by_user_id(session, user_id)
         else:
             agents = crud.get_agents(session)
@@ -275,7 +247,8 @@ async def update_agent(
 @app.post("/tokens")
 async def deploy_token_api(
     token_request: TokenCreationRequest,
-    user: User = Security(get_user_from_token),  # noqa: TODO access list from JWT
+    user: User = Security(get_user_from_token),  # noqa
+    # TODO: Access lsit from jwt
 ) -> Token:
     """
     Deploys a token smart contract to the block chain.
