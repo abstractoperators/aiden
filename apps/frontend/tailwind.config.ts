@@ -9,43 +9,83 @@ export default {
   ],
   theme: {
   	extend: {
-			fontSize: {
-				d1: ['4.5rem', '120%'],
-				d2: ['3.25rem', '120%'],
-				d3: ['2.75rem', '120%'],
-				d4: ['2.25rem', '130%'],
-				d5: ['1.75rem', '140%'],
-				d6: ['1.375rem', '140%'],
-				m1: ['2.75rem', '120%'],
-				m2: ['2.5rem', '120%'],
-				m3: ['2rem', '120%'],
-				m4: ['1.5rem', '130%'],
-				m5: ['1.25rem', '140%'],
-				m6: ['1.125rem', '140%'],
-			},
-			fontFamily: {
-				sans: ['var(--font-inter)'],
-				serif: ['var(--font-aldrich)'],
-			},
+  		fontSize: {
+  			d1: [
+  				'4.5rem',
+  				'120%'
+  			],
+  			d2: [
+  				'3.25rem',
+  				'120%'
+  			],
+  			d3: [
+  				'2.75rem',
+  				'120%'
+  			],
+  			d4: [
+  				'2.25rem',
+  				'130%'
+  			],
+  			d5: [
+  				'1.75rem',
+  				'140%'
+  			],
+  			d6: [
+  				'1.375rem',
+  				'140%'
+  			],
+  			m1: [
+  				'2.75rem',
+  				'120%'
+  			],
+  			m2: [
+  				'2.5rem',
+  				'120%'
+  			],
+  			m3: [
+  				'2rem',
+  				'120%'
+  			],
+  			m4: [
+  				'1.5rem',
+  				'130%'
+  			],
+  			m5: [
+  				'1.25rem',
+  				'140%'
+  			],
+  			m6: [
+  				'1.125rem',
+  				'140%'
+  			]
+  		},
+  		fontFamily: {
+  			sans: [
+  				'var(--font-inter)'
+  			],
+  			serif: [
+  				'var(--font-aldrich)'
+  			]
+  		},
   		colors: {
-				anakiwa: {
-					lightest: '#f5f8ff',
-					lighter: '#ebf1ff',
-					light: '#b9ceff',
-					DEFAULT: '#9bb9ff',
-					dark: '#7c94cc',
-					darker: '#3e4a66',
-					darkest: '#2e374c',
-				},
-				carnation: {
-					lightest: '#fef5fa',
-					lighter: '#feecf5',
-					light: '#febedc',
-					DEFAULT: '#fea3cd',
-					dark: '#cb82a4',
-					darker: '#654152',
-					darkest: '#4c303d',
-				},
+  			anakiwa: {
+  				lightest: '#f5f8ff',
+  				lighter: '#ebf1ff',
+  				light: '#b9ceff',
+  				DEFAULT: '#9bb9ff',
+  				dark: '#7c94cc',
+  				darker: '#3e4a66',
+  				darkest: '#2e374c'
+  			},
+  			carnation: {
+  				lightest: '#fef5fa',
+  				lighter: '#feecf5',
+  				light: '#febedc',
+  				DEFAULT: '#fea3cd',
+  				dark: '#cb82a4',
+  				darker: '#654152',
+  				darkest: '#4c303d'
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -101,6 +141,28 @@ export default {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
+  		},
+  		keyframes: {
+  			'accordion-down': {
+  				from: {
+  					height: '0'
+  				},
+  				to: {
+  					height: 'var(--radix-accordion-content-height)'
+  				}
+  			},
+  			'accordion-up': {
+  				from: {
+  					height: 'var(--radix-accordion-content-height)'
+  				},
+  				to: {
+  					height: '0'
+  				}
+  			}
+  		},
+  		animation: {
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out'
   		}
   	}
   },
