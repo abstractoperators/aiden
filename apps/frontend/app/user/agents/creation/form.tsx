@@ -484,7 +484,8 @@ function DynamicList({
 }) {
   const { fields, append, remove } = useFieldArray({
     control,
-    name,
+    // @ts-expect-error
+    name, // TODO: figure out why name has weird type
   })
 
   return (
@@ -516,7 +517,9 @@ function DynamicList({
           />
         ))}
         </div>
+        {/* @ts-expect-error */}
         <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
+        {/* TODO: figure out why empty string yields unexpected behavior */}
       </AccordionContent>
     </AccordionItem>
   )
