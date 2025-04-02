@@ -163,11 +163,7 @@ def get_wallet_by_public_key_hack(
     """
     TODO: Remove and replace with identification w/ address + chai9n
     """
-    stmt = (
-        select(Wallet)
-        .where(Wallet.public_key == public_key)
-        .where(Wallet.chain == "EVM")
-    )
+    stmt = select(Wallet).where(Wallet.public_key == public_key)
     return session.exec(stmt).first()
 
 

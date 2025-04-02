@@ -152,7 +152,7 @@ def get_wallets_from_token(
     with Session() as session:
         for address in addresses:
             # Not going to throw a 404 here cuz it's hacky af any how.
-            wallet = crud.get_wallet_by_public_key(session, address)
+            wallet = crud.get_wallet_by_public_key_hack(session, address)
             if wallet is None:
                 continue
             wallets.append(wallet)
