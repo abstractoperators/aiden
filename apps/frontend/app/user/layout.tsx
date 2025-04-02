@@ -37,7 +37,7 @@ export default async function UserLayout({
             variant="floating"
             userAgents={userAgents}
           />
-          <SidebarInset className="bg-opacity-0">
+          <SidebarInset className="bg-anakiwa-darkest/50 backdrop-blur">
             <main>
               {children}
             </main>
