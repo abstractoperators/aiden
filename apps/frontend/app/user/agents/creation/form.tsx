@@ -3,6 +3,7 @@
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -11,7 +12,13 @@ import {
 import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import {
+  Control,
+  useFieldArray,
+  UseFieldArrayRemove,
+  useForm,
+  UseFormRegister,
+} from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useDynamicContext, UserProfile } from "@dynamic-labs/sdk-react-core"
@@ -27,10 +34,18 @@ import {
   Runtime,
 } from "@/lib/api/runtime";
 import { TaskStatus } from "@/lib/api/task";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 
+const borderStyle = "rounded-xl border border-black dark:border-white"
 
 const MAX_FILE_SIZE = 5000000;
-const formSchema = z.object({
+const fileSchema = z.object({
   characterFile: z
     .instanceof(File)
     .refine(file => file.size !== 0, "File may not be empty.")
@@ -44,10 +59,25 @@ const formSchema = z.object({
     ),
     // TODO validate against Character JSON schema
   env: z.string(),
-  // character JSON schema
-  name: z.string(),
+})
+
+const stringListTitles = {
+  "bio": "Biography",
+  "lore": "Lore",
+  "postExamples": "Post Examples",
+  "adjectives": "Adjectives",
+  "topics": "Topics",
+ }
+const stringListSchema = z.object({
   bio: z.string().array().min(1),
   lore: z.string().array().min(1),
+  postExamples: z.string().array().min(1),
+  adjectives: z.string().array().min(1),
+  topics: z.string().array().min(1),
+})
+
+const characterSchema = z.object({
+  name: z.string(),
   messageExamples: z.object({
     user: z.string(),
     content: z.object({
@@ -55,9 +85,6 @@ const formSchema = z.object({
       action: z.string().optional(),
     })
   }).array().min(1).array().min(1),
-  postExamples: z.string().array().min(1),
-  adjectives: z.string().array().min(1),
-  topics: z.string().array().min(1),
   knowledge: z.object({
     id: z.string(),
     path: z.string(),
@@ -68,22 +95,63 @@ const formSchema = z.object({
     chat: z.string().array().min(1),
     post: z.string().array().min(1),
   }),
-})
+}).merge(stringListSchema)
+
+const formSchema = characterSchema.merge(fileSchema)
+type FormType = z.infer<typeof formSchema>
 
 export default function CreationForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      env: "",
-    }
-  })
-  // TODO: set up sei and eth addresses if undefined
-
   const { user } = useDynamicContext()
   if (!user)
     throw new Error(`User ${user} does not exist!`)
   if (!user.userId)
     throw new Error(`User ${user} has no userId!`)
+
+  const form = useForm<FormType>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      env: "",
+      name: "",
+      bio: [""],
+      lore: [""],
+      messageExamples: [[{
+        user: "",
+        content: {
+          text: "",
+          action: "",
+        },
+      }]],
+      postExamples: [""],
+      adjectives: [""],
+      topics: [""],
+      knowledge: [{
+        id: "",
+        path: "",
+        content: "",
+      }],
+      style: { all: [""], chat: [""], post: [""], }
+    }
+  })
+  const { control, handleSubmit, register } = form
+
+  const {
+    fields: messageExamplesFields,
+    append: messageExamplesAppend,
+    remove: messageExamplesRemove,
+  } = useFieldArray({
+    control,
+    name: "messageExamples",
+  })
+  const {
+    fields: knowledgeFields,
+    append: knowledgeAppend,
+    remove: knowledgeRemove,
+  } = useFieldArray({
+    control,
+    name: "knowledge",
+  })
+
+  // TODO: set up sei and eth addresses if undefined
 
   async function onSubmit(formData: z.infer<typeof formSchema>) {
     try {
@@ -177,11 +245,67 @@ export default function CreationForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <Accordion type="multiple">
+          <AccordionItem value="Name">
+            <AccordionTrigger className="font-semibold text-d6">Name</AccordionTrigger>
+            <AccordionContent>
+              <FormField
+                name="name"
+                render={({field}) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Name" {...field} />
+                    </FormControl>
+                    <FormDescription>Name of the agent being built</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+
+        {Object.entries(stringListTitles).map(([name, title]) => (
+          <DynamicList
+            key={name}
+            title={title}
+            name={name}
+            control={control}
+          />
+        ))}
+
+          <AccordionItem value="Message Examples">
+            <AccordionTrigger className="font-semibold text-d6">
+              Message Examples
+            </AccordionTrigger>
+            <AccordionContent className="space-y-8">
+              <div className="space-y-4">
+              {messageExamplesFields.map((example, exampleIndex) => (
+                <MessageExample
+                  key={example.id}
+                  control={control}
+                  exampleIndex={exampleIndex}
+                  register={register}
+                  parentRemove={messageExamplesRemove}
+                />
+              ))}
+              </div>
+              <Button
+                type="button"
+                onClick={() =>
+                  messageExamplesAppend([[{ user: "", content: { text: "", action: "" } }]])
+                }
+              >
+                Add Message Example
+              </Button>
+            </AccordionContent>
+          </AccordionItem>
+
+        </Accordion>
+
         <FormField
-          control={form.control}
           name="characterFile"
-          render={({ field: { value, onChange, ...fieldProps } }) => ( // eslint-disable-line
+          render={({ field: { onChange, onBlur, disabled, name, ref } }) => (
             <FormItem>
               <FormLabel>Character JSON</FormLabel>
               <FormControl>
@@ -191,15 +315,17 @@ export default function CreationForm() {
                   onChange={ event =>
                     onChange(event.target.files && event.target.files[0])
                   }
-                  {...fieldProps}
+                  {...{ onBlur, disabled, name, ref }}
                 />
               </FormControl>
+              <FormDescription>
+                Upload a character JSON file. This while disable all other fields but .env.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
-          control={form.control}
           name="env"
           render={({ field }) => (
             <FormItem>
@@ -216,5 +342,121 @@ export default function CreationForm() {
         <Button type="submit">Submit</Button>
       </form>
     </Form>
+  )
+}
+
+function MessageExample({
+  exampleIndex,
+  control,
+  register,
+  parentRemove,
+}: {
+  exampleIndex: number,
+  control: Control<FormType>,
+  register: UseFormRegister<FormType>,
+  parentRemove: UseFieldArrayRemove,
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `messageExamples.${exampleIndex}`,
+  })
+
+  return (
+    <div className={cn(borderStyle, "p-4 space-y-8")}>
+      <h3 className="font-semibold">Message Example {exampleIndex + 1}</h3>
+      <div className="space-y-2">
+      {fields.map((field, messageIndex) => (
+        <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
+          <div className="space-y-2">
+            <Input
+              {...register(`messageExamples.${exampleIndex}.${messageIndex}.user`)}
+              className="placeholder:text-neutral-400"
+              placeholder="User"
+            />
+            <Input
+              {...register(`messageExamples.${exampleIndex}.${messageIndex}.content.text`)}
+              className="placeholder:text-neutral-400"
+              placeholder="Text"
+            />
+            <Input
+              {...register(`messageExamples.${exampleIndex}.${messageIndex}.content.action`)}
+              className="placeholder:text-neutral-400"
+              placeholder="Action (Optional)"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => remove(messageIndex)}
+          >
+            Remove Message
+          </Button>
+        </div>
+      ))}
+      </div>
+      <div className="flex flex-row justify-between">
+        <Button
+          type="button"
+          onClick={() => append([{ user: "", content: { text: "", action: "" } }])}
+        >
+          Add Message
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => parentRemove(exampleIndex)}
+        >
+          Remove Example
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function DynamicList({
+  title,
+  name,
+  control,
+}: {
+  title: string,
+  name: string,
+  control: Control<FormType>,
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name,
+  })
+
+  return (
+    <AccordionItem value={title}>
+      <AccordionTrigger className="font-semibold text-d6">{title}</AccordionTrigger>
+      <AccordionContent className="space-y-8">
+        <div className="space-y-4">
+        {fields.map((formField, index) => (
+          <FormField
+            key={formField.id}
+            name={`${name}.${index}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel></FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder={title}
+                  />
+                </FormControl>
+                <FormMessage />
+                <Button type="button" variant="destructive" onClick={() => remove(index)}>
+                  Remove
+                </Button>
+              </FormItem>
+            )}
+          />
+        ))}
+        </div>
+        <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
+      </AccordionContent>
+    </AccordionItem>
   )
 }
