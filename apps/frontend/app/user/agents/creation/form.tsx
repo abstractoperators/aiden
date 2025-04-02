@@ -42,6 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
+const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
 
 const MAX_FILE_SIZE = 5000000;
 const fileSchema = z.object({
@@ -247,8 +248,8 @@ export default function CreationForm() {
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Accordion type="multiple">
-          <AccordionItem value="Name">
+        <Accordion type="multiple" className="space-y-2">
+          <AccordionItem value="Name" className={accordionItemStyle}>
             <AccordionTrigger className="font-semibold text-d6">Name</AccordionTrigger>
             <AccordionContent>
               <FormField
@@ -279,7 +280,7 @@ export default function CreationForm() {
           />
         ))}
 
-          <AccordionItem value="Message Examples">
+          <AccordionItem value="Message Examples" className={accordionItemStyle}>
             <AccordionTrigger className="font-semibold text-d6">
               Message Examples
             </AccordionTrigger>
@@ -428,7 +429,7 @@ function Knowledge({ control }: { control: Control<FormType> }) {
   })
 
   return (
-    <AccordionItem value="Knowledge">
+    <AccordionItem value="Knowledge" className={accordionItemStyle}>
       <AccordionTrigger className="font-semibold text-d6">Knowledge</AccordionTrigger>
       <AccordionContent className="space-y-8">
         <div className="space-y-4">
@@ -489,7 +490,7 @@ function DynamicList({
   })
 
   return (
-    <AccordionItem value={title}>
+    <AccordionItem value={title} className={accordionItemStyle}>
       <AccordionTrigger className="font-semibold text-d6">{title}</AccordionTrigger>
       <AccordionContent className="space-y-8">
         <div className="space-y-4">
