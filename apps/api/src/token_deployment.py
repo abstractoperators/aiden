@@ -21,10 +21,14 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
 
     # Load ABI and bytecode
     with open(
-        "./src/bonding_token/artifacts/contracts/BondingCurveToken.sol/BondingCurveToken.json",
-        "r",
+        "./src/launchpad-contracts/artifacts/contracts/Bonding.sol/Bonding.json", "r"
     ) as f:
         contract_json = json.load(f)
+    # with open(
+    #     "./src/bonding_token/artifacts/contracts/BondingCurveToken.sol/BondingCurveToken.json",
+    #     "r",
+    # ) as f:
+    #     contract_json = json.load(f)
     contract_abi: list[dict] = contract_json["abi"]
     contract_bytecode = contract_json["bytecode"]
 
@@ -33,13 +37,23 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
     deployer_address = account.address
 
     # Deploy contract
-    contract = w3.eth.contract(abi=contract_abi, bytecode=contract_bytecode)
+    contract = w3.eth.contract(
+        address=1,  # TODO: From artifacts
+        abi=contract_abi,
+        bytecode=contract_bytecode,
+    )
 
     nonce = await w3.eth.get_transaction_count(deployer_address)
     gas_price = await w3.eth.gas_price
     chain_id = await w3.eth.chain_id
     # Build transaction with the given name and ticker
-    deploy_txn = await contract.constructor(name, ticker).build_transaction(
+
+    launch_token_txn = await contract.launchWithAsset(
+        name,
+        ticker,
+        0,  # TODO purchaseAmount
+        0,  # TODO: assetToken
+    ).build_transaction(
         {
             "from": deployer_address,
             "nonce": nonce,
@@ -48,9 +62,18 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
             "chainId": chain_id,
         }
     )
+    # deploy_txn = await contract.constructor(name, ticker).build_transaction(
+    #     {
+    #         "from": deployer_address,
+    #         "nonce": nonce,
+    #         "gas": 5000000,
+    #         "gasPrice": gas_price,
+    #         "chainId": chain_id,
+    #     }
+    # )
 
     # Sign and send deployment transaction
-    signed_txn = w3.eth.account.sign_transaction(deploy_txn, PRIVATE_KEY)
+    signed_txn = w3.eth.account.sign_transaction(launch_token_txn, PRIVATE_KEY)
     tx_hash = await w3.eth.send_raw_transaction(signed_txn.raw_transaction)
     print(f"Deployment TX sent: {tx_hash.hex()}")
 
