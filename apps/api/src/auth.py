@@ -67,13 +67,11 @@ def optional_jwt(
 
 
 def valid_jwt(
-    request: Request,
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> dict[str, Any]:
     """
     If the JWT token is valid, returns None
     Otherwise, raises an HTTPException with status code 401
-    request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
     Returns the payload of the JWT token.
     """
@@ -129,7 +127,6 @@ def get_user_from_token(
 
 
 def get_wallets_from_token(
-    request: Request,
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> list[Wallet]:
     """
@@ -139,7 +136,7 @@ def get_wallets_from_token(
     request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
     """
-    payload = valid_jwt(request, token)
+    payload = valid_jwt(token)
 
     wallets: dict | None = payload.get("verified_credentials")
     if not wallets:
@@ -166,15 +163,13 @@ def access_list(
     """
     If the JWT token is valid, returns the access list associated with the token
     Otherwise, raises an HTTPException with status code 401
-    request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
     """
 
     def helper(
-        request: Request,
         token: HTTPAuthorizationCredentials = Security(auth_scheme),
     ) -> None:
-        payload = valid_jwt(request, token)
+        payload = valid_jwt(token)
 
         # Access lists will be in lists field of payload
         # https://docs.dynamic.xyz/authentication-methods/auth-tokens

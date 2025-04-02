@@ -53,7 +53,6 @@ def test_jwt(
 def wallet_factory(
     client, user_factory, helper_encode_jwt
 ) -> Generator[Callable[..., Wallet], None, None]:
-    # wallet_ids: list[UUID] = []
     wallets: list[Wallet] = []
 
     def factory(**kwargs) -> Wallet:
