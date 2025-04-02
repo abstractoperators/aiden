@@ -2,7 +2,7 @@ import os
 from typing import Any, Callable
 from uuid import UUID
 
-from fastapi import HTTPException, Request, Security
+from fastapi import HTTPException, Security
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 from jwt import PyJWK, PyJWKClient, PyJWT
@@ -101,7 +101,6 @@ def valid_jwt(
 
 
 def get_user_from_token(
-    request: Request,
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> User:
     """
@@ -110,7 +109,7 @@ def get_user_from_token(
     request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
     """
-    payload = valid_jwt(request, token)
+    payload = valid_jwt(token)
 
     subject = payload.get("sub")
     if not subject:
