@@ -20,12 +20,10 @@ async function getResource<ResponseType>(
   {
     resourceId,
     query,
-    headers,
   } :
   {
     resourceId?: string,
     query?: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
-    headers?: Record<string, string>,
   } = {},
 ): Promise<ResponseType> {
   try {
@@ -33,7 +31,7 @@ async function getResource<ResponseType>(
     const params = query ? new URLSearchParams(snakify(query)) : undefined
     const url = params ? new URL(`${resourceUrl.href}?${params.toString()}`) : resourceUrl
 
-    const response = await fetch(url, { headers })
+    const response = await fetch(url);
 
     if (response.status === 404)
       throw new UrlResourceNotFoundError(url)
@@ -75,7 +73,6 @@ async function updateResource<ResponseType, RequestType = undefined>(
   baseUrl: URL | string,
   resourceId: string,
   body?: RequestType,
-  headers?: Record<string, string>,
 ): Promise<ResponseType> {
   try {
     const url = new URL(resourceId, baseUrl)
@@ -83,12 +80,9 @@ async function updateResource<ResponseType, RequestType = undefined>(
       url,
       {
         method: 'PATCH',
-        headers: body
-        ? {
+        headers: body ? {
           'Content-Type': 'application/json',
-          ...headers,
-        }
-        : headers,
+        } : undefined,
         body: body ? JSON.stringify(snakify(body)) : undefined,
       }
     )
