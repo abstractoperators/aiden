@@ -195,14 +195,14 @@ def runtime_factory(
 
     for runtime_id in runtime_ids:
         with Session() as session:
-            runtime: Runtime = crud.get_runtime(session, runtime_id)
+            runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+            if not runtime:
+                continue
 
             if runtime.agent:
                 auth = helper_encode_jwt(
-                    {"lists": ["admin"], "sub": str(runtime.agent.dynamic_id)}
+                    {"lists": ["admin"], "sub": str(runtime.agent.owner_id)}
                 )
-            if runtime.agent:
-                auth
             client.delete(
                 f"/runtimes/{runtime_id}", headers={"Authorization": f"Bearer {auth}"}
             )
@@ -219,8 +219,8 @@ def agent_factory(
 
     def factory(**kwargs) -> AgentPublic:
         if (owner_id := kwargs.get("owner_id")) is None:
-            owner: User = user_factory()
-            owner_id = owner.id
+            owner_default: User = user_factory()
+            owner_id = owner_default.id
         owner_dict = client.get(f"/users?user_id={owner_id}").json()
         owner: UserPublic = UserPublic.model_validate(owner_dict)
         owner_dynamic_id = owner.dynamic_id
@@ -476,11 +476,11 @@ async def test_agents(
     assert len(response_json) == 1
 
     response = client.get(f"/users?user_id={agent.owner_id}")
-    owner = UserPublic.model_validate(response.json())
-    assert owner.id == agent.owner_id
+    owner_public = UserPublic.model_validate(response.json())
+    assert owner_public.id == agent.owner_id
 
     response = client.get(
-        f"/agents?user_dynamic_id={owner.dynamic_id}",
+        f"/agents?user_dynamic_id={owner_public.dynamic_id}",
         headers={"Authorization": f"Bearer {auth}"},
     )
     assert response.status_code == 200

@@ -243,7 +243,7 @@ def test_runtimes(
     assert create_task is not None
     assert create_task.runtime_id == runtime_id
     assert create_task.celery_task_id == create_celery_task_uuid
-    gotten_create_task: RuntimeCreateTask = get_runtime_create_task(
+    gotten_create_task: RuntimeCreateTask | None = get_runtime_create_task(
         session=session,
         runtime_id=runtime_id,
     )
@@ -259,7 +259,7 @@ def test_runtimes(
     assert update_task is not None
     assert update_task.runtime_id == runtime_id
     assert update_task.celery_task_id == update_celery_task_id
-    gotten_update_task: RuntimeUpdateTask = get_runtime_update_task(
+    gotten_update_task: RuntimeUpdateTask | None = get_runtime_update_task(
         session=session,
         runtime_id=runtime_id,
     )
@@ -275,7 +275,7 @@ def test_runtimes(
     assert delete_task is not None
     assert delete_task.runtime_id == runtime_id
     assert delete_task.celery_task_id == delete_celery_task_id
-    gotten_delete_task: RuntimeDeleteTask = get_runtime_delete_task(
+    gotten_delete_task: RuntimeDeleteTask | None = get_runtime_delete_task(
         session=session,
         runtime_id=runtime_id,
     )

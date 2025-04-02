@@ -61,7 +61,7 @@ auth_scheme = HTTPBearer(
 
 def optional_jwt(
     token: HTTPAuthorizationCredentials | None = Security(auth_scheme),
-) -> dict[str, Any] | None:
+) -> HTTPAuthorizationCredentials | None:
     """ """
     return token
 
@@ -142,15 +142,20 @@ def get_wallets_from_token(
             detail="No verified credentials in token",
             status_code=401,
         )
-    addresses: list[str] = [credential.get("address") for credential in credentials]
-
+    addresses: list[str] = []
+    for credential in credentials:
+        if address := credential.get("address"):
+            addresses.append(address)
     # For now, assume the wallet already exists
 
     wallets: list[Wallet] = []
     with Session() as session:
         for address in addresses:
             # Not going to throw a 404 here cuz it's hacky af any how.
-            wallets.append(crud.get_wallet_by_public_key_hack(session, address))
+            wallet = crud.get_wallet_by_public_key(session, address)
+            if wallet is None:
+                continue
+            wallets.append(wallet)
 
     return [wallet for wallet in wallets if wallet is not None]
 

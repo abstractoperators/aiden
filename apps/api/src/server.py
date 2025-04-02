@@ -151,7 +151,7 @@ async def ping():
 def create_agent(
     agent: AgentBase,
     # Require that the user be signed in, but don't do any other verification
-    user: User = Security(get_user_from_token),
+    user: User = Security(get_user_from_token),  # noqa
 ) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
@@ -181,7 +181,6 @@ def get_agents_conditional_dep(
             detail="Token is required if user_id or user_dynamic_id is passed",
         )
     return get_user_from_token(
-        request=request,
         token=token,
     )
 
@@ -207,18 +206,18 @@ async def get_agents(
         )
     with Session() as session:
         if user_dynamic_id:
-            if not user or user_dynamic_id != user.dynamic_id:
+            if not user or user_dynamic_id != user.dynamic_id:  # noqa
                 raise HTTPException(
                     status_code=403,
-                    detail=f"You may not access Agents not owned by you. Wanted {user_dynamic_id}, logged in as {user.dynamic_id}",
+                    detail=f"You may not access Agents not owned by you. Wanted {user_dynamic_id}. Got {user.dynamic_id if user else 'no token passed'}",
                 )
-            user_id = user.id
+            user_id = user.id  # noqa
             agents = crud.get_agents_by_user_id(session, user_id)
         elif user_id:
             if not user or user_id != user.id:
                 raise HTTPException(
                     status_code=403,
-                    detail=f"You may not access Agents not owned by you. Wanted {user_id}, logged in as {user.id}",
+                    detail=f"You may not access Agents not owned by you. Wanted {user_id}. Got {user.id if user else 'no token passed'}",
                 )
             agents = crud.get_agents_by_user_id(session, user_id)
         else:
@@ -496,8 +495,10 @@ def start_agent(
     # Must block on both agent_id or runtime_id.
     # That is, there must not be a running task for either agent_id or runtime_id.
     try:
-        task_status_agent: TaskStatus = get_agent_start_task_status(agent_id=agent_id)
-        if (
+        task_status_agent: TaskStatus | None = get_agent_start_task_status(
+            agent_id=agent_id
+        )
+        if task_status_agent and (
             task_status_agent == TaskStatus.PENDING
             or task_status_agent == TaskStatus.STARTED
         ):
@@ -510,10 +511,10 @@ def start_agent(
             raise e
 
     try:
-        task_status_runtime: TaskStatus = get_agent_start_task_status(
+        task_status_runtime: TaskStatus | None = get_agent_start_task_status(
             runtime_id=runtime_id
         )
-        if (
+        if task_status_runtime and (
             task_status_runtime == TaskStatus.PENDING
             or task_status_runtime == TaskStatus.STARTED
         ):

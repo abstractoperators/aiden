@@ -3,12 +3,10 @@ import os
 import signal
 import subprocess
 from contextlib import asynccontextmanager
-from typing import Annotated
 
 import fastapi
 import requests
 from dotenv import dotenv_values, load_dotenv
-from fastapi import Body
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, SecretStr
@@ -41,13 +39,10 @@ class Env(BaseModel):
 
 
 class Character(BaseModel):
-    character_json: dict = Field(
-        {}, description="Character json for an eliza agent", required=True
-    )
+    character_json: dict = Field({}, description="Character json for an eliza agent")
     envs: str = Field(
         "",
         description="A string representing an env file containing environment variables for the eliza agent",
-        required=True,
     )
 
 
@@ -92,7 +87,7 @@ def get_character_status() -> CharacterStatus:
 
 @router.post("/character/start")
 def start_character(
-    character: Character = Annotated[Character, Body(..., embed=True)],
+    character: Character,
 ) -> CharacterStatus:
     """
     Attempts to start a character and returns its status after a wait.
