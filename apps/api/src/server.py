@@ -387,21 +387,6 @@ def get_runtime(runtime_id: UUID) -> Runtime:
     return runtime
 
 
-@app.get("/tasks/{task_id}")
-def get_task_status(task_id: UUID) -> TaskStatus:
-    """
-    Returns the status of a task by id.
-    Raises a 404 if the task is not found.
-    """
-    # TODO: Include more info like traceback if failed.
-    with Session() as session:
-        task = crud.get_task(session, task_id)
-        if not task:
-            raise HTTPException(status_code=404, detail="Task not found")
-
-        return TaskStatus(task["status"])
-
-
 @app.get("/tasks/start-agent")
 def get_agent_start_task_status(
     agent_id: UUID | None = None,
@@ -414,6 +399,7 @@ def get_agent_start_task_status(
     If not found, raises a 404
     Otherwise, it returns the status of the task.
     """
+    logger.error("foo")
     if not agent_id and not runtime_id:
         raise ValueError("At least one of agent_id or runtime_id must be provided")
 
@@ -437,9 +423,25 @@ def get_agent_start_task_status(
                 runtime_id=runtime_id,
             )
         agent_start_task = obj_or_404(agent_start_task, AgentStartTask)
+        logger.info(agent_start_task)
         task_id = agent_start_task.celery_task_id
-
+        logger.info(task_id)
         return get_task_status(task_id)
+
+
+@app.get("/tasks/{task_id}")
+def get_task_status(task_id: UUID) -> TaskStatus:
+    """
+    Returns the status of a task by id.
+    Raises a 404 if the task is not found.
+    """
+    # TODO: Include more info like traceback if failed.
+    with Session() as session:
+        task = crud.get_task(session, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        return TaskStatus(task["status"])
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
