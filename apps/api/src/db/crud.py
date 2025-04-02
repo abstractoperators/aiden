@@ -156,6 +156,21 @@ def get_wallets_by_owner(session: Session, owner_id: UUID) -> Sequence[Wallet]:
     return session.exec(stmt).all()
 
 
+def get_wallet_by_public_key_hack(
+    session: Session,
+    public_key: str,
+) -> Wallet | None:
+    """
+    TODO: Remove and replace with identification w/ address + chai9n
+    """
+    stmt = (
+        select(Wallet)
+        .where(Wallet.public_key == public_key)
+        .where(Wallet.chain == "EVM")
+    )
+    return session.exec(stmt).first()
+
+
 def get_wallet_by_public_key(
     session: Session,
     public_key: str,

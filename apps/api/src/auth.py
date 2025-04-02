@@ -132,28 +132,27 @@ def get_wallets_from_token(
     If the JWT token is valid, returns the wallets associated with the token
     TODO: Associate wallets with User object in crud
     Otherwise, raises an HTTPException with status code 401
-    request (Request): FastAPI Request object TODO Remove it after debugging
     token (str): JWT token to decode representing a user claim.
     """
     payload = valid_jwt(token)
 
-    wallets: dict | None = payload.get("verified_credentials")
-    if not wallets:
-        raise ValueError()
-
-    address_and_chains = []
-    for wallet in wallets:
-        address_and_chains.append((wallet.get("address"), wallet.get("chain")))
+    credentials: list[dict] | None = payload.get("verified_credentials")
+    if not credentials:
+        raise HTTPException(
+            detail="No verified credentials in token",
+            status_code=401,
+        )
+    addresses: list[str] = [credential.get("address") for credential in credentials]
 
     # For now, assume the wallet already exists
-    crud_wallets: list[Wallet] = []
+
+    wallets: list[Wallet] = []
     with Session() as session:
-        for address, chain in address_and_chains:
-            crud_wallet = obj_or_404(
-                crud.get_wallet_by_public_key(session, address, chain), Wallet
-            )
-            crud_wallets.append(crud_wallet)
-    return crud_wallets
+        for address in addresses:
+            # Not going to throw a 404 here cuz it's hacky af any how.
+            wallets.append(crud.get_wallet_by_public_key_hack(session, address))
+
+    return [wallet for wallet in wallets if wallet is not None]
 
 
 def access_list(
