@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Control,
+  FieldArrayWithId,
   useFieldArray,
   UseFieldArrayRemove,
   useForm,
@@ -85,6 +86,11 @@ const knowledgeTitles = {
   "id": "ID",
   "path": "Path",
   "content": "Content",
+}
+const styleTitles = {
+  "all": "All",
+  "chat": "Chat",
+  "post": "Post",
 }
 const characterSchema = z.object({
   name: z.string(),
@@ -272,7 +278,7 @@ export default function CreationForm() {
           </AccordionItem>
 
         {Object.entries(stringListTitles).map(([name, title]) => (
-          <DynamicList
+          <AccordionList
             key={name}
             title={title}
             name={name}
@@ -307,7 +313,7 @@ export default function CreationForm() {
           </AccordionItem>
 
           <Knowledge control={control} />
-          {/* TODO: style */}
+          <Style control={control} />
 
         </Accordion>
 
@@ -368,13 +374,9 @@ function MessageExample({
 
   return (
     <div className={cn(borderStyle, "p-4 space-y-8")}>
-      <h3 className="font-semibold">Message Example {exampleIndex + 1}</h3>
       <div className="space-y-2">
       {fields.map((field, messageIndex) => (
         <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
-          <h4 className="font-semibold">
-            Message Example {exampleIndex + 1}.{messageIndex + 1}
-          </h4>
           <div>
           {Object.entries(messageExampleTitles).map(([name, title]) => (
             <FormField
@@ -435,9 +437,6 @@ function Knowledge({ control }: { control: Control<FormType> }) {
         <div className="space-y-4">
         {fields.map((formField, index) => (
           <div key={formField.id} className={cn(borderStyle, "space-y-8 p-4")}>
-            <h4 className="font-semibold">
-              Knowledge {index + 1}
-            </h4>
             <div>
             {Object.entries(knowledgeTitles).map(([name, title]) => (
               <FormField
@@ -474,7 +473,36 @@ function Knowledge({ control }: { control: Control<FormType> }) {
   )
 }
 
-function DynamicList({
+function Style({ control }: { control: Control<FormType> }) {
+  const arrays = Object.entries(styleTitles)
+    .map(([name, title]) => {
+      const fullName = `style.${name}`
+      const { fields, append, remove } = useFieldArray({
+      // @ts-expect-error TS not recognizing other property types
+        control, name: fullName,
+      })
+      return { name: fullName, title, fields, append, remove }
+    })
+
+  return (
+    <AccordionItem value="Style" className={accordionItemStyle}>
+      <AccordionTrigger className="font-semibold text-d6">Style</AccordionTrigger>
+      <AccordionContent className="space-y-4">
+      {arrays.map(({ name, title, append, ...props }) => (
+        <div key={name} className={cn(borderStyle, "space-y-8 p-4")}>
+          <h3 className="font-semibold">{title}</h3>
+          <FieldArray name={name} title={title} {...props} />
+          {/* @ts-expect-error TS not recognizing other property types */}
+          <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
+          {/* TODO: figure out why empty string yields unexpected behavior */}
+        </div>
+      ))}
+      </AccordionContent>
+    </AccordionItem>
+  )
+}
+
+function AccordionList({
   title,
   name,
   control,
@@ -493,35 +521,51 @@ function DynamicList({
     <AccordionItem value={title} className={accordionItemStyle}>
       <AccordionTrigger className="font-semibold text-d6">{title}</AccordionTrigger>
       <AccordionContent className="space-y-8">
-        <div className="space-y-4">
-        {fields.map((formField, index) => (
-          <FormField
-            key={formField.id}
-            name={`${name}.${index}`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{title} {index + 1}</FormLabel>
-                <FormControl>
-                  <Input
-                    className="placeholder:text-neutral-400"
-                    placeholder={title}
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription />
-                <FormMessage />
-                <Button type="button" variant="destructive" onClick={() => remove(index)}>
-                  Remove
-                </Button>
-              </FormItem>
-            )}
-          />
-        ))}
-        </div>
+        <FieldArray name={name} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
         <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
         {/* TODO: figure out why empty string yields unexpected behavior */}
       </AccordionContent>
     </AccordionItem>
+  )
+}
+
+function FieldArray({
+  name,
+  title,
+  fields,
+  remove,
+}: {
+  name: string,
+  title: string,
+  fields: FieldArrayWithId<FormType>[],
+  remove: UseFieldArrayRemove,
+}) {
+  return (
+    <div className="space-y-4">
+    {fields.map((formField, index) => (
+      <FormField
+        key={formField.id}
+        name={`${name}.${index}`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel></FormLabel>
+            <FormControl>
+              <Input
+                className="placeholder:text-neutral-400"
+                placeholder={title}
+                {...field}
+              />
+            </FormControl>
+            <FormDescription />
+            <FormMessage />
+            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+              Remove
+            </Button>
+          </FormItem>
+        )}
+      />
+    ))}
+    </div>
   )
 }
