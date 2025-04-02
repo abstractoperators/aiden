@@ -17,7 +17,6 @@ import {
   useFieldArray,
   UseFieldArrayRemove,
   useForm,
-  UseFormRegister,
 } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -76,6 +75,16 @@ const stringListSchema = z.object({
   topics: z.string().array().min(1),
 })
 
+const messageExampleTitles = {
+  "user": "User",
+  "content.text": "Text",
+  "context.action": "Action (Optional)",
+}
+const knowledgeTitles = {
+  "id": "ID",
+  "path": "Path",
+  "content": "Content",
+}
 const characterSchema = z.object({
   name: z.string(),
   messageExamples: z.object({
@@ -132,7 +141,7 @@ export default function CreationForm() {
       style: { all: [""], chat: [""], post: [""], }
     }
   })
-  const { control, handleSubmit, register } = form
+  const { control, handleSubmit } = form
 
   const {
     fields: messageExamplesFields,
@@ -141,14 +150,6 @@ export default function CreationForm() {
   } = useFieldArray({
     control,
     name: "messageExamples",
-  })
-  const {
-    fields: knowledgeFields,
-    append: knowledgeAppend,
-    remove: knowledgeRemove,
-  } = useFieldArray({
-    control,
-    name: "knowledge",
   })
 
   // TODO: set up sei and eth addresses if undefined
@@ -255,7 +256,11 @@ export default function CreationForm() {
                 render={({field}) => (
                   <FormItem>
                     <FormControl>
-                      <Input placeholder="Name" {...field} />
+                      <Input
+                        className="placeholder:text-neutral-400"
+                        placeholder="Name"
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>Name of the agent being built</FormDescription>
                     <FormMessage />
@@ -285,7 +290,6 @@ export default function CreationForm() {
                   key={example.id}
                   control={control}
                   exampleIndex={exampleIndex}
-                  register={register}
                   parentRemove={messageExamplesRemove}
                 />
               ))}
@@ -300,6 +304,9 @@ export default function CreationForm() {
               </Button>
             </AccordionContent>
           </AccordionItem>
+
+          <Knowledge control={control} />
+          {/* TODO: style */}
 
         </Accordion>
 
@@ -331,10 +338,9 @@ export default function CreationForm() {
             <FormItem>
               <FormLabel>.env</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                />
+                <Input {...field} />
               </FormControl>
+              <FormDescription />
               <FormMessage />
             </FormItem>
           )}
@@ -348,12 +354,10 @@ export default function CreationForm() {
 function MessageExample({
   exampleIndex,
   control,
-  register,
   parentRemove,
 }: {
   exampleIndex: number,
   control: Control<FormType>,
-  register: UseFormRegister<FormType>,
   parentRemove: UseFieldArrayRemove,
 }) {
   const { fields, append, remove } = useFieldArray({
@@ -367,29 +371,32 @@ function MessageExample({
       <div className="space-y-2">
       {fields.map((field, messageIndex) => (
         <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
-          <div className="space-y-2">
-            <Input
-              {...register(`messageExamples.${exampleIndex}.${messageIndex}.user`)}
-              className="placeholder:text-neutral-400"
-              placeholder="User"
+          <h4 className="font-semibold">
+            Message Example {exampleIndex + 1}.{messageIndex + 1}
+          </h4>
+          <div>
+          {Object.entries(messageExampleTitles).map(([name, title]) => (
+            <FormField
+              key={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
+              name={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{title}</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="placeholder:text-neutral-400"
+                      placeholder={title}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <Input
-              {...register(`messageExamples.${exampleIndex}.${messageIndex}.content.text`)}
-              className="placeholder:text-neutral-400"
-              placeholder="Text"
-            />
-            <Input
-              {...register(`messageExamples.${exampleIndex}.${messageIndex}.content.action`)}
-              className="placeholder:text-neutral-400"
-              placeholder="Action (Optional)"
-            />
+          ))}
           </div>
-
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => remove(messageIndex)}
-          >
+          <Button type="button" variant="destructive" onClick={() => remove(messageIndex)}>
             Remove Message
           </Button>
         </div>
@@ -411,6 +418,58 @@ function MessageExample({
         </Button>
       </div>
     </div>
+  )
+}
+
+function Knowledge({ control }: { control: Control<FormType> }) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "knowledge",
+  })
+
+  return (
+    <AccordionItem value="Knowledge">
+      <AccordionTrigger className="font-semibold text-d6">Knowledge</AccordionTrigger>
+      <AccordionContent className="space-y-8">
+        <div className="space-y-4">
+        {fields.map((formField, index) => (
+          <div key={formField.id} className={cn(borderStyle, "space-y-8 p-4")}>
+            <h4 className="font-semibold">
+              Knowledge {index + 1}
+            </h4>
+            <div>
+            {Object.entries(knowledgeTitles).map(([name, title]) => (
+              <FormField
+                key={`knowledge.${index}.${name}`}
+                name={`knowledge.${index}.${name}`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{title}</FormLabel>
+                    <FormControl>
+                      <Input
+                        className="placeholder:text-neutral-400"
+                        placeholder={title}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+            </div>
+            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+              Remove Knowledge
+            </Button>
+          </div>
+        ))}
+        </div>
+        <Button type="button" onClick={() => append({id: "", path: "", content: ""})}>
+          Add Knowledge
+        </Button>
+      </AccordionContent>
+    </AccordionItem>
   )
 }
 
@@ -439,13 +498,15 @@ function DynamicList({
             name={`${name}.${index}`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel></FormLabel>
+                <FormLabel>{title} {index + 1}</FormLabel>
                 <FormControl>
                   <Input
-                    {...field}
+                    className="placeholder:text-neutral-400"
                     placeholder={title}
+                    {...field}
                   />
                 </FormControl>
+                <FormDescription />
                 <FormMessage />
                 <Button type="button" variant="destructive" onClick={() => remove(index)}>
                   Remove
