@@ -28,6 +28,7 @@ from src.db.models import (
     RuntimeUpdateTask,
     RuntimeUpdateTaskBase,
     Token,
+    TokenBase,
     User,
     UserBase,
     UserUpdate,
@@ -226,20 +227,23 @@ async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     ticker = token_request.ticker
 
     # Deploy the token
-    contract_address, contract_abi = await deploy_token(name, ticker)
-    return None
-    # with Session() as session:
-    #     token = crud.create_token(
-    #         session,
-    #         TokenBase(
-    #             name=name,
-    #             ticker=ticker,
-    #             evm_contract_address=contract_address,
-    #             abi=contract_abi,
-    #         ),
-    #     )
+    await deploy_token(name, ticker)
+    contract_address, contract_abi = (
+        await deploy_token(name, ticker),
+        [{"not a real abi": "temporary not a real abi"}],
+    )
+    with Session() as session:
+        token = crud.create_token(
+            session,
+            TokenBase(
+                name=name,
+                ticker=ticker,
+                evm_contract_address=contract_address,
+                abi=contract_abi,
+            ),
+        )
 
-    # return token
+    return token
 
 
 @app.get("/tokens")
