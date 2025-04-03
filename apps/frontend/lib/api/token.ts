@@ -37,10 +37,17 @@ async function createToken(tokenPayload: TokenCreationRequest): Promise<Token> {
   return createResource<Token, TokenCreationRequest>(baseUrlPath, tokenPayload)
 }
 
+async function getTokens(): Promise<Token[]> {
+  return getResource<Token[]>({
+    baseUrl: baseUrlPath,
+  })
+};
+
 export {
   getToken,
   saveToken,
   createToken,
+  getTokens
 }
 
 export type {

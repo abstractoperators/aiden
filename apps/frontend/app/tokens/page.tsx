@@ -1,6 +1,4 @@
-import { TokenLaunch } from "@/components/token";
-import { BuyWithSei } from "@/components/token";
-import { SellForSei, Balance } from "@/components/token";
+import TokensTabs from "./tabs"
 
 export default function TokensDashboard() {
     return (
@@ -8,19 +6,7 @@ export default function TokensDashboard() {
             <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
                 Tokens
             </h1>
-            <TokenLaunch
-                tokenName="foo"
-                tokenTicker="bar" >
-            </TokenLaunch>
-            <BuyWithSei
-                tokenAddress="0x889AF18DbBeE2e37F085d8916f7F0Aa79B8f1944">
-            </BuyWithSei>
-            <SellForSei
-                tokenAddress="0x889AF18DbBeE2e37F085d8916f7F0Aa79B8f1944">
-            </SellForSei>
-            <Balance
-                tokenAddress="0x889AF18DbBeE2e37F085d8916f7F0Aa79B8f1944">
-            </Balance>
+            <TokensTabs />
         </main>
     )
 }
