@@ -1,14 +1,11 @@
 
 'use client'
 
-import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
-import { Star } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import type { Token } from "@/lib/api/token"
-// import type { ClientAgent } from "@/lib/api/agent"
 
 export const columns: ColumnDef<Token>[] = [
     {
@@ -44,7 +41,7 @@ export const columns: ColumnDef<Token>[] = [
         ),
         cell: ({ row }) => (
             <Link
-                href={`/agents/${row.original.id}`}
+                href={`/tokens/${row.original.id}`}
             >
                 <hgroup>
                     <h2 className="text-base">{row.getValue("name")}</h2>

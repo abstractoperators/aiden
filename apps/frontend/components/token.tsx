@@ -17,9 +17,7 @@ const ERC20_ABI = ERC20_JSON.abi;
 
 
 const TokenLaunch: FC<{
-    tokenName: string;
-    tokenTicker: string;
-}> = ({ tokenName, tokenTicker }) => {
+}> = ({ }) => {
     const { primaryWallet } = useDynamicContext();
     const [status, setStatus] = useState<{
         loading: boolean;
@@ -113,13 +111,11 @@ const TokenLaunch: FC<{
                 type="text"
                 name="tokenName"
                 placeholder="Token Name"
-                defaultValue={tokenName}
             />
             <input
                 type="text"
                 name="tokenTicker"
                 placeholder="Token Ticker"
-                defaultValue={tokenTicker}
             />
             <button type="submit"> Launch Token </button>
         </form>

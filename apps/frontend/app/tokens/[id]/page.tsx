@@ -17,10 +17,6 @@ export default async function Token({
             <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
                 Tokens
             </h1>
-            <TokenLaunch
-                tokenName={name}
-                tokenTicker={ticker}>
-            </TokenLaunch>
             <BuyWithSei
                 tokenAddress={address}>
             </BuyWithSei>
