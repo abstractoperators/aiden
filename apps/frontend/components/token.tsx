@@ -9,7 +9,6 @@ import { FormEventHandler } from "react";
 import BONDING_JSON from "@/lib/abis/bonding.json";
 import ERC20_JSON from "@/lib/abis/ferc20.json";
 import { saveToken } from "@/lib/api/token";
-import { useEffect } from "react";
 
 const BONDING_CONTRACT_ADDRESS = "0xDdFF841E7bb9c2180D160eE5E11663ca127Fd21e";
 const BONDING_ABI = BONDING_JSON.abi;
@@ -18,7 +17,7 @@ const ERC20_ABI = ERC20_JSON.abi;
 const TokenLaunch: FC = () => {
     const { primaryWallet } = useDynamicContext();
 
-    if (!primaryWallet || !isEthereumWallet(primaryWallet)) return (<>No wallet</>);
+    if (!primaryWallet || !isEthereumWallet(primaryWallet)) return (<>Please sign into an Ethereum wallet.</>);
 
 
     const onSubmit: FormEventHandler = async (event) => {
@@ -70,7 +69,7 @@ const TokenLaunch: FC = () => {
 
 
             const launchedEvent = launchedEvents[0];
-            // @ts-ignore
+            // @ts-expect-error
             const tokenAddress = launchedEvent.args[0] as `0x${string}`;
             console.log("Token launched at:", tokenAddress);
 

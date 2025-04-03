@@ -41,6 +41,7 @@ import { TaskStatus } from "@/lib/api/task"
 import { toast } from "@/hooks/use-toast"
 import { getRuntime } from "@/lib/api/runtime"
 import { getUser } from "@/lib/api/user"
+import Link from "next/link"
 
 const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
 const borderStyle = "rounded-xl border border-black dark:border-white"
@@ -421,14 +422,19 @@ function TokenId() {
                 />
               </FormControl>
               <FormDescription>
-                Link a token's actual uuid here.
+                Link a token actual uuid here.
               </FormDescription>
-              <a
-                href="/tokens/launch"
-                className="text-blue-600 underline text-sm mt-1 inline-block"
+              <Link
+                href="/tokens"
+                className={cn(
+                  "text-blue-600 underline text-sm mt-1",
+                  "hover:text-blue-700 dark:hover:text-blue-500",
+                  "transition duration-300",
+                  "inline-block",
+                )}
               >
-                Need to deploy a new token? Click here.
-              </a>
+                Need to find a token? Click here.
+              </Link>
               <FormMessage />
             </FormItem>
           )}
