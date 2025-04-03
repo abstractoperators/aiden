@@ -39,10 +39,16 @@ interface AgentBase {
 
 type AgentUpdate = Partial<AgentBase>
 
-interface Agent extends AgentBase {
+interface Agent {
   id: string
   runtime?: Runtime | null
   token?: Token | null
+  envFile: { key: string, value: string | null }[]
+  elizaAgentId?: string | null
+  ownerId: string
+  runtimeId?: string | null
+  tokenId?: string | null
+  characterJson: Character
 }
 
 async function getAgent(agentId: string): Promise<Agent> {

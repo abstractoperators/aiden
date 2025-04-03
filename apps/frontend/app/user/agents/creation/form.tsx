@@ -21,7 +21,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { accordionItemStyle, EnvironmentVariables, envSchema, onSubmitBase, SubmitButton } from "@/components/agent-form";
+import {
+  accordionItemStyle,
+  EnvironmentVariables,
+  envSchema,
+  onSubmitCreate,
+  SubmitButton,
+} from "@/components/agent-form";
 
 const MAX_FILE_SIZE = 5000000;
 const uploadSchema = z.object({
@@ -72,8 +78,8 @@ function UploadForm() {
     if (typeof(fileText) === "undefined")
       return
 
-    const characterJson = JSON.parse(fileText) // TODO: catch SyntaxError
-    return onSubmitBase({ dynamicId: userId, characterJson, envFile })
+    const character = JSON.parse(fileText) // TODO: catch SyntaxError
+    return onSubmitCreate({ dynamicId: userId, character, envFile })
   }
 
   return (

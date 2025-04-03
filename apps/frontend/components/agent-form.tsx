@@ -31,10 +31,15 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { createAgent, getAgentStartTaskStatus, startAgent } from "@/lib/api/agent"
+import {
+  createAgent,
+  getAgentStartTaskStatus,
+  startAgent,
+  updateAgent,
+} from "@/lib/api/agent"
 import { TaskStatus } from "@/lib/api/task"
 import { toast } from "@/hooks/use-toast"
-import { createRuntime, getRuntimes, Runtime } from "@/lib/api/runtime"
+import { getRuntime } from "@/lib/api/runtime"
 import { getUser } from "@/lib/api/user"
 
 const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
@@ -68,7 +73,15 @@ const integrationsSchema = z.object({
 const formSchema = characterSchema.merge(envSchema).merge(integrationsSchema)
 type FormType = z.infer<typeof formSchema>
 
-function AgentForm({ defaultValues } : { defaultValues?: FormType }) {
+function AgentForm({
+  defaultValues,
+  agentId,
+  runtimeId,
+} : {
+  defaultValues?: FormType,
+  agentId?: string,
+  runtimeId?: string,
+}) {
   const { user } = useDynamicContext()
   if (!user)
     throw new Error(`User ${user} does not exist!`)
@@ -105,11 +118,12 @@ function AgentForm({ defaultValues } : { defaultValues?: FormType }) {
   })
 
   // TODO: set up sei and eth addresses if undefined
+  const onSubmitBase = agentId ? onSubmitEdit(agentId, runtimeId) : onSubmitCreate
 
   async function onSubmit(formData: FormType) {
     console.debug("AgentForm", formData)
     const {env: envFile, twitter, ...data} = formData
-    const characterJson = {
+    const character = {
       modelProvider: "openai",
       clients: twitter ? ["twitter"] : [],
       settings: {
@@ -119,7 +133,7 @@ function AgentForm({ defaultValues } : { defaultValues?: FormType }) {
       ...data,
     }
 
-    return onSubmitBase({dynamicId: userId, characterJson, envFile})
+    return onSubmitBase({ dynamicId: userId, character, envFile })
   }
 
   return (
@@ -426,41 +440,28 @@ function SubmitButton() {
   )
 }
 
-async function onSubmitBase({
+async function onSubmitCreate({
   dynamicId,
-  characterJson,
+  character,
   envFile,
 } : {
   dynamicId: string,
-  characterJson: Character,
+  character: Character,
   envFile: string,
 }) {
-    console.debug("Character JSON", characterJson)
+    console.debug("Character", character)
 
     try {
       const apiUser = await getUser({ dynamicId })
 
       const agentPayload = {
         ownerId: apiUser.id,
-        characterJson: characterJson,
+        characterJson: character,
         envFile,
       }
 
       const agentPromise = createAgent(agentPayload)
-      const unusedRuntimes = await getRuntimes()
-      // if no unused runtime, get a random one
-      // TODO: delete once getlatestruntime is implemented on API
-      const runtime: Runtime = unusedRuntimes.length ?
-        unusedRuntimes[0] :
-        await (async () => {
-          console.log("No unused runtimes to start an agent, getting a random runtime")
-          const runtimes: Runtime[] = (
-            await getRuntimes(false)
-            .then(list => list.length ? list : Promise.all([createRuntime()]))
-          )
-          return runtimes[Math.floor(Math.random() * runtimes.length)]
-        })()
-
+      const runtime = await getRuntime()
       const { id: agentId } = await agentPromise
       startAgent(agentId, runtime.id)
       toast({
@@ -517,10 +518,91 @@ async function onSubmitBase({
     }
 }
 
+function onSubmitEdit(agentId: string, runtimeId?: string) {
+  async function onSubmitEditHelper({
+    dynamicId,
+    character,
+    envFile,
+  } : {
+    dynamicId: string,
+    character: Character,
+    envFile: string,
+  }) {
+    console.debug("Character", character)
+
+    try {
+      const apiUser = await getUser({ dynamicId })
+
+      const agentPayload = {
+        ownerId: apiUser.id,
+        characterJson: character,
+        envFile,
+      }
+
+      // update and (re)start
+      updateAgent(agentId, agentPayload)
+      runtimeId = runtimeId ?? (await getRuntime()).id
+      startAgent(agentId, runtimeId)
+      toast({
+        title: "Agent Updated!",
+        description: "Agent has been updated, but is still waiting to start up.",
+      })
+
+      // TODO: configurable maxTries
+      // TODO: configurable delay (in ms)
+      const delay = 30000
+      const maxTries = 15
+      const arr = [...Array(maxTries).keys()]
+      startLoop: for (const i of arr) {
+        console.debug(
+          "Waiting for agent", agentId,
+          "to start up for runtime", runtimeId,
+        )
+
+        const status = await getAgentStartTaskStatus(
+          agentId,
+          runtimeId,
+          delay,
+        )
+        switch (status) {
+          case TaskStatus.SUCCESS:
+            console.log(
+              "Agent", agentId,
+              "successfully started on", runtimeId,
+            )
+            toast({
+              title: "Success!",
+              description: "Agent defined and started! You can now fully interact with it.",
+            })
+            break startLoop;
+          case TaskStatus.FAILURE:
+            throw new Error("Agent Start Task Status failed!!!")
+          case TaskStatus.PENDING:
+          case TaskStatus.STARTED:
+            toast({
+              title: "Still waiting for agent to start..."
+            })
+        }
+
+        if (i === maxTries - 1)
+          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
+      }
+    } catch (error) {
+      toast({
+        title: "Something went wrong. Please try again",
+      });
+      console.error(error);
+    }
+  }
+
+  return onSubmitEditHelper
+}
+
 export {
   accordionItemStyle,
   envSchema,
-  onSubmitBase,
+  onSubmitCreate,
+  onSubmitEdit,
   EnvironmentVariables,
   SubmitButton,
 }
