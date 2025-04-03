@@ -31,7 +31,7 @@ export default async function AgentEdit({
       />
     </div> : <div className="my-16 mx-16">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl my-8">
-        You don't own agent {characterJson.name}!
+        You don&#39;t own agent {characterJson.name}!
       </h1>
     </div>
   )
