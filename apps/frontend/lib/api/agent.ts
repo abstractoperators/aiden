@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from "next/cache"
-import { createResource, fromApiEndpoint, getResource } from "./common"
+import { createResource, fromApiEndpoint, getResource, updateResource } from "./common"
 import { Runtime } from "./runtime"
 import { getToken, Token } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
@@ -36,6 +36,8 @@ interface AgentBase {
   characterJson: Character
   envFile: string
 }
+
+type AgentUpdate = Partial<AgentBase>
 
 interface Agent extends AgentBase {
   id: string
@@ -131,6 +133,16 @@ async function getIncubating(
   return getEnlightened(query)
 }
 
+async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<Agent> {
+  const ret = updateResource<Agent, AgentUpdate>({
+    baseUrl: baseUrlSegment,
+    resourceId: agentId,
+    body: agentUpdate
+  })
+  revalidatePath(AGENT_PATH)
+  return ret
+}
+
 export {
   createAgent,
   getAgent,
@@ -138,6 +150,7 @@ export {
   getIncubating,
   getAgentStartTaskStatus,
   startAgent,
+  updateAgent,
 }
 
 export type {
