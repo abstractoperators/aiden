@@ -52,7 +52,7 @@ const stringListTitles = {
   "postExamples": "Post Examples",
   "adjectives": "Adjectives",
   "topics": "Topics",
- }
+}
 const messageExampleTitles = {
   "user": "User",
   "content.text": "Text",
@@ -70,14 +70,18 @@ const envSchema = z.object({
 const integrationsSchema = z.object({
   twitter: z.boolean()
 })
-const formSchema = characterSchema.merge(envSchema).merge(integrationsSchema)
+const tokenSchema = z.object({
+  tokenId: z.string(),
+}) // idk don't use id? idgaf.
+
+const formSchema = characterSchema.merge(envSchema).merge(integrationsSchema).merge(tokenSchema)
 type FormType = z.infer<typeof formSchema>
 
 function AgentForm({
   defaultValues,
   agentId,
   runtimeId,
-} : {
+}: {
   defaultValues?: FormType,
   agentId?: string,
   runtimeId?: string,
@@ -122,7 +126,7 @@ function AgentForm({
 
   async function onSubmit(formData: FormType) {
     console.debug("AgentForm", formData)
-    const {env: envFile, twitter, ...data} = formData
+    const { env: envFile, tokenId, twitter, ...data } = formData
     const character = {
       modelProvider: "openai",
       clients: twitter ? ["twitter"] : [],
@@ -133,7 +137,8 @@ function AgentForm({
       ...data,
     }
 
-    return onSubmitBase({ dynamicId: userId, character, envFile })
+
+    return onSubmitBase({ dynamicId: userId, character, envFile, tokenId })
   }
 
   return (
@@ -145,7 +150,7 @@ function AgentForm({
             <AccordionContent>
               <FormField
                 name="name"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel></FormLabel>
                     <FormControl>
@@ -163,14 +168,14 @@ function AgentForm({
             </AccordionContent>
           </AccordionItem>
 
-        {Object.entries(stringListTitles).map(([name, title]) => (
-          <AccordionList
-            key={name}
-            title={title}
-            name={name}
-            control={control}
-          />
-        ))}
+          {Object.entries(stringListTitles).map(([name, title]) => (
+            <AccordionList
+              key={name}
+              title={title}
+              name={name}
+              control={control}
+            />
+          ))}
 
           <AccordionItem value="Message Examples" className={accordionItemStyle}>
             <AccordionTrigger className="font-semibold text-d6">
@@ -178,14 +183,14 @@ function AgentForm({
             </AccordionTrigger>
             <AccordionContent className="space-y-8">
               <div className="space-y-4">
-              {messageExamplesFields.map((example, exampleIndex) => (
-                <MessageExample
-                  key={example.id}
-                  control={control}
-                  exampleIndex={exampleIndex}
-                  parentRemove={messageExamplesRemove}
-                />
-              ))}
+                {messageExamplesFields.map((example, exampleIndex) => (
+                  <MessageExample
+                    key={example.id}
+                    control={control}
+                    exampleIndex={exampleIndex}
+                    parentRemove={messageExamplesRemove}
+                  />
+                ))}
               </div>
               <Button
                 type="button"
@@ -206,7 +211,7 @@ function AgentForm({
             <AccordionContent>
               <FormField
                 name="twitter"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-start space-x-2">
                     <FormControl>
                       <Checkbox
@@ -222,6 +227,8 @@ function AgentForm({
               />
             </AccordionContent>
           </AccordionItem>
+
+          <TokenId />
 
         </Accordion>
 
@@ -248,35 +255,35 @@ function MessageExample({
   return (
     <div className={cn(borderStyle, "p-4 space-y-8")}>
       <div className="space-y-2">
-      {fields.map((field, messageIndex) => (
-        <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
-          <div>
-          {Object.entries(messageExampleTitles).map(([name, title]) => (
-            <FormField
-              key={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
-              name={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{title}</FormLabel>
-                  <FormControl>
-                    <Input
-                      className="placeholder:text-neutral-400"
-                      placeholder={title}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
+        {fields.map((field, messageIndex) => (
+          <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
+            <div>
+              {Object.entries(messageExampleTitles).map(([name, title]) => (
+                <FormField
+                  key={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
+                  name={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{title}</FormLabel>
+                      <FormControl>
+                        <Input
+                          className="placeholder:text-neutral-400"
+                          placeholder={title}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
+            <Button type="button" variant="destructive" onClick={() => remove(messageIndex)}>
+              Remove Message
+            </Button>
           </div>
-          <Button type="button" variant="destructive" onClick={() => remove(messageIndex)}>
-            Remove Message
-          </Button>
-        </div>
-      ))}
+        ))}
       </div>
       <div className="flex flex-row justify-between">
         <Button
@@ -299,10 +306,10 @@ function MessageExample({
 
 function Style({ control }: { control: Control<FormType> }) {
   const getFullName = (name: string) => `style.${name}`
-  function StyleHelper({name, title}: {name: string, title: string}) {
+  function StyleHelper({ name, title }: { name: string, title: string }) {
     const fullName = getFullName(name)
     const { fields, append, remove } = useFieldArray({
-    // @ts-expect-error TS not recognizing other property types
+      // @ts-expect-error TS not recognizing other property types
       control, name: fullName,
     })
     return (
@@ -320,9 +327,9 @@ function Style({ control }: { control: Control<FormType> }) {
     <AccordionItem value="Style" className={accordionItemStyle}>
       <AccordionTrigger className="font-semibold text-d6">Style</AccordionTrigger>
       <AccordionContent className="space-y-4">
-      {Object.entries(styleTitles).map(([ name, title ]) => (
-        <StyleHelper key={getFullName(name)} name={name} title={title} />
-      ))}
+        {Object.entries(styleTitles).map(([name, title]) => (
+          <StyleHelper key={getFullName(name)} name={name} title={title} />
+        ))}
       </AccordionContent>
     </AccordionItem>
   )
@@ -369,29 +376,29 @@ function FieldArray({
 }) {
   return (
     <div className="space-y-4">
-    {fields.map((formField, index) => (
-      <FormField
-        key={formField.id}
-        name={`${name}.${index}`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel></FormLabel>
-            <FormControl>
-              <Input
-                className="placeholder:text-neutral-400"
-                placeholder={title}
-                {...field}
-              />
-            </FormControl>
-            <FormDescription />
-            <FormMessage />
-            <Button type="button" variant="destructive" onClick={() => remove(index)}>
-              Remove
-            </Button>
-          </FormItem>
-        )}
-      />
-    ))}
+      {fields.map((formField, index) => (
+        <FormField
+          key={formField.id}
+          name={`${name}.${index}`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel></FormLabel>
+              <FormControl>
+                <Input
+                  className="placeholder:text-neutral-400"
+                  placeholder={title}
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription />
+              <FormMessage />
+              <Button type="button" variant="destructive" onClick={() => remove(index)}>
+                Remove
+              </Button>
+            </FormItem>
+          )}
+        />
+      ))}
     </div>
   )
 }
@@ -424,6 +431,33 @@ function EnvironmentVariables() {
   )
 }
 
+function TokenId() {
+  return (
+    <AccordionItem value="token" className={accordionItemStyle}>
+      <AccordionTrigger className="font-semibold text-d6">
+        Token ID
+      </AccordionTrigger>
+      <AccordionContent>
+        <FormField
+          name="tokenId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Token ID</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Token ID"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                The token ID to associate with this agent.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}></FormField>
+      </AccordionContent>
+    </AccordionItem>)
+}
 function SubmitButton() {
   return (
     <Button
@@ -444,78 +478,81 @@ async function onSubmitCreate({
   dynamicId,
   character,
   envFile,
-} : {
+  tokenId,
+}: {
   dynamicId: string,
   character: Character,
   envFile: string,
+  tokenId: string,
 }) {
-    console.debug("Character", character)
+  console.debug("Character", character)
 
-    try {
-      const apiUser = await getUser({ dynamicId })
+  try {
+    const apiUser = await getUser({ dynamicId })
 
-      const agentPayload = {
-        ownerId: apiUser.id,
-        characterJson: character,
-        envFile,
-      }
+    const agentPayload = {
+      ownerId: apiUser.id,
+      characterJson: character,
+      envFile,
+      tokenId,
+    }
 
-      const agentPromise = createAgent(agentPayload)
-      const runtime = await getRuntime()
-      const { id: agentId } = await agentPromise
-      startAgent(agentId, runtime.id)
-      toast({
-        title: "Agent Created!",
-        description: "Agent has been defined, but is still waiting to start up.",
-      })
+    const agentPromise = createAgent(agentPayload)
+    const runtime = await getRuntime()
+    const { id: agentId } = await agentPromise
+    startAgent(agentId, runtime.id)
+    toast({
+      title: "Agent Created!",
+      description: "Agent has been defined, but is still waiting to start up.",
+    })
 
-      // TODO: configurable maxTries
-      // TODO: configurable delay (in ms)
-      const delay = 30000
-      const maxTries = 15
-      const arr = [...Array(maxTries).keys()]
-      startLoop: for (const i of arr) {
-        console.log(
-          "Waiting for agent", agentId,
-          "to start up for runtime", runtime.id,
-          "at", runtime.url,
-        )
+    // TODO: configurable maxTries
+    // TODO: configurable delay (in ms)
+    const delay = 30000
+    const maxTries = 15
+    const arr = [...Array(maxTries).keys()]
+    startLoop: for (const i of arr) {
+      console.log(
+        "Waiting for agent", agentId,
+        "to start up for runtime", runtime.id,
+        "at", runtime.url,
+      )
 
-        const status = await getAgentStartTaskStatus(
-          agentId,
-          runtime.id,
-          delay,
-        )
-        switch (status) {
-          case TaskStatus.SUCCESS:
-            console.log(
-              "Agent", agentId,
-              "successfully started on", runtime.id,
+      const status = await getAgentStartTaskStatus(
+        agentId,
+        runtime.id,
+        delay,
+      )
+      switch (status) {
+        case TaskStatus.SUCCESS:
+          console.log(
+            "Agent", agentId,
+            "successfully started on", runtime.id,
             "at", runtime.url,
           )
-            toast({
-              title: "Success!",
-              description: "Agent defined and started! You can now fully interact with it.",
-            })
-            break startLoop;
-          case TaskStatus.FAILURE:
-            throw new Error("Agent Start Task Status failed!!!")
-          case TaskStatus.PENDING:
-          case TaskStatus.STARTED:
-            toast({
-              title: "Still waiting for agent to start..."
-            })
-        }
-
-        if (i === maxTries - 1)
-          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
+          toast({
+            title: "Success!",
+            description: "Agent defined and started! You can now fully interact with it.",
+          })
+          break startLoop;
+        case TaskStatus.FAILURE:
+          throw new Error("Agent Start Task Status failed!!!")
+        case TaskStatus.PENDING:
+        case TaskStatus.STARTED:
+          toast({
+            title: "Still waiting for agent to start..."
+          })
       }
-    } catch (error) {
-      toast({
-        title: "Something went wrong. Please try again",
-      });
-      console.error(error);
+
+      if (i === maxTries - 1)
+        throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
     }
+  } catch (error) {
+    toast({
+      title: "Something went wrong. Please try again",
+    });
+    console.error(error);
+  }
 }
 
 function onSubmitEdit(agentId: string, runtimeId?: string) {
@@ -523,7 +560,7 @@ function onSubmitEdit(agentId: string, runtimeId?: string) {
     dynamicId,
     character,
     envFile,
-  } : {
+  }: {
     dynamicId: string,
     character: Character,
     envFile: string,
@@ -605,6 +642,7 @@ export {
   onSubmitEdit,
   EnvironmentVariables,
   SubmitButton,
+  TokenId,
 }
 
 export default AgentForm
