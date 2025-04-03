@@ -239,7 +239,7 @@ const Balance: FC<{
 }
 
 const SellForSei: FC<{
-    tokenAddress: string;
+    tokenAddress: `0x${string}`;
 }> = ({ tokenAddress }) => {
     const { primaryWallet } = useDynamicContext();
     const [status, setStatus] = useState<{
@@ -269,6 +269,23 @@ const SellForSei: FC<{
             const amount = formData.get("amount") as string;
             const parsedAmount = parseEther(amount);
 
+            // Approve the bonding contract to spend the token
+            const tokenContract = getContract({
+                address: tokenAddress,
+                abi: ERC20_ABI,
+                client: { public: publicClient, wallet: walletClient }
+            });
+            const approveHash = await tokenContract.write.approve(
+                [BONDING_CONTRACT_ADDRESS, parsedAmount],
+                {
+                    gasLimit: 100000,
+                }
+            );
+            const approveReceipt = await publicClient.waitForTransactionReceipt({
+                hash: approveHash,
+                confirmations: 1,
+            });
+            console.log("Approval transaction hash:", approveHash);
             const buyHash = await bondingContract.write.sellForSei(
                 [parsedAmount, tokenAddress],
             );

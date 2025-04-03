@@ -1,5 +1,6 @@
 import { TokenLaunch } from "@/components/token";
 import { BuyWithSei } from "@/components/token";
+import { SellForSei, Balance } from "@/components/token";
 
 export default function TokensDashboard() {
     return (
@@ -14,6 +15,12 @@ export default function TokensDashboard() {
             <BuyWithSei
                 tokenAddress="0x889AF18DbBeE2e37F085d8916f7F0Aa79B8f1944">
             </BuyWithSei>
+            <SellForSei
+                tokenAddress="0x889AF18DbBeE2e37F085d8916f7F0Aa79B8f1944">
+            </SellForSei>
+            <Balance
+                tokenAddress="0x889AF18DbBeE2e37F085d8916f7F0Aa79B8f1944">
+            </Balance>
         </main>
     )
 }
