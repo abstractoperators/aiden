@@ -7,6 +7,7 @@ import { getToken, Token } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
 import { setTimeout } from "node:timers/promises"
+import { Character } from "@/lib/character"
 
 const AGENT_PATH = '/agents'
 const AGENT_SEGMENT = '/agents/'
@@ -32,9 +33,7 @@ interface AgentBase {
   ownerId: string
   runtimeId?: string | null
   tokenId?: string | null
-  characterJson: {
-    name: string
-  }
+  characterJson: Character
   envFile: string
 }
 
