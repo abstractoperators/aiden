@@ -1,6 +1,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreateForm, UploadForm } from "./form";
+import { UploadForm } from "./form";
+import AgentForm from "@/components/agent-form";
 
 export default function FormTabs() {
   return (
@@ -10,7 +11,7 @@ export default function FormTabs() {
         <TabsTrigger value="upload">Upload</TabsTrigger>
       </TabsList>
       <TabsContent value="create">
-        <CreateForm />
+        <AgentForm />
       </TabsContent>
       <TabsContent value="upload">
         <UploadForm />
