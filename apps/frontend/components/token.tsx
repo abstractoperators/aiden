@@ -69,7 +69,7 @@ const TokenLaunch: FC = () => {
 
 
             const launchedEvent = launchedEvents[0];
-            // @ts-expect-error
+            // @ts-expect-error it's because I didn't want to make my own type and find the Log type from which LaunchedEvent inherits, and .args doesn't exist on the Log type by default but istg it does on the Launched Event.
             const tokenAddress = launchedEvent.args[0] as `0x${string}`;
             console.log("Token launched at:", tokenAddress);
 
