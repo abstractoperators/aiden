@@ -1,11 +1,14 @@
 import asyncio
 import json
 from asyncio import sleep as asyncio_sleep
+from time import time
 from typing import Any, Callable, Coroutine, Generator
 from uuid import UUID, uuid4
 
 import pytest
+import requests
 
+from src.auth import decode_bearer_token
 from src.db import crud
 from src.db.models import (
     AgentBase,
@@ -29,11 +32,28 @@ def test_ping(client):
     assert response.status_code == 200
 
 
+def test_jwt(
+    helper_encode_jwt,
+) -> None:
+    payload = {
+        "sub": 1234,
+        "exp": time() + 3600,
+        "iat": 1234567890,
+    }
+    bearer_token = helper_encode_jwt(payload)
+    assert bearer_token is not None
+    decoded_payload = decode_bearer_token(bearer_token).get("payload")
+    assert decoded_payload is not None
+    assert decoded_payload["sub"] == payload["sub"]
+    assert decoded_payload["exp"] == payload["exp"]
+    assert decoded_payload["iat"] == payload["iat"]
+
+
 @pytest.fixture()
 def wallet_factory(
-    client, user_factory
+    client, user_factory, helper_encode_jwt
 ) -> Generator[Callable[..., Wallet], None, None]:
-    wallet_ids: list[UUID] = []
+    wallets: list[Wallet] = []
 
     def factory(**kwargs) -> Wallet:
         owner_id = kwargs.get("owner_id", user_factory().id)
@@ -45,21 +65,37 @@ def wallet_factory(
             chain_id="1",
             owner_id=owner_id,
         )
+        # POST /wallets is not yet authed.
         response = client.post("/wallets", json=wallet_base.model_dump(mode="json"))
         assert response.status_code == 200
         wallet = Wallet.model_validate(response.json())
-        wallet_ids.append(wallet.id)
+        wallets.append(wallet)
         return wallet
 
     yield factory
 
-    for wallet_id in wallet_ids:
-        client.delete(f"/wallets/{wallet_id}")
+    for wallet in wallets:
+        auth = helper_encode_jwt(
+            {
+                "verified_credentials": [
+                    {
+                        "address": wallet.public_key,
+                        "chain": wallet.chain,
+                    }
+                ],
+            }
+        )
+
+        client.delete(
+            f"/wallets/{wallet.id}", headers={"Authorization": f"Bearer {auth}"}
+        )
 
 
 @pytest.fixture()
-def user_factory(client) -> Generator[Callable[..., User], None, None]:
-    user_ids: list[UUID] = []
+def user_factory(
+    client, helper_encode_jwt
+) -> Generator[Callable[..., User], None, None]:
+    users: list[User] = []
 
     def factory(**kwargs) -> User:
         email = kwargs.get("email", "email@email.com")
@@ -75,16 +111,23 @@ def user_factory(client) -> Generator[Callable[..., User], None, None]:
             username=username,
             dynamic_id=dynamic_id,
         )
-        response = client.post("/users", json=user_base.model_dump(mode="json"))
+        auth: str = helper_encode_jwt({"sub": str(dynamic_id)})
+
+        response = client.post(
+            "/users",
+            json=user_base.model_dump(mode="json"),
+            headers={"Authorization": f"Bearer {auth}"},
+        )
         assert response.status_code == 200
         user = User.model_validate(response.json())
-        user_ids.append(user.id)
+        users.append(user)
         return user
 
     yield factory
 
-    for user_id in user_ids:
-        client.delete(f"/users/{user_id}")
+    for user in users:
+        auth: str = helper_encode_jwt({"sub": str(user.dynamic_id)})
+        client.delete(f"/users/{user.id}", headers={"Authorization": f"Bearer {auth}"})
 
 
 # TODO: Use the actual endpoint instead of directly through crud
@@ -120,12 +163,19 @@ def token_factory(client):
 @pytest.fixture()
 def runtime_factory(
     client,
+    helper_encode_jwt,
 ) -> Generator[Callable[[], Coroutine[Any, Any, Runtime]], None, None]:
     runtime_ids: list[UUID] = []
 
+    auth = helper_encode_jwt({"lists": ["admin"]})
+
     async def factory() -> Runtime:
-        runtime_resp = client.post("/runtimes")
-        runtime_create_task = RuntimeCreateTask.model_validate(runtime_resp.json())
+        runtime_resp = client.post(
+            "/runtimes", headers={"Authorization": f"Bearer {auth}"}
+        )
+        runtime_create_task: RuntimeCreateTask = RuntimeCreateTask.model_validate(
+            runtime_resp.json()
+        )
         runtime_ids.append(runtime_create_task.runtime_id)
 
         # Wait for the runtime to be created
@@ -144,19 +194,37 @@ def runtime_factory(
     yield factory
 
     for runtime_id in runtime_ids:
-        client.delete(f"/runtimes/{runtime_id}")
+        with Session() as session:
+            runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+            if not runtime:
+                continue
+
+            if runtime.agent:
+                auth = helper_encode_jwt(
+                    {"lists": ["admin"], "sub": str(runtime.agent.owner_id)}
+                )
+            client.delete(
+                f"/runtimes/{runtime_id}", headers={"Authorization": f"Bearer {auth}"}
+            )
 
 
 @pytest.fixture()
 def agent_factory(
-    client, user_factory, token_factory
+    client,
+    user_factory,
+    token_factory,
+    helper_encode_jwt,
 ) -> Generator[Callable[..., AgentPublic], None, None]:
-    agent_ids: list[UUID] = []
+    agents: list[AgentPublic] = []
 
     def factory(**kwargs) -> AgentPublic:
         if (owner_id := kwargs.get("owner_id")) is None:
-            owner = user_factory()
-            owner_id = owner.id
+            owner_default: User = user_factory()
+            owner_id = owner_default.id
+        owner_dict = client.get(f"/users?user_id={owner_id}").json()
+        owner: UserPublic = UserPublic.model_validate(owner_dict)
+        owner_dynamic_id = owner.dynamic_id
+
         eliza_agent_id = kwargs.get("eliza_agent_id", "eliza_agent_id_01")
         if (token_id := kwargs.get("token_id")) is None:
             token = token_factory()
@@ -176,19 +244,35 @@ def agent_factory(
             character_json=character_json,
             env_file=env_file,
         )
-        response = client.post("/agents", json=agent_base.model_dump(mode="json"))
+        auth = helper_encode_jwt({"sub": str(owner_dynamic_id)})
+        response = client.post(
+            "/agents",
+            json=agent_base.model_dump(mode="json"),
+            headers={"Authorization": f"Bearer {auth}"},
+        )
         assert response.status_code == 200
         agent_public = AgentPublic.model_validate(response.json())
-        agent_ids.append(agent_public.id)
+        agents.append(agent_public)
         return agent_public
 
     yield factory
 
-    for agent_id in agent_ids:
-        client.delete(f"/agents/{agent_id}")
+    for agent in agents:
+        owner_dict = client.get(f"/users?user_id={agent.owner_id}").json()
+        owner: User = User.model_validate(owner_dict)
+        auth = helper_encode_jwt({"sub": str(owner.dynamic_id)})
+        client.delete(
+            f"/agents/{agent.id}",
+            headers={"Authorization": f"Bearer {auth}"},
+        )
 
 
-def test_wallets(client, wallet_factory, user_factory) -> None:
+def test_wallets(
+    client,
+    wallet_factory,
+    user_factory,
+    helper_encode_jwt,
+) -> None:
     wallet: Wallet = wallet_factory()
     assert wallet is not None
 
@@ -210,16 +294,29 @@ def test_wallets(client, wallet_factory, user_factory) -> None:
     wallet_update = WalletUpdate(
         owner_id=new_owner.id,
     )
+    auth = helper_encode_jwt(
+        {
+            "verified_credentials": [
+                {
+                    "address": wallet.public_key,
+                    "chain": wallet.chain,
+                }
+            ],
+        }
+    )
     response = client.patch(
         f"/wallets/{wallet.id}",
         json=wallet_update.model_dump(mode="json"),
+        headers={"Authorization": f"Bearer {auth}"},
     )
     assert response.status_code == 200
     wallet = Wallet.model_validate(response.json())
     assert wallet.owner_id == new_owner.id
 
     # Try deleting it
-    response = client.delete(f"/wallets/{wallet.id}")
+    response = client.delete(
+        f"/wallets/{wallet.id}", headers={"Authorization": f"Bearer {auth}"}
+    )
     assert response.status_code == 200
     response = client.get(f"/wallets?wallet_id={wallet.id}")
     assert response.status_code == 404
@@ -275,7 +372,9 @@ def test_tokens(client, token_factory) -> None:
 
 
 @pytest.mark.asyncio
-async def test_runtimes(client, runtime_factory, agent_factory) -> None:
+async def test_runtimes(
+    client, runtime_factory, agent_factory, user_factory, helper_encode_jwt
+) -> None:
     response = client.get("/runtimes")
     assert response.status_code == 200
     num_runtimes = len(response.json())
@@ -301,10 +400,15 @@ async def test_runtimes(client, runtime_factory, agent_factory) -> None:
     Runtime.model_validate(response.json()[0])
     Runtime.model_validate(response.json()[1])
 
-    agent = agent_factory()
+    owner: UserPublic = user_factory()
+    agent: AgentPublic = agent_factory(owner_id=owner.id)
     assert agent is not None
-    response = client.post(f"/agents/{agent.id}/start/{runtime_1.id}")
-    assert response.status_code == 200
+    auth = helper_encode_jwt({"sub": str(owner.dynamic_id)})
+    response = client.post(
+        f"/agents/{agent.id}/start/{runtime_1.id}",
+        headers={"Authorization": f"Bearer {auth}"},
+    )
+    assert response.status_code == 200, response.json()
     agent_start_task = AgentStartTask.model_validate(response.json())
     assert agent_start_task.agent_id == agent.id
     assert agent_start_task.runtime_id == runtime_1.id
@@ -317,44 +421,68 @@ async def test_runtimes(client, runtime_factory, agent_factory) -> None:
         await asyncio_sleep(5)
 
     # Try chatting with it.
-    response = client.post(
+    # Get updated eliza_agent_id (from mock id eliza_agent_id_01)
+    response = client.get(f"/agents/{agent.id}")
+    assert response.status_code == 200
+    agent = AgentPublic.model_validate(response.json())
+
+    # omg im an idiot
+    response = requests.post(
         f"{runtime_1.url}/{agent.eliza_agent_id}/message",
         json={"user": "testuser", "text": "hello"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
 
     return None
 
 
 @pytest.mark.asyncio
-async def test_agents(client, user_factory, agent_factory, runtime_factory) -> None:
-    agent: AgentPublic = agent_factory()
+async def test_agents(
+    client, user_factory, agent_factory, runtime_factory, helper_encode_jwt
+) -> None:
+    owner: User = user_factory()
+    agent: AgentPublic = agent_factory(owner_id=owner.id)
     assert agent is not None
     # Test getting agents by the user's dynamic id.
     # Make a random agent with a different owner.
-    random_user = user_factory()
+    random_user: UserPublic = user_factory()
     agent_factory(owner_id=random_user.id)
     agent_factory(owner_id=random_user.id)
 
     response = client.get(f"/agents/{agent.id}")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
     AgentPublic.model_validate(response.json())
 
     response = client.get("/agents")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
     AgentPublic.model_validate(response.json()[0])
 
-    response = client.get(f"/agents?user_id={agent.owner_id}")
-    assert response.status_code == 200
+    # Logged in as wrong user
+    bad_auth = helper_encode_jwt({"sub": str(random_user.dynamic_id)})
+    response = client.get(
+        f"/agents?user_id={agent.owner_id}",
+        headers={"Authorization": f"Bearer {bad_auth}"},
+    )
+    assert response.status_code == 403, response.json()
+
+    # Logged in as correct user
+    auth = helper_encode_jwt({"sub": str(owner.dynamic_id)})
+    response = client.get(
+        f"/agents?user_id={agent.owner_id}",
+        headers={"Authorization": f"Bearer {auth}"},
+    )
     response_json = response.json()
     AgentPublic.model_validate(response_json[0])
     assert len(response_json) == 1
 
     response = client.get(f"/users?user_id={agent.owner_id}")
-    owner = UserPublic.model_validate(response.json())
-    assert owner.id == agent.owner_id
+    owner_public = UserPublic.model_validate(response.json())
+    assert owner_public.id == agent.owner_id
 
-    response = client.get(f"/agents?user_dynamic_id={owner.dynamic_id}")
+    response = client.get(
+        f"/agents?user_dynamic_id={owner_public.dynamic_id}",
+        headers={"Authorization": f"Bearer {auth}"},
+    )
     assert response.status_code == 200
     response_json = response.json()
     AgentPublic.model_validate(response_json[0])

@@ -27,9 +27,18 @@ import {
   envSchema,
   onSubmitCreate,
   SubmitButton,
+  TokenId,
 } from "@/components/agent-form";
 
+// import {
+//   TokenLaunch
+// } from "@/components/token";
+
 const MAX_FILE_SIZE = 5000000;
+const tokenSchema = z.object({
+  tokenId: z.string(),
+})
+
 const uploadSchema = z.object({
   characterFile: z
     .instanceof(File)
@@ -42,8 +51,8 @@ const uploadSchema = z.object({
       ].includes(file.type),
       { message: "Invalid file type, must be JSON." }
     ),
-    // TODO validate against Character JSON schema
-}).merge(envSchema)
+  // TODO validate against Character JSON schema
+}).merge(envSchema).merge(tokenSchema)
 type UploadType = z.infer<typeof uploadSchema>
 
 function UploadForm() {
@@ -57,7 +66,7 @@ function UploadForm() {
 
   const form = useForm<UploadType>({
     resolver: zodResolver(uploadSchema),
-    defaultValues: { env: "", },
+    defaultValues: { env: "", tokenId: "" },
   })
   const { handleSubmit } = form
 
@@ -65,7 +74,7 @@ function UploadForm() {
 
   async function onUploadSubmit(formData: UploadType) {
     console.debug("UploadForm", formData)
-    const { env: envFile, characterFile } = formData
+    const { env: envFile, characterFile, tokenId } = formData
 
     const fileText = await characterFile.text().catch(error => {
       toast({
@@ -75,11 +84,11 @@ function UploadForm() {
       return undefined
     })
 
-    if (typeof(fileText) === "undefined")
+    if (typeof (fileText) === "undefined")
       return
 
     const character = JSON.parse(fileText) // TODO: catch SyntaxError
-    return onSubmitCreate({ dynamicId: userId, character, envFile })
+    return onSubmitCreate({ dynamicId: userId, character, envFile, tokenId });
   }
 
   return (
@@ -100,7 +109,7 @@ function UploadForm() {
                       <Input
                         type="file"
                         accept=".json,application/json"
-                        onChange={ event =>
+                        onChange={event =>
                           onChange(event.target.files && event.target.files[0])
                         }
                         {...{ onBlur, disabled, name, ref }}
@@ -117,6 +126,7 @@ function UploadForm() {
           </AccordionItem>
 
           <EnvironmentVariables />
+          <TokenId />
         </Accordion>
         <SubmitButton />
       </form>

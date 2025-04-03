@@ -1,14 +1,21 @@
+"use server"
 import { fromApiEndpoint, getResource } from "./common"
-
+import { createResource } from "./common"
 const TOKEN_SEGMENT = '/tokens/'
+const TOKEN_PATH = "/tokens"
 
 const baseUrlSegment = fromApiEndpoint(TOKEN_SEGMENT)
+const baseUrlPath = fromApiEndpoint(TOKEN_PATH)
 
 interface TokenBase {
   ticker: string
   name: string
-  evmContractAddress: string
+  evmContractAddress: `0x${string}`
   abi: object[]
+}
+interface TokenCreationRequest {
+  name: string
+  ticker: string
 }
 
 interface Token extends TokenBase {
@@ -22,8 +29,25 @@ async function getToken(tokenId: string): Promise<Token> {
   })
 }
 
+async function saveToken(tokenPayload: TokenBase): Promise<Token> {
+  return createResource<Token, TokenBase>(new URL(`${baseUrlPath.href}/save`), tokenPayload)
+}
+
+async function createToken(tokenPayload: TokenCreationRequest): Promise<Token> {
+  return createResource<Token, TokenCreationRequest>(baseUrlPath, tokenPayload)
+}
+
+async function getTokens(): Promise<Token[]> {
+  return getResource<Token[]>({
+    baseUrl: baseUrlPath,
+  })
+};
+
 export {
   getToken,
+  saveToken,
+  createToken,
+  getTokens
 }
 
 export type {
