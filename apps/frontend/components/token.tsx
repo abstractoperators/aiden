@@ -24,7 +24,6 @@ const TokenLaunch: FC<{
 
     const onSubmit: FormEventHandler = async (event) => {
         event.preventDefault();
-        setStatus({ loading: true });
 
         try {
             const walletClient = await primaryWallet.getWalletClient();
@@ -247,19 +246,19 @@ const SellForSei: FC<{
                     gasLimit: 100000,
                 }
             );
-            const approveReceipt = await publicClient.waitForTransactionReceipt({
-                hash: approveHash,
-                confirmations: 1,
-            });
+            // const approveReceipt = await publicClient.waitForTransactionReceipt({
+            //     hash: approveHash,
+            //     confirmations: 1,
+            // });
             console.log("Approval transaction hash:", approveHash);
             const buyHash = await bondingContract.write.sellForSei(
                 [parsedAmount, tokenAddress],
             );
 
-            const buyReceipt = await publicClient.waitForTransactionReceipt({
-                hash: buyHash,
-                confirmations: 1,
-            });
+            // const buyReceipt = await publicClient.waitForTransactionReceipt({
+            //     hash: buyHash,
+            //     confirmations: 1,
+            // });
 
             console.log("Token bought successfully! Transaction hash:", buyHash);
 
