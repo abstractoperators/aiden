@@ -399,7 +399,6 @@ def get_agent_start_task_status(
     If not found, raises a 404
     Otherwise, it returns the status of the task.
     """
-    logger.error("foo")
     if not agent_id and not runtime_id:
         raise ValueError("At least one of agent_id or runtime_id must be provided")
 
@@ -425,7 +424,6 @@ def get_agent_start_task_status(
         agent_start_task = obj_or_404(agent_start_task, AgentStartTask)
         logger.info(agent_start_task)
         task_id = agent_start_task.celery_task_id
-        logger.info(task_id)
         return get_task_status(task_id)
 
 
