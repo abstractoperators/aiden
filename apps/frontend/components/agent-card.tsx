@@ -13,7 +13,7 @@ export default function AgentCard({
   return (
     <div
       className={cn(
-        "flex flex-col items-center space-y-8 relative p-8",
+        "flex flex-col justify-center items-center space-y-8 p-8",
         "bg-anakiwa-darker/30 dark:bg-anakiwa/30 rounded-xl"
       )}
     >
@@ -26,9 +26,7 @@ export default function AgentCard({
         />
         <AvatarFallback className="text-4xl">{name.substring(0, 1)}</AvatarFallback>
       </Avatar>
-      <div className="flex items-center gap-2 mt-2">
-        <h1 className="text-4xl font-bold text-center">{name}</h1>
-      </div>
+      <h1 className="text-4xl font-bold text-center">{name}</h1>
     </div>
   )
 }
