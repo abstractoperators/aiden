@@ -1,5 +1,11 @@
 interface Character {
   name: string
+  clients: string[]
+  modelProvider: string
+  settings?: {
+    secrets?: {}
+  }
+  plugins: string[]
   bio: string[]
   lore: string[]
   knowledge?: string[]

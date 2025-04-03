@@ -97,7 +97,7 @@ export default function Chat({
 
   return (
     <div className="flex flex-col w-full justify-start items-center gap-8">
-      <ScrollArea className="w-full h-96 lg:h-[600px] rounded-md border p-2">
+      <ScrollArea className="bg-anakiwa-darker/50 w-full h-96 lg:h-[600px] rounded-xl p-2">
         <ol className="flex flex-col w-full">
           {chat.map(message => (
             <li

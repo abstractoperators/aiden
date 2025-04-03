@@ -4,7 +4,7 @@ import { CreateForm, UploadForm } from "./form";
 
 export default function FormTabs() {
   return (
-    <Tabs className="bg-anakiwa-lighter/50 p-4 rounded-xl" defaultValue="create">
+    <Tabs className="bg-anakiwa-lighter/50 dark:bg-anakiwa-darker/50 p-4 rounded-xl" defaultValue="create">
       <TabsList>
         <TabsTrigger value="create">Create</TabsTrigger>
         <TabsTrigger value="upload">Upload</TabsTrigger>

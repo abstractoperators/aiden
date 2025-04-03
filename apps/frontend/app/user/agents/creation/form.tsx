@@ -41,6 +41,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
@@ -75,12 +77,12 @@ const stringListTitles = {
   "topics": "Topics",
  }
 const stringListSchema = z.object({
-  bio: z.string().array().min(1),
-  lore: z.string().array().min(1),
-  knowledge: z.string().array().optional(),
-  postExamples: z.string().array().min(1),
-  adjectives: z.string().array().min(1),
-  topics: z.string().array().min(1),
+  bio: z.string().trim().min(2, "Cannot be empty").array().min(1),
+  lore: z.string().trim().min(2, "Cannot be empty").array(),
+  knowledge: z.string().trim().min(2, "Cannot be empty").array().optional(),
+  postExamples: z.string().trim().min(2, "Cannot be empty").array(),
+  adjectives: z.string().trim().min(2, "Cannot be empty").array(),
+  topics: z.string().trim().min(2, "Cannot be empty").array(),
 })
 
 const messageExampleTitles = {
@@ -94,22 +96,26 @@ const styleTitles = {
   "post": "Post",
 }
 const characterSchema = z.object({
-  name: z.string(),
+  name: z.string().trim().min(1, "Cannot be empty"),
   messageExamples: z.object({
-    user: z.string(),
+    user: z.string().trim().min(1, "Cannot be empty"),
     content: z.object({
-      text: z.string(),
-      action: z.string().optional(),
+      text: z.string().trim().min(1, "Cannot be empty"),
+      action: z.string().trim().min(1, "Cannot be empty").optional(),
     })
-  }).array().min(1).array().min(1),
+  }).array().array(),
   style: z.object({
-    all: z.string().array().min(1),
-    chat: z.string().array().min(1),
-    post: z.string().array().min(1),
+    all: z.string().trim().min(2, "Cannot be empty").array(),
+    chat: z.string().trim().min(2, "Cannot be empty").array(),
+    post: z.string().trim().min(2, "Cannot be empty").array(),
   }),
 }).merge(stringListSchema)
 
-const createSchema = characterSchema.merge(envSchema)
+const integrationsSchema = z.object({
+  twitter: z.boolean()
+})
+
+const createSchema = characterSchema.merge(envSchema).merge(integrationsSchema)
 type CreateType = z.infer<typeof createSchema>
 
 function CreateForm() {
@@ -122,22 +128,17 @@ function CreateForm() {
   const form = useForm<CreateType>({
     resolver: zodResolver(createSchema),
     defaultValues: {
+      twitter: false,
       env: "",
       name: "",
-      bio: [""],
-      lore: [""],
-      knowledge: [""],
-      messageExamples: [[{
-        user: "",
-        content: {
-          text: "",
-          action: "",
-        },
-      }]],
-      postExamples: [""],
-      adjectives: [""],
-      topics: [""],
-      style: { all: [""], chat: [""], post: [""], }
+      bio: [],
+      lore: [],
+      knowledge: [],
+      messageExamples: [],
+      postExamples: [],
+      adjectives: [],
+      topics: [],
+      style: { all: [], chat: [], post: [], }
     }
   })
   const { control, handleSubmit } = form
@@ -154,22 +155,31 @@ function CreateForm() {
   // TODO: set up sei and eth addresses if undefined
 
   async function onSubmit(formData: CreateType) {
+    console.debug("CreateForm", formData)
     try {
-
       const apiUser = await getUser({
         // TS not able to use user assertion from outside of function
         dynamicId: (user as UserProfile).userId as string
       })
 
       // TODO
+      const {env: envFile, twitter, ...data} = formData
       const characterJson = {
-        name: formData.name
+        modelProvider: "openai",
+        clients: twitter ? ["twitter"] : [],
+        settings: {
+          secrets: {}
+        },
+        plugins: [],
+        ...data,
       }
+
+      console.debug("Character JSON", characterJson)
 
       const agentPayload = {
         ownerId: apiUser.id,
         characterJson: characterJson,
-        envFile: formData.env,
+        envFile,
       }
 
       const agent = await createAgent(agentPayload)
@@ -306,6 +316,29 @@ function CreateForm() {
 
           <Style control={control} />
           <EnvironmentVariables />
+
+          <AccordionItem value="Twitter" className={accordionItemStyle}>
+            <AccordionTrigger className="font-semibold text-d6">Twitter</AccordionTrigger>
+            <AccordionContent>
+              <FormField
+                name="twitter"
+                render={({field}) => (
+                  <FormItem className="flex flex-row items-center justify-start space-x-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="!my-2">Connect the agent to Twitter</FormLabel>
+                    <FormDescription></FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+
 
         </Accordion>
 
@@ -493,9 +526,12 @@ function EnvironmentVariables() {
             <FormItem>
               <FormLabel></FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Textarea
+                  placeholder="Environment Variables"
+                  {...field}
+                />
               </FormControl>
-              <FormDescription />
+              <FormDescription>Copy-paste your .env file here.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
