@@ -9,6 +9,8 @@ import { parseEventLogs } from "viem";
 import { FormEventHandler } from "react";
 import BONDING_JSON from "@/lib/abis/bonding.json";
 import ERC20_JSON from "@/lib/abis/ferc20.json";
+import { saveToken } from "@/lib/api/token";
+
 const BONDING_CONTRACT_ADDRESS = "0xDdFF841E7bb9c2180D160eE5E11663ca127Fd21e";
 const BONDING_ABI = BONDING_JSON.abi;
 const ERC20_ABI = ERC20_JSON.abi;
@@ -81,6 +83,15 @@ const TokenLaunch: FC<{
             const tokenAddress = launchedEvent.args[0] as string;
             console.log("Token launched at:", tokenAddress);
 
+            const tokenPayload = {
+                name,
+                ticker,
+                evmContractAddress: tokenAddress,
+                abi: ERC20_ABI, //maybe we stop saving an abi for each token - dunno.
+            };
+
+
+            saveToken(tokenPayload)
 
             setStatus({
                 loading: false,
