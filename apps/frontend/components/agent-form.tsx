@@ -433,31 +433,32 @@ function EnvironmentVariables() {
 
 function TokenId() {
   return (
-    <AccordionItem value="token" className={accordionItemStyle}>
+    <AccordionItem value="Token Id" className={accordionItemStyle}>
       <AccordionTrigger className="font-semibold text-d6">
-        Token ID
+        TokenId
       </AccordionTrigger>
       <AccordionContent>
         <FormField
           name="tokenId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Token ID</FormLabel>
+              <FormLabel></FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Token ID"
+                <Textarea
+                  placeholder="Token Id"
                   {...field}
                 />
               </FormControl>
-              <FormDescription>
-                The token ID to associate with this agent.
-              </FormDescription>
+              <FormDescription>Link a token's actual uuid here.</FormDescription>
               <FormMessage />
             </FormItem>
-          )}></FormField>
+          )}
+        />
       </AccordionContent>
-    </AccordionItem>)
+    </AccordionItem>
+  )
 }
+
 function SubmitButton() {
   return (
     <Button
