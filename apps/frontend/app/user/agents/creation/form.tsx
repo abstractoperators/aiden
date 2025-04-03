@@ -43,6 +43,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Character } from "@/lib/character";
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
@@ -125,6 +126,8 @@ function CreateForm() {
   if (!user.userId)
     throw new Error(`User ${user} has no userId!`)
 
+  const userId: string = user.userId
+
   const form = useForm<CreateType>({
     resolver: zodResolver(createSchema),
     defaultValues: {
@@ -154,107 +157,25 @@ function CreateForm() {
 
   // TODO: set up sei and eth addresses if undefined
 
-  async function onSubmit(formData: CreateType) {
+  async function onCreateSubmit(formData: CreateType) {
     console.debug("CreateForm", formData)
-    try {
-      const apiUser = await getUser({
-        // TS not able to use user assertion from outside of function
-        dynamicId: (user as UserProfile).userId as string
-      })
-
-      // TODO
-      const {env: envFile, twitter, ...data} = formData
-      const characterJson = {
-        modelProvider: "openai",
-        clients: twitter ? ["twitter"] : [],
-        settings: {
-          secrets: {}
-        },
-        plugins: [],
-        ...data,
-      }
-
-      console.debug("Character JSON", characterJson)
-
-      const agentPayload = {
-        ownerId: apiUser.id,
-        characterJson: characterJson,
-        envFile,
-      }
-
-      const agent = await createAgent(agentPayload)
-      const unusedRuntimes = await getRuntimes()
-      // if no unused runtime, get a random one
-      // TODO: delete once getlatestruntime is implemented on API
-      const runtime: Runtime = unusedRuntimes.length ?
-        unusedRuntimes[0] :
-        await (async () => {
-          console.log("No unused runtimes to start an agent, getting a random runtime")
-          const runtimes: Runtime[] = (
-            await getRuntimes(false)
-            .then(list => list.length ? list : Promise.all([createRuntime()]))
-          )
-          return runtimes[Math.floor(Math.random() * runtimes.length)]
-        })()
-
-      startAgent(agent.id, runtime.id)
-      toast({
-        title: "Agent Created!",
-        description: "Agent has been defined, but is still waiting to start up.",
-      })
-
-      // TODO: configurable maxTries
-      // TODO: configurable delay (in ms)
-      const delay = 30000
-      const maxTries = 15
-      const arr = [...Array(maxTries).keys()]
-      startLoop: for (const i of arr) {
-        console.log(
-          "Waiting for agent", agent.id,
-          "to start up for runtime", runtime.id,
-          "at", runtime.url,
-        )
-
-        const status = await getAgentStartTaskStatus(
-          agent.id,
-          runtime.id,
-          delay,
-        )
-        switch (status) {
-          case TaskStatus.SUCCESS:
-            console.log(
-              "Agent", agent.id,
-              "successfully started on", runtime.id,
-            "at", runtime.url,
-          )
-            toast({
-              title: "Success!",
-              description: "Agent defined and started! You can now fully interact with it.",
-            })
-            break startLoop;
-          case TaskStatus.FAILURE:
-            throw new Error("Agent Start Task Status failed!!!")
-          case TaskStatus.PENDING:
-          case TaskStatus.STARTED:
-            toast({
-              title: "Still waiting for agent to start..."
-            })
-        }
-
-        if (i === maxTries - 1)
-          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
-      }
-    } catch (error) {
-      toast({
-        title: "Something went wrong. Please try again",
-      });
-      console.error(error);
+    const {env: envFile, twitter, ...data} = formData
+    const characterJson = {
+      modelProvider: "openai",
+      clients: twitter ? ["twitter"] : [],
+      settings: {
+        secrets: {}
+      },
+      plugins: [],
+      ...data,
     }
+
+    return onSubmit({dynamicId: userId, characterJson, envFile})
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
           <AccordionItem value="Name" className={accordionItemStyle}>
             <AccordionTrigger className="font-semibold text-d6">Name</AccordionTrigger>
@@ -338,7 +259,6 @@ function CreateForm() {
               />
             </AccordionContent>
           </AccordionItem>
-
 
         </Accordion>
 
@@ -548,6 +468,8 @@ function UploadForm() {
   if (!user.userId)
     throw new Error(`User ${user} has no userId!`)
 
+  const userId: string = user.userId
+
   const form = useForm<UploadType>({
     resolver: zodResolver(uploadSchema),
     defaultValues: { env: "", },
@@ -556,99 +478,28 @@ function UploadForm() {
 
   // TODO: set up sei and eth addresses if undefined
 
-  async function onSubmit(formData: UploadType) {
-    try {
-      const characterFile = await formData.characterFile.text()
-      const characterJson = JSON.parse(characterFile) // TODO: catch SyntaxError
-      console.debug(characterJson)
+  async function onUploadSubmit(formData: UploadType) {
+    console.debug("UploadForm", formData)
+    const { env: envFile, characterFile } = formData
 
-      const env = formData.env
-      console.debug(".env", env)
-
-      const apiUser = await getUser({
-        // TS not able to use user assertion from outside of function
-        dynamicId: (user as UserProfile).userId as string
-      })
-
-      const agentPayload = {
-        ownerId: apiUser.id,
-        characterJson: characterJson,
-        envFile: env,
-      }
-
-      const agent = await createAgent(agentPayload)
-      const unusedRuntimes = await getRuntimes()
-      // if no unused runtime, get a random one
-      // TODO: delete once getlatestruntime is implemented on API
-      const runtime: Runtime = unusedRuntimes.length ?
-        unusedRuntimes[0] :
-        await (async () => {
-          console.log("No unused runtimes to start an agent, getting a random runtime")
-          const runtimes: Runtime[] = (
-            await getRuntimes(false)
-            .then(list => list.length ? list : Promise.all([createRuntime()]))
-          )
-          return runtimes[Math.floor(Math.random() * runtimes.length)]
-        })()
-
-      startAgent(agent.id, runtime.id)
+    const fileText = await characterFile.text().catch(error => {
       toast({
-        title: "Agent Created!",
-        description: "Agent has been defined, but is still waiting to start up.",
-      })
-
-      // TODO: configurable maxTries
-      // TODO: configurable delay (in ms)
-      const delay = 30000
-      const maxTries = 15
-      const arr = [...Array(maxTries).keys()]
-      startLoop: for (const i of arr) {
-        console.log(
-          "Waiting for agent", agent.id,
-          "to start up for runtime", runtime.id,
-          "at", runtime.url,
-        )
-
-        const status = await getAgentStartTaskStatus(
-          agent.id,
-          runtime.id,
-          delay,
-        )
-        switch (status) {
-          case TaskStatus.SUCCESS:
-            console.log(
-              "Agent", agent.id,
-              "successfully started on", runtime.id,
-            "at", runtime.url,
-          )
-            toast({
-              title: "Success!",
-              description: "Agent defined and started! You can now fully interact with it.",
-            })
-            break startLoop;
-          case TaskStatus.FAILURE:
-            throw new Error("Agent Start Task Status failed!!!")
-          case TaskStatus.PENDING:
-          case TaskStatus.STARTED:
-            toast({
-              title: "Still waiting for agent to start..."
-            })
-        }
-
-        if (i === maxTries - 1)
-          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
-      }
-    } catch (error) {
-      toast({
-        title: "Something went wrong. Please try again",
+        title: "Unable to parse JSON file; is it valid?",
       });
       console.error(error);
-    }
+      return undefined
+    })
+
+    if (typeof(fileText) === "undefined")
+      return
+
+    const characterJson = JSON.parse(fileText) // TODO: catch SyntaxError
+    return onSubmit({ dynamicId: userId, characterJson, envFile })
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onUploadSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
           <AccordionItem value="file" className={accordionItemStyle}>
             <AccordionTrigger className="font-semibold text-d6">
@@ -686,6 +537,97 @@ function UploadForm() {
       </form>
     </Form>
   )
+}
+
+async function onSubmit({
+  dynamicId,
+  characterJson,
+  envFile,
+} : {
+  dynamicId: string,
+  characterJson: Character,
+  envFile: string,
+}) {
+    console.debug("Character JSON", characterJson)
+
+    try {
+      const apiUser = await getUser({ dynamicId })
+
+      const agentPayload = {
+        ownerId: apiUser.id,
+        characterJson: characterJson,
+        envFile,
+      }
+
+      const agentPromise = createAgent(agentPayload)
+      const unusedRuntimes = await getRuntimes()
+      // if no unused runtime, get a random one
+      // TODO: delete once getlatestruntime is implemented on API
+      const runtime: Runtime = unusedRuntimes.length ?
+        unusedRuntimes[0] :
+        await (async () => {
+          console.log("No unused runtimes to start an agent, getting a random runtime")
+          const runtimes: Runtime[] = (
+            await getRuntimes(false)
+            .then(list => list.length ? list : Promise.all([createRuntime()]))
+          )
+          return runtimes[Math.floor(Math.random() * runtimes.length)]
+        })()
+
+      const { id: agentId } = await agentPromise
+      startAgent(agentId, runtime.id)
+      toast({
+        title: "Agent Created!",
+        description: "Agent has been defined, but is still waiting to start up.",
+      })
+
+      // TODO: configurable maxTries
+      // TODO: configurable delay (in ms)
+      const delay = 30000
+      const maxTries = 15
+      const arr = [...Array(maxTries).keys()]
+      startLoop: for (const i of arr) {
+        console.log(
+          "Waiting for agent", agentId,
+          "to start up for runtime", runtime.id,
+          "at", runtime.url,
+        )
+
+        const status = await getAgentStartTaskStatus(
+          agentId,
+          runtime.id,
+          delay,
+        )
+        switch (status) {
+          case TaskStatus.SUCCESS:
+            console.log(
+              "Agent", agentId,
+              "successfully started on", runtime.id,
+            "at", runtime.url,
+          )
+            toast({
+              title: "Success!",
+              description: "Agent defined and started! You can now fully interact with it.",
+            })
+            break startLoop;
+          case TaskStatus.FAILURE:
+            throw new Error("Agent Start Task Status failed!!!")
+          case TaskStatus.PENDING:
+          case TaskStatus.STARTED:
+            toast({
+              title: "Still waiting for agent to start..."
+            })
+        }
+
+        if (i === maxTries - 1)
+          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
+      }
+    } catch (error) {
+      toast({
+        title: "Something went wrong. Please try again",
+      });
+      console.error(error);
+    }
 }
 
 function SubmitButton() {
