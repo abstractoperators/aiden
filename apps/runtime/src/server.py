@@ -67,19 +67,28 @@ def get_character_status() -> CharacterStatus:
     """
     global agent_runtime_subprocess
 
-    if agent_runtime_subprocess and agent_runtime_subprocess.poll() is None:
+    exit_code = None
+    if agent_runtime_subprocess:
+        exit_code = agent_runtime_subprocess.poll()
+    if agent_runtime_subprocess and exit_code is None:
         try:
             agents = requests.get("http://localhost:3000/agents").json().get("agents")
             agent_id = agents[0].get("id") if agents else ""
-        except requests.exceptions.ConnectionError:
-            return CharacterStatus(running=False)
+        except requests.exceptions.ConnectionError as e:
+            return CharacterStatus(running=False, msg=str(e))
         return CharacterStatus(running=True, agent_id=agent_id)
-    else:
-        return CharacterStatus(running=False)
+
+    return CharacterStatus(
+        running=False,
+        agent_id="",
+        msg=f"No agent running. {exit_code if exit_code else ''}",
+    )
 
 
 @router.post("/character/start")
-def start_character(character: Character) -> CharacterStatus:
+def start_character(
+    character: Character,
+) -> CharacterStatus:
     """
     Attempts to start a character and returns its status after a wait.
     """
