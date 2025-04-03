@@ -402,6 +402,42 @@ function FieldArray({
     </div>
   )
 }
+function TokenId() {
+  return (
+    <AccordionItem value="Token Id" className={accordionItemStyle}>
+      <AccordionTrigger className="font-semibold text-d6">
+        TokenId
+      </AccordionTrigger>
+      <AccordionContent>
+        <FormField
+          name="tokenId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel></FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Token Id"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Link a token's actual uuid here.
+              </FormDescription>
+              <a
+                href="/tokens/launch"
+                className="text-blue-600 underline text-sm mt-1 inline-block"
+              >
+                Need to deploy a new token? Click here.
+              </a>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </AccordionContent>
+    </AccordionItem>
+  )
+}
+
 
 function EnvironmentVariables() {
   return (
@@ -431,33 +467,6 @@ function EnvironmentVariables() {
   )
 }
 
-function TokenId() {
-  return (
-    <AccordionItem value="Token Id" className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">
-        TokenId
-      </AccordionTrigger>
-      <AccordionContent>
-        <FormField
-          name="tokenId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel></FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Token Id"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>Link a token's actual uuid here.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
 
 function SubmitButton() {
   return (

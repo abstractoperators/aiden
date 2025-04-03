@@ -2,6 +2,7 @@ import { getToken } from "@/lib/api/token"
 import { TokenLaunch } from "@/components/token";
 import { BuyWithSei } from "@/components/token";
 import { SellForSei, Balance } from "@/components/token";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 
 export default async function Token({
     params,
