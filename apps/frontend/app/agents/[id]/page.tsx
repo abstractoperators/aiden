@@ -84,7 +84,7 @@ export default async function AgentHome({
             ) : <></>}
             {agent.characterJson.adjectives.length ? (
               <div>
-                <h2 className="font-sans text-d6">Lore</h2>
+                <h2 className="font-sans text-d6">Adjectives</h2>
               {agent.characterJson.adjectives.map(str => (
                 <p key={str}>{str}</p>
               ))}
