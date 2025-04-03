@@ -62,7 +62,7 @@ export default function Header({ variant }: variantProp) {
             className="transition duration-300 hover:invert-[.5]"
             href='/agents'
           >
-            Agents
+            Explore Agents
           </Link>
           <div className="flex items-center justify-between space-x-2">
             <LoginButtonHeader className="px-4 py-2" />

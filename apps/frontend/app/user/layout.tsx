@@ -15,6 +15,10 @@ export default async function UserLayout({
   const session = await auth()
   if (!session)
     throw new Error(`Session ${JSON.stringify(session)} does not exist!`)
+  if (!session.user)
+    throw new Error(`Session ${JSON.stringify(session)} does not have a user!`)
+  if (!session.user.id)
+    throw new Error(`Session user ${JSON.stringify(session.user)} does not have an ID!`)
 
   const apiUser = await getUser({dynamicId: session.user.id})
   const userAgents = (
@@ -33,7 +37,7 @@ export default async function UserLayout({
             variant="floating"
             userAgents={userAgents}
           />
-          <SidebarInset className="bg-opacity-0">
+          <SidebarInset className="bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur">
             <main>
               {children}
             </main>

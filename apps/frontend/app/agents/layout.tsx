@@ -7,9 +7,9 @@ export default function AgentsLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center w-full min-h-screen">
+    <div className="flex flex-col justify-between items-center w-full min-h-screen">
       <Header />
-        {children}
+      {children}
       <Footer />
     </div>
   )

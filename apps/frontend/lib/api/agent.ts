@@ -1,12 +1,13 @@
 'use server'
 
 import { revalidatePath } from "next/cache"
-import { createResource, fromApiEndpoint, getResource } from "./common"
+import { createResource, fromApiEndpoint, getResource, updateResource } from "./common"
 import { Runtime } from "./runtime"
 import { getToken, Token } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
 import { setTimeout } from "node:timers/promises"
+import { Character } from "@/lib/character"
 
 const AGENT_PATH = '/agents'
 const AGENT_SEGMENT = '/agents/'
@@ -32,20 +33,29 @@ interface AgentBase {
   ownerId: string
   runtimeId?: string | null
   tokenId?: string | null
-  characterJson: {
-    name: string
-  }
+  characterJson: Character
   envFile: string
 }
 
-interface Agent extends AgentBase {
+type AgentUpdate = Partial<AgentBase>
+
+interface Agent {
   id: string
   runtime?: Runtime | null
   token?: Token | null
+  envFile: { key: string, value: string | null }[]
+  elizaAgentId?: string | null
+  ownerId: string
+  runtimeId?: string | null
+  tokenId?: string | null
+  characterJson: Character
 }
 
 async function getAgent(agentId: string): Promise<Agent> {
-  return getResource<Agent>(baseUrlSegment, { resourceId: agentId })
+  return getResource<Agent>({
+    baseUrl: baseUrlSegment,
+    resourceId: agentId,
+  })
 }
 
 async function createAgent(agentPayload: AgentBase): Promise<Agent> {
@@ -60,26 +70,28 @@ async function startAgent(agentId: string, runtimeId: string): Promise<AgentStar
   ))
 }
 
-// TODO: update when endpoint is updated
 async function getAgentStartTaskStatus(
   agentId: string,
   runtimeId: string,
   delay?: number,
 ): Promise<TaskStatus> {
   await setTimeout(delay)
-  const baseUrl = fromApiEndpoint('/agents')
-  return getResource<TaskStatus>(new URL(
-    `${baseUrl.href}/${agentId}/start/${runtimeId}`,
-  ))
+  return getResource<TaskStatus>({
+    baseUrl: fromApiEndpoint('/tasks/start-agent'),
+    query: {
+      agentId: agentId,
+      runtimeId: runtimeId,
+    }
+  })
 }
 
 async function getAgents(
   query?: { userId: string } | { userDynamicId: string }
 ): Promise<Agent[]> {
-  return getResource<Agent[]>(
-    baseUrlSegment,
-    query ? { query: query } : undefined,
-  )
+  return getResource<Agent[]>({
+    baseUrl: baseUrlSegment,
+    query,
+  })
 }
 
 async function getEnlightened(
@@ -89,14 +101,14 @@ async function getEnlightened(
   )
 ): Promise<ClientAgent[]> {
   try {
-    const apiAgents = (!query) ? getAgents() : getAgents(query)
+    const apiAgents = await getAgents(query)
 
     return Promise.all(
-      (await apiAgents)
+      apiAgents
       .map(async agent => {
         const clientAgent = {
           id: agent.id,
-          name: agent.characterJson.name || "Nameless",
+          name: agent.characterJson.name || agent.id,
           ownerId: agent.ownerId,
           // TODO: retrieve financial stats via API
           marketCapitalization: 0,
@@ -117,9 +129,24 @@ async function getEnlightened(
   throw new Error("Logic error, this should never be reached.")
 }
 
-async function getIncubating(): Promise<ClientAgent[]> {
-  // TODO: replace with API call
-  return getEnlightened()
+async function getIncubating(
+  query?: (
+    { userId: string } |
+    { userDynamicId: string }
+  )
+): Promise<ClientAgent[]> {
+  // TODO: replace with Incubating version
+  return getEnlightened(query)
+}
+
+async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<Agent> {
+  const ret = updateResource<Agent, AgentUpdate>({
+    baseUrl: baseUrlSegment,
+    resourceId: agentId,
+    body: agentUpdate
+  })
+  revalidatePath(AGENT_PATH)
+  return ret
 }
 
 export {
@@ -129,6 +156,7 @@ export {
   getIncubating,
   getAgentStartTaskStatus,
   startAgent,
+  updateAgent,
 }
 
 export type {
