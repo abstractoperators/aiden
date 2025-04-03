@@ -216,6 +216,18 @@ async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> AgentPublic
         return agent_to_agent_public(agent)
 
 
+@app.post("/tokens/save")
+async def save_token(token_base: TokenBase) -> Token:
+    """
+    Saves an already deployed token to db.
+    Returns the token object
+    """
+    with Session() as session:
+        token = crud.create_token(session, token_base)
+
+    return token
+
+
 @app.post("/tokens")
 async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
     """
