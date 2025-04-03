@@ -3,7 +3,7 @@ interface Character {
   clients: string[]
   modelProvider: string
   settings?: {
-    secrets?: {}
+    secrets?: Record<string, string>
   }
   plugins: string[]
   bio: string[]
