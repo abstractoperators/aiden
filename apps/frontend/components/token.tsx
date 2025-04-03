@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
 import { FC, useState } from "react";
 import { getContract } from "viem";
+import { parseEther } from "viem";
 import { parseEventLogs } from "viem";
 import { FormEventHandler } from "react";
 import BONDING_JSON from "@/lib/abis/bonding.json";
@@ -112,4 +113,82 @@ const TokenLaunch: FC<{
     );
 };
 
-export { TokenLaunch };
+const BuyWithSei: FC<{
+    tokenAddress: string;
+}> = ({ tokenAddress }) => {
+    const { primaryWallet } = useDynamicContext();
+    const [status, setStatus] = useState<{
+        loading: boolean;
+        success?: string;
+        error?: string;
+    }>({ loading: false });
+
+    if (!primaryWallet || !isEthereumWallet(primaryWallet)) return (<>Must be connected to ethereum wallet.</>);
+
+    const onSubmit: FormEventHandler = async (event) => {
+        event.preventDefault();
+        setStatus({ loading: true });
+
+        try {
+            const walletClient = await primaryWallet.getWalletClient();
+            const publicClient = await primaryWallet.getPublicClient();
+            if (!publicClient) throw new Error("No public client available");
+            if (!walletClient) throw new Error("No wallet client available");
+
+            // Create contract instance with the signer
+            const bondingContract = getContract({
+                address: BONDING_CONTRACT_ADDRESS,
+                abi: BONDING_ABI,
+                client: { public: publicClient, wallet: walletClient }
+            });
+
+            const formData = new FormData(event.target as HTMLFormElement);
+            const amount = formData.get("amount") as string;
+
+            const buyHash = await bondingContract.write.buyWithSei(
+                [tokenAddress],
+                {
+                    value: parseEther(amount)
+                }
+            );
+
+            const buyReceipt = await publicClient.waitForTransactionReceipt({
+                hash: buyHash,
+                confirmations: 1,
+            });
+
+            console.log("Token bought successfully! Transaction hash:", buyHash);
+
+            setStatus({
+                loading: false,
+                success: `Token bought successfully! Transaction hash: ${buyHash}`,
+            });
+        } catch (error) {
+            console.error("Error buying token:", error);
+            setStatus({
+                loading: false,
+                error: error instanceof Error ? error.message : "Unknown error occurred"
+            });
+        }
+    };
+
+    return (
+        <form onSubmit={onSubmit}>
+            <p> Buy Token</p>
+            <input
+                type="text"
+                name="amount"
+                placeholder="Amount Sei"
+            />
+            <button type="submit"> Buy Token </button>
+        </form>
+    );
+};
+
+/* const SellForSei: FC<{
+    tokenAddress: string;
+}> = ({ tokenAddress }) => {
+    return (
+        <form 
+}; */
+export { TokenLaunch, BuyWithSei };
