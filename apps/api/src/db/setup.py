@@ -53,11 +53,13 @@ def init_db():
     """
     logger.info("Initializing database")
     if SQLALCHEMY_DATABASE_URL.drivername == "sqlite":
+        logger.info("Using sqlite, dropping and creating tables")
         with Session() as session:
             logger.info(f"Dropping and creating tables for sqlite. {SQLModel.metadata}")
             SQLModel.metadata.drop_all(session.get_bind())
             SQLModel.metadata.create_all(session.get_bind())
     else:
+        logger.info("Using postgres, running alembic migrations")
         from alembic import command
         from alembic.config import Config
 
