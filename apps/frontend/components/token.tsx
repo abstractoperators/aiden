@@ -15,8 +15,7 @@ const BONDING_CONTRACT_ADDRESS = "0xDdFF841E7bb9c2180D160eE5E11663ca127Fd21e";
 const BONDING_ABI = BONDING_JSON.abi;
 const ERC20_ABI = ERC20_JSON.abi;
 
-const TokenLaunch: FC<{
-}> = ({ }) => {
+const TokenLaunch: FC = () => {
     const { primaryWallet } = useDynamicContext();
 
     if (!primaryWallet || !isEthereumWallet(primaryWallet)) return (<>No wallet</>);
@@ -70,7 +69,8 @@ const TokenLaunch: FC<{
             }
 
 
-            const launchedEvent = launchedEvents[0] as any;
+            const launchedEvent = launchedEvents[0];
+            // @ts-ignore
             const tokenAddress = launchedEvent.args[0] as `0x${string}`;
             console.log("Token launched at:", tokenAddress);
 
@@ -141,7 +141,7 @@ const BuyWithSei: FC<{
                     }
                 );
 
-                const buyReceipt = await publicClient.waitForTransactionReceipt({
+                await publicClient.waitForTransactionReceipt({
                     hash: buyHash,
                     confirmations: 1,
                 });
@@ -196,15 +196,10 @@ const Balance: FC<{
         }
     };
 
-    // Automatically fetch balance when the component mounts
-    useEffect(() => {
-        fetchBalance();
-    }, [primaryWallet, tokenAddress]);
-
     return (
         <div>
             <p>Token Balance: {formattedBalance}</p>
-
+            <button onClick={fetchBalance}>Fetch Balance</button>
         </div>
     );
 };
@@ -246,19 +241,19 @@ const SellForSei: FC<{
                     gasLimit: 100000,
                 }
             );
-            // const approveReceipt = await publicClient.waitForTransactionReceipt({
-            //     hash: approveHash,
-            //     confirmations: 1,
-            // });
+            await publicClient.waitForTransactionReceipt({
+                hash: approveHash,
+                confirmations: 1,
+            });
             console.log("Approval transaction hash:", approveHash);
             const buyHash = await bondingContract.write.sellForSei(
                 [parsedAmount, tokenAddress],
             );
 
-            // const buyReceipt = await publicClient.waitForTransactionReceipt({
-            //     hash: buyHash,
-            //     confirmations: 1,
-            // });
+            await publicClient.waitForTransactionReceipt({
+                hash: buyHash,
+                confirmations: 1,
+            });
 
             console.log("Token bought successfully! Transaction hash:", buyHash);
 
