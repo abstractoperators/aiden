@@ -6,11 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { z } from "zod"
 import { toast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card"
+import { Agent, getAgent, getAgentStartTaskStatus, startAgent } from "@/lib/api/agent"
+import { getRuntime } from "@/lib/api/runtime"
+import { AgentStartTask, TaskStatus } from "@/lib/api/task"
+import { Skeleton } from "./ui/skeleton"
+import { UrlResourceForbiddenError, UrlResourceUnauthorizedError } from "@/lib/api/common"
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 
 const formSchema = z.object({
   message: z.string(),
@@ -32,15 +38,96 @@ const left = "m-4 flex flex-col justify-center items-start text-left"
 const right = "m-4 flex flex-col justify-center items-end text-right"
 
 export default function Chat({
-  elizaId,
-  runtimeUrl,
+  init,
 }: {
-  elizaId: string,
-  runtimeUrl: string,
+  init: Agent,
 }) {
-  const chatUrl = new URL(`${elizaId}/message`, runtimeUrl)
+  const [agent, setAgent] = useState<Agent>(init)
+  const [agentStartTaskStatus, setAgentStartTaskStatus] = useState<AgentStartTask>()
   const [chat, setChat] = useState<Message[]>([])
-  const senderName = 'You'
+  const { user } = useDynamicContext()
+
+  useEffect(() => {
+    if (!agent.runtimeId && !agentStartTaskStatus) {
+      const wakeAgent = async () => {
+        try {
+          const runtime = await getRuntime()
+          setAgentStartTaskStatus(await startAgent(agent.id, runtime.id))
+        } catch (error) {
+          console.error(error)
+          if (error instanceof UrlResourceUnauthorizedError) {
+            toast({
+              title: "Unable to wake agent!",
+              description: "You must be logged in and own this agent to wake it up.",
+            })
+          } else if (error instanceof UrlResourceForbiddenError) {
+            toast({
+              title: "Unable to wake agent!",
+              description: "You do not own this agent and cannot wake it up.",
+            })
+          }
+        }
+      }
+
+      console.log("Agent", agent.characterJson.name, "not awake, waking up now")
+      wakeAgent()
+    } else if (!agent.runtimeId && agentStartTaskStatus) {
+      const { agentId, runtimeId } = agentStartTaskStatus
+      const pollAgentStartTaskStatus = async () => {
+        try {
+          // TODO: configurable maxTries
+          // TODO: configurable delay (in ms)
+          const delay = 30000
+          const maxTries = 15
+          const arr = [...Array(maxTries).keys()]
+          startLoop: for (const i of arr) {
+            console.debug(
+              "Waiting for agent", agentId,
+              "to start up for runtime", runtimeId,
+            )
+
+            const status = await getAgentStartTaskStatus(
+              agentId,
+              runtimeId,
+              delay,
+            )
+            switch (status) {
+              case TaskStatus.SUCCESS:
+                console.log(
+                  "Agent", agentId,
+                  "successfully started on", runtimeId,
+                )
+                break startLoop;
+              case TaskStatus.FAILURE:
+                throw new Error("Agent Start Task Status failed!!!")
+              case TaskStatus.PENDING:
+              case TaskStatus.STARTED:
+            }
+
+            if (i === maxTries - 1)
+              throw new Error(`Couldn't wake up ${agent.characterJson.name} after ${maxTries} tries!!!`)
+          }
+
+          const newAgent = await getAgent(agent.id)
+          setAgent(newAgent)
+        } catch (error) {
+          console.error(error)
+          if (error instanceof Error) {
+            toast({
+              title: "Unable to start agent chat!",
+              description: error.message,
+            })
+          }
+        }
+      }
+      
+      pollAgentStartTaskStatus()
+     } else {
+      console.debug("Agent", agent.characterJson.name, "is up an running")
+    }
+  }, [agent, agentStartTaskStatus])
+
+  const senderName = user ? `${user} (You)` : 'You'
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,7 +148,7 @@ export default function Chat({
       // TODO: better wait indicator/feedback
       // TODO: move to server side
       const response = await fetch(
-        chatUrl,
+        new URL(`${agent.elizaAgentId}/message`, agent.runtime?.url),
         {
           method: "POST",
           headers: {
@@ -96,6 +183,8 @@ export default function Chat({
   }
 
   return (
+  <div>
+  {agent.runtimeId ? 
     <div className="flex flex-col w-full justify-start items-center gap-8">
       <ScrollArea className="bg-anakiwa-darker/50 w-full h-96 lg:h-[600px] rounded-xl p-2">
         <ol className="flex flex-col w-full">
@@ -132,6 +221,10 @@ export default function Chat({
           <Button type="submit">Send message</Button>
         </form>
       </Form>
+    </div> : <div className="flex flex-col w-full justify-start items-center gap-8">
+      <Skeleton className="w-full h-96 lg:h-[600px] rounded-xl p-2" />
+      Waking agent up
     </div>
-  )
+  }
+  </div>)
 }
