@@ -21,7 +21,7 @@ import {
 } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useDynamicContext, UserProfile } from "@dynamic-labs/sdk-react-core"
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 import { getUser } from "@/lib/api/user";
 import {
   createAgent,
