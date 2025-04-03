@@ -12,10 +12,10 @@ export default async function AgentEdit({
   const { characterJson, envFile, ownerId, runtimeId } = await getAgent(id)
 
   const session = await auth()
-  const user = session?.user?.id && await getUser({dynamicId: session.user.id})
+  const user = session?.user?.id && await getUser({ dynamicId: session.user.id })
   const userOwnsAgent = user && user.id === ownerId
 
-  return (userOwnsAgent ? 
+  return (userOwnsAgent ?
     <div className="my-16 mx-16">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl my-8">
         Edit Agent {characterJson.name}
@@ -24,6 +24,7 @@ export default async function AgentEdit({
         defaultValues={{
           env: envFile.map(({ key, value }) => `${key}=${value || ""}`).join("\n"),
           twitter: characterJson.clients.includes("twitter"),
+          tokenId: "",
           ...characterJson
         }}
         agentId={id}
