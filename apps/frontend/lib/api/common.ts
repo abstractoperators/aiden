@@ -4,8 +4,8 @@ import { auth } from "@/auth"
 import { camelize, snakify } from "@/lib/utils"
 
 class UrlResourceNotFoundError extends Error {
-  constructor(url: string) {
-    super(`Resource at ${url} not found!`)
+  constructor(url: string, text: string) {
+    super(`Resource at ${url} not found! Got ${text}`)
     this.name = "UrlResourceNotFoundError"
     // It's recommended to set the prototype explicitly.
     Object.setPrototypeOf(this, UrlResourceNotFoundError.prototype)
@@ -13,8 +13,8 @@ class UrlResourceNotFoundError extends Error {
 }
 
 class UrlResourceForbiddenError extends Error {
-  constructor(url: string) {
-    super(`Resource at ${url} forbidden!`)
+  constructor(url: string, text: string) {
+    super(`Resource at ${url} forbidden! Got ${text}`)
     this.name = "UrlResourceForbiddenError"
     // It's recommended to set the prototype explicitly.
     Object.setPrototypeOf(this, UrlResourceForbiddenError.prototype)
@@ -22,21 +22,28 @@ class UrlResourceForbiddenError extends Error {
 }
 
 class UrlResourceUnauthorizedError extends Error {
-  constructor(url: string) {
-    super(`Resource at ${url} unauthorized!`)
+  constructor(url: string, text: string) {
+    super(`Resource at ${url} unauthorized! Got ${text}`)
     this.name = "UrlResourceUnauthorizedError"
     // It's recommended to set the prototype explicitly.
     Object.setPrototypeOf(this, UrlResourceUnauthorizedError.prototype)
   }
 }
 
-function checkResponseStatus(response: Response): void {
-  if (response.status === 404)
-    throw new UrlResourceNotFoundError(response.url)
-  if (response.status === 403)
-    throw new UrlResourceForbiddenError(response.url)
-  if (response.status === 401)
-    throw new UrlResourceUnauthorizedError(response.url)
+async function checkResponseStatus(response: Response): Promise<void> {
+  const { status, url } = response
+  if (status === 404) {
+    const text = await response.text()
+    throw new UrlResourceNotFoundError(url, text)
+  }
+  if (status === 403) {
+    const text = await response.text()
+    throw new UrlResourceForbiddenError(url, text)
+  }
+  if (status === 401) {
+    const text = await response.text()
+    throw new UrlResourceUnauthorizedError(url, text)
+  }
 }
 
 async function getHeaders<RequestType>(
@@ -80,7 +87,7 @@ async function getResource<ResponseType>({
       { headers: await getHeaders(), },
     );
 
-    checkResponseStatus(response)
+    await checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to GET at ${url} with response ${JSON.stringify(response)}`)
 
@@ -104,7 +111,7 @@ async function createResource<ResponseType, RequestType = undefined>(
       }
     )
 
-    checkResponseStatus(response)
+    await checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to CREATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -134,7 +141,7 @@ async function updateResource<ResponseType, RequestType = undefined>({
       }
     )
 
-    checkResponseStatus(response)
+    await checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -193,7 +200,7 @@ async function deleteResource(
       }
     );
 
-    checkResponseStatus(response)
+    await checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to DELETE at ${url} with response ${JSON.stringify(response)}`)
 

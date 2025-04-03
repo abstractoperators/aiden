@@ -20,8 +20,19 @@ const get403Message = () => {
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const auth = req.auth
+  const consoleAuth = {
+    expires: auth?.expires,
+    user : {
+      email: auth?.user?.email,
+      id: auth?.user?.id,
+      image: auth?.user?.image,
+      name: auth?.user?.name,
+      scopes: auth?.user?.scopes,
+      token: auth?.user?.token.length,
+    }
+  }
   console.log("pathname:", pathname)
-  console.log("auth:", auth)
+  console.log("auth:", consoleAuth)
 
   if (!auth || !auth.user) {
     console.log(
