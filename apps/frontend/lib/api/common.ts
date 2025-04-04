@@ -226,7 +226,8 @@ export {
   getResource,
   updateResource,
   updateOrCreateResource,
+  UrlResourceBadRequestError,
+  UrlResourceForbiddenError,
   UrlResourceNotFoundError,
   UrlResourceUnauthorizedError,
-  UrlResourceForbiddenError,
 }
