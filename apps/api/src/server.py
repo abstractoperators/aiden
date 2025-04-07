@@ -5,12 +5,18 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
+from src.auth import (  # decode_bearer_token,
+    access_list,
+    get_user_from_token,
+    get_wallets_from_token,
+    valid_jwt,
+)
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
 from src.db.models import (
@@ -46,8 +52,11 @@ from src.models import (
     user_to_user_public,
 )
 from src.setup import test_db_connection
-from src.token_deployment import buy_token_unsigned, deploy_token, sell_token_unsigned
+from src.token_deployment import deploy_token
 from src.utils import obj_or_404
+
+# TODO: Change a ton of endpoints to not require information that is already in the JWT token.
+# For example, PATCH /users should just require the user_id in the JWT token, not in query params.
 
 
 @asynccontextmanager
@@ -96,8 +105,6 @@ async def auth_middleware(request: Request, call_next):
             )
 
         return await call_next(request)
-    else:
-        pass
     return await call_next(request)
 
 
@@ -139,10 +146,15 @@ async def ping():
 
 
 @app.post("/agents")
-def create_agent(agent: AgentBase) -> AgentPublic:
+def create_agent(
+    agent: AgentBase,
+    # Require that the user be signed in, but don't do any other verification
+    user: User = Security(get_user_from_token),  # noqa
+) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
     Only stores it in db.
+    Requires that the user be signed in.
     """
     with Session() as session:
         agent = crud.create_agent(session, agent)
@@ -161,20 +173,23 @@ async def get_agents(
     If user_dynamic_id is passed, returns all agents owned by that user.
     If neither is passed, returns all agents.
     Raises a 400 if both user_id and user_dynamic_id are passed.
+    If user query params are passed, valid auth for that user must be provided.
     """
     if user_id and user_dynamic_id:
         raise HTTPException(
             status_code=400,
             detail="Exactly one or zero of user_id or user_dynamic_id may be passed",
         )
-
     with Session() as session:
         if user_dynamic_id:
-            user = crud.get_user_by_dynamic_id(session, user_dynamic_id)
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
-            user_id = user.id
-            agents = crud.get_agents_by_user_id(session, user_id)
+            user: User = obj_or_404(
+                session,
+                crud.get_user_by_dynamic_id(
+                    user_dynamic_id=user_dynamic_id,
+                ),
+                User,
+            )
+            agents = crud.get_agents_by_user_id(session, user.id)
         elif user_id:
             agents = crud.get_agents_by_user_id(session, user_id)
         else:
@@ -184,7 +199,9 @@ async def get_agents(
 
 
 @app.get("/agents/{agent_id}")
-async def get_agent(agent_id: UUID) -> AgentPublic:
+async def get_agent(
+    agent_id: UUID,
+) -> AgentPublic:
     """
     Returns an agent by id.
     Raises a 404 if the agent is not found.
@@ -199,11 +216,22 @@ async def get_agent(agent_id: UUID) -> AgentPublic:
 
 
 @app.patch("/agents/{agent_id}")
-async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> AgentPublic:
+async def update_agent(
+    agent_id: UUID,
+    agent_update: AgentUpdate,
+    user: User = Security(get_user_from_token),
+) -> AgentPublic:
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
     """
+    # Prevent updating agent that doesn't belong to the user
+    # You can, however, transfer ownership.
+    if agent_update.owner_id and agent_update.owner_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to update an agent that doesn't belong to you",
+        )
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
@@ -217,7 +245,11 @@ async def update_agent(agent_id: UUID, agent_update: AgentUpdate) -> AgentPublic
 
 
 @app.post("/tokens")
-async def deploy_token_api(token_request: TokenCreationRequest) -> Token:
+async def deploy_token_api(
+    token_request: TokenCreationRequest,
+    user: User = Security(get_user_from_token),  # noqa
+    # TODO: Access lsit from jwt
+) -> Token:
     """
     Deploys a token smart contract to the block chain.
     Returns the token object.
@@ -268,54 +300,11 @@ async def get_token(token_id: UUID) -> Token:
     return token
 
 
-@app.get("/tokens/{token_id}/sell_txn")
-def get_sell_txn(token_id: UUID, user_address: str, amount_tokens: int) -> dict:
-    """
-    Returns an unsigned transaction to sell tokens for SEI.
-
-    contract_address: Address of the token contract
-    user_address: Address of the user selling the tokens
-    amount: Amount of tokens to sell
-    """
-    with Session() as session:
-        token = crud.get_token(session, token_id)
-
-        if not token:
-            raise ValueError(f"Token {token_id} not found")
-
-        contract_address = token.evm_contract_address
-        contract_abi = token.abi
-
-    return sell_token_unsigned(
-        amount_tokens,
-        contract_abi,
-        contract_address,
-        user_address,
-    )
-
-
-@app.get("/tokens/{token_id}/buy_txn")
-def get_buy_txn(token_id: UUID, user_address: str, amount_sei: int) -> dict:
-    """
-    Returns an unsigned transaction buy tokens with Sei
-    TODO: Change amount_sei -> amount_tokens
-    """
-    with Session() as session:
-        token = crud.get_token(session, token_id)
-
-        if not token:
-            raise ValueError(f"Token {token_id} not found")
-
-        contract_address = token.evm_contract_address
-
-    return buy_token_unsigned(
-        amount_sei,
-        contract_address,
-        user_address,
-    )
-
-
-@app.post("/runtimes")
+# TODO: Admin page for creating this.
+@app.post(
+    "/runtimes",
+    dependencies=[Security(access_list("admin"))],
+)
 def create_runtime() -> RuntimeCreateTask:
     """
     Attempts to create a new runtime.
@@ -369,7 +358,9 @@ def create_runtime() -> RuntimeCreateTask:
 
 
 @app.get("/runtimes")
-def get_runtimes(unused: bool = False) -> Sequence[Runtime]:
+def get_runtimes(
+    unused: bool = False,
+) -> Sequence[Runtime]:
     """
     Returns a list of up to 100 runtimes.
     """
@@ -396,21 +387,6 @@ def get_runtime(runtime_id: UUID) -> Runtime:
     return runtime
 
 
-@app.get("/tasks/{task_id}")
-def get_task_status(task_id: UUID) -> TaskStatus:
-    """
-    Returns the status of a task by id.
-    Raises a 404 if the task is not found.
-    """
-    # TODO: Include more info like traceback if failed.
-    with Session() as session:
-        task = crud.get_task(session, task_id)
-        if not task:
-            raise HTTPException(status_code=404, detail="Task not found")
-
-        return TaskStatus(task["status"])
-
-
 @app.get("/tasks/start-agent")
 def get_agent_start_task_status(
     agent_id: UUID | None = None,
@@ -427,75 +403,101 @@ def get_agent_start_task_status(
         raise ValueError("At least one of agent_id or runtime_id must be provided")
 
     with Session() as session:
-        agent_start_task: AgentStartTask | None = None
+        agent_start_task: AgentStartTask | None
         if agent_id and runtime_id:
-            agent_start_task = obj_or_404(
-                crud.get_agent_start_task(
-                    session,
-                    agent_id=agent_id,
-                    runtime_id=runtime_id,
-                ),
-                AgentStartTask,
+            agent_start_task = crud.get_agent_start_task(
+                session,
+                agent_id=agent_id,
+                runtime_id=runtime_id,
             )
+
         elif agent_id:
-            agent_start_task = obj_or_404(
-                crud.get_agent_start_task(
-                    session,
-                    agent_id=agent_id,
-                ),
-                AgentStartTask,
+            agent_start_task = crud.get_agent_start_task(
+                session,
+                agent_id=agent_id,
             )
         elif runtime_id:
-            agent_start_task = obj_or_404(
-                crud.get_agent_start_task(
-                    session,
-                    runtime_id=runtime_id,
-                ),
-                AgentStartTask,
+            agent_start_task = crud.get_agent_start_task(
+                session,
+                runtime_id=runtime_id,
             )
-        if not agent_start_task:
-            raise HTTPException(status_code=404, detail="Task not found")
+        agent_start_task = obj_or_404(agent_start_task, AgentStartTask)
+        logger.info(agent_start_task)
         task_id = agent_start_task.celery_task_id
-
         return get_task_status(task_id)
+
+
+@app.get("/tasks/{task_id}")
+def get_task_status(task_id: UUID) -> TaskStatus:
+    """
+    Returns the status of a task by id.
+    Raises a 404 if the task is not found.
+    """
+    # TODO: Include more info like traceback if failed.
+    with Session() as session:
+        task = crud.get_task(session, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        return TaskStatus(task["status"])
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
     agent_id: UUID,
     runtime_id: UUID,
+    current_user: User = Security(get_user_from_token),
 ) -> AgentStartTask:
     """
     Kicks off a task to start an agent on a runtime.
     Returns a task record that you can retrieve from.
     Returns a 404 if the agent or runtime is not found.
     """
+
+    with Session() as session:
+        agent: Agent | None = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        if agent.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to start an agent that doesn't belong to you",
+            )
+
     # Make sure that no task for starting an agent is already running.
     # Must block on both agent_id or runtime_id.
     # That is, there must not be a running task for either agent_id or runtime_id.
-    task_status_agent: TaskStatus | None = get_agent_start_task_status(
-        agent_id=agent_id
-    )
-    task_status_runtime: TaskStatus | None = get_agent_start_task_status(
-        runtime_id=runtime_id
-    )
+    try:
+        task_status_agent: TaskStatus | None = get_agent_start_task_status(
+            agent_id=agent_id
+        )
+        if task_status_agent and (
+            task_status_agent == TaskStatus.PENDING
+            or task_status_agent == TaskStatus.STARTED
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"There is already a {task_status_agent} task for agent {agent_id}",
+            )
+    except HTTPException as e:
+        if e.status_code != 404:
+            raise e
 
-    if task_status_agent and (
-        task_status_agent == TaskStatus.PENDING
-        or task_status_agent == TaskStatus.STARTED
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail=f"There is already a {task_status_agent} task for agent {agent_id}",
+    try:
+        task_status_runtime: TaskStatus | None = get_agent_start_task_status(
+            runtime_id=runtime_id
         )
-    if task_status_runtime and (
-        task_status_runtime == TaskStatus.PENDING
-        or task_status_runtime == TaskStatus.STARTED
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail=f"There is already a {task_status_runtime} task for runtime {runtime_id}",
-        )
+        if task_status_runtime and (
+            task_status_runtime == TaskStatus.PENDING
+            or task_status_runtime == TaskStatus.STARTED
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"There is already a {task_status_runtime} task for runtime {runtime_id}",
+            )
+    except HTTPException as e:
+        if e.status_code != 404:
+            raise e
 
     with Session() as session:
         # Let the task manage everything
@@ -509,7 +511,10 @@ def start_agent(
 
 
 @app.post("/agents/{agent_id}/stop")
-def stop_agent(agent_id: UUID) -> Agent:
+def stop_agent(
+    agent_id: UUID,
+    user: User = Security(get_user_from_token),  # noqa
+) -> Agent:
     """
     Stops agent running on a runtime.
     """
@@ -517,6 +522,12 @@ def stop_agent(agent_id: UUID) -> Agent:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
+
+        if not agent.owner_id == user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to stop an agent that doesn't belong to you",
+            )
 
         runtime_id = agent.runtime_id
         if not runtime_id:
@@ -535,15 +546,24 @@ def stop_agent(agent_id: UUID) -> Agent:
 
 
 @app.delete("/agents/{agent_id}")
-def delete_agent(agent_id: UUID) -> None:
+def delete_agent(
+    agent_id: UUID,
+    current_user: User = Security(get_user_from_token),
+) -> None:
     """
     Deletes an agent by id.
     Raises a 404 if the agent is not found.
+    Raises a 403 if the agent does not belong to the currently signed in user.
     """
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
+        if agent.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You may not delete an agent that doesn't belong to you",
+            )
 
         if agent.runtime_id:
             stop_agent(agent_id)
@@ -552,6 +572,7 @@ def delete_agent(agent_id: UUID) -> None:
     return None
 
 
+# TODO: Auth wallets by jwt token
 @app.post("/wallets")
 async def create_wallet(wallet: WalletBase) -> Wallet:
     """
@@ -607,7 +628,16 @@ async def get_wallets(
 
 
 @app.patch("/wallets/{wallet_id}")
-async def update_wallet(wallet_id: UUID, wallet_update: WalletUpdate) -> Wallet:
+async def update_wallet(
+    wallet_id: UUID,
+    wallet_update: WalletUpdate,
+    current_wallets: list[Wallet] = Security(get_wallets_from_token),
+) -> Wallet:
+    if wallet_id not in [wallet.id for wallet in current_wallets]:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to update a wallet that doesn't belong to you",
+        )
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
         if not wallet:
@@ -618,11 +648,19 @@ async def update_wallet(wallet_id: UUID, wallet_update: WalletUpdate) -> Wallet:
 
 
 @app.delete("/wallets/{wallet_id}")
-async def delete_wallet(wallet_id: UUID) -> None:
+async def delete_wallet(
+    wallet_id: UUID,
+    current_wallets: list[Wallet] = Security(get_wallets_from_token),
+) -> None:
     """
     Deletes a wallet.
     Returns a 404 if the wallet is not found.
     """
+    if wallet_id not in [wallet.id for wallet in current_wallets]:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete a wallet that doesn't belong to you",
+        )
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
         if not wallet:
@@ -632,10 +670,21 @@ async def delete_wallet(wallet_id: UUID) -> None:
 
 
 @app.post("/users")
-async def create_user(user: UserBase) -> User:
+async def create_user(
+    user: UserBase,
+    decoded_token: dict = Security(valid_jwt),
+) -> User:
     """
     Creates a new user in the database, and returns the full user.
     """
+    # Make sure the currently signed in user is the same as the user being created.
+    subject = decoded_token.get("sub")
+
+    if not UUID(subject) == user.dynamic_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to create a user that doesn't belong to you",
+        )
     with Session() as session:
         user = crud.create_user(session, user)
 
@@ -677,11 +726,23 @@ async def get_user(
 
 
 @app.patch("/users/{user_id}")
-async def update_user(user_id: UUID, user_update: UserUpdate) -> User:
+async def update_user(
+    user_id: UUID,
+    user_update: UserUpdate,
+    current_user: User = Security(get_user_from_token),
+) -> User:
     """
     Updates an existing in the database, and returns the full user.
     Returns a 404 if the user is not found.
+    user_id: UUID of user to update
+    user_update: UserUpdate object with fields to update
+    current_user: User object of the currently signed in user making the request. Comes from Auth headers.
     """
+    if not user_id == current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to update a user another than your own",
+        )
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
@@ -692,11 +753,19 @@ async def update_user(user_id: UUID, user_update: UserUpdate) -> User:
 
 
 @app.delete("/users/{user_id}")
-async def delete_user(user_id: UUID) -> None:
+async def delete_user(
+    user_id: UUID,
+    current_user: User = Security(get_user_from_token),
+) -> None:
     """
     Deletes a user from the database.
     Returns a 404 if the user is not found.
     """
+    if not user_id == current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete a user other than your own",
+        )
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
@@ -705,7 +774,10 @@ async def delete_user(user_id: UUID) -> None:
     return None
 
 
-@app.patch("/runtimes/{runtime_id}")
+@app.patch(
+    "/runtimes/{runtime_id}",
+    dependencies=[Depends(access_list("admin"))],
+)
 def update_runtime(
     runtime_id: UUID,
 ) -> RuntimeUpdateTask:
@@ -753,7 +825,10 @@ def update_runtime(
         return runtime_update_task
 
 
-@app.delete("/runtimes/{runtime_id}")
+@app.delete(
+    "/runtimes/{runtime_id}",
+    dependencies=[Depends(access_list("admin"))],
+)
 def delete_runtime(
     runtime_id: UUID,
 ) -> RuntimeDeleteTask:
