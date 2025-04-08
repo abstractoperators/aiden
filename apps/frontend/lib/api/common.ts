@@ -55,8 +55,8 @@ async function getHeaders<RequestType>(
     return undefined
 
   return new Headers({
-    ...(authToken ? {Authorization: `Bearer ${authToken}`} : {}),
-    ...(body ? {'Content-Type': 'application/json'} : {}),
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    ...(body ? { 'Content-Type': 'application/json' } : {}),
   })
 }
 
@@ -72,7 +72,7 @@ async function getResource<ResponseType>({
   baseUrl,
   resourceId,
   query,
-} : {
+}: {
   baseUrl: URL | string,
   resourceId?: string,
   query?: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -125,7 +125,7 @@ async function updateResource<ResponseType, RequestType = undefined>({
   baseUrl,
   resourceId,
   body,
-} : {
+}: {
   baseUrl: URL | string,
   resourceId: string,
   body?: RequestType,
@@ -175,13 +175,13 @@ async function updateOrCreateResource<
       resourceId,
       body: updateBody,
     })
-    .catch((error) => {
-      if (error instanceof UrlResourceNotFoundError) {
-        return createResource(createUrl, createBody)
-      } else {
-        throw error
-      }
-    })
+      .catch((error) => {
+        if (error instanceof UrlResourceNotFoundError) {
+          return createResource(createUrl, createBody)
+        } else {
+          throw error
+        }
+      })
   )
 }
 

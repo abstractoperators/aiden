@@ -5,10 +5,10 @@ const scopedRoutes: {
   path: string,
   requiredScopes: string[],
 }[] = [
-  { path: "/admin", requiredScopes: ["admin"] },
-  { path: "/user", requiredScopes: ["create-agent"] },
-  { path: "/user/agents/creation", requiredScopes: ["deploy-agent"] },
-]
+    { path: "/admin", requiredScopes: ["admin"] },
+    { path: "/user", requiredScopes: ["create-agent"] },
+    { path: "/user/agents/creation", requiredScopes: ["deploy-agent"] },
+  ]
 
 const get403Message = () => {
   return NextResponse.json(
@@ -22,7 +22,7 @@ export default auth((req) => {
   const auth = req.auth
   const consoleAuth = {
     expires: auth?.expires,
-    user : {
+    user: {
       email: auth?.user?.email,
       id: auth?.user?.id,
       image: auth?.user?.image,
@@ -41,7 +41,7 @@ export default auth((req) => {
       "without any authorization!",
     )
     return NextResponse.json(
-      { error: "Unauthorized: Log in to attempt access to this page!"},
+      { error: "Unauthorized: Log in to attempt access to this page!" },
       { status: 401 },
     )
   }

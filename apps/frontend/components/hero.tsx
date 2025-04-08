@@ -6,6 +6,10 @@ import { ChevronsDown } from "lucide-react"
 import Link from "next/link"
 import { buttonVariants } from "./ui/button"
 import { cn } from "@/lib/utils"
+import { ChevronsDown } from "lucide-react"
+import Link from "next/link"
+import { buttonVariants } from "./ui/button"
+import { cn } from "@/lib/utils"
 
 export default function Hero() {
   return (
@@ -29,21 +33,21 @@ export default function Hero() {
       </div>
       <div className="h-48 flex flex-col items-center justify-between">
         <LoginButtonHero className="px-8 py-8 text-3xl" />
-          <Link
-            href="#about"
-            className={cn(
-              buttonVariants({
-                variant: "ghost",
-              }),
-              "rounded-xl h-12 w-12",
-            )}
-          >
-            <ChevronsDown
-              className="animate-bounce mt-2 !h-8 !w-8"
-              strokeWidth={3}
-            />
-            <span className="sr-only">Scroll Down</span>
-          </Link>
+        <Link
+          href="#about"
+          className={cn(
+            buttonVariants({
+              variant: "ghost",
+            }),
+            "rounded-xl h-12 w-12",
+          )}
+        >
+          <ChevronsDown
+            className="animate-bounce mt-2 !h-8 !w-8"
+            strokeWidth={3}
+          />
+          <span className="sr-only">Scroll Down</span>
+        </Link>
       </div>
     </section>
   )
