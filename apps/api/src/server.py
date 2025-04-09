@@ -244,18 +244,6 @@ async def update_agent(
         return agent_to_agent_public(agent)
 
 
-@app.post("/tokens/save")
-async def save_token(token_base: TokenBase) -> Token:
-    """
-    Saves an already deployed token to db.
-    Returns the token object
-    """
-    with Session() as session:
-        token = crud.create_token(session, token_base)
-
-    return token
-
-
 @app.post("/tokens")
 async def deploy_token_api(
     token_request: TokenCreationRequest,
@@ -271,11 +259,8 @@ async def deploy_token_api(
     ticker = token_request.ticker
 
     # Deploy the token
-    await deploy_token(name, ticker)
-    contract_address, contract_abi = (
-        await deploy_token(name, ticker),
-        [{"not a real abi": "temporary not a real abi"}],
-    )
+    contract_address, contract_abi = await deploy_token(name, ticker)
+
     with Session() as session:
         token = crud.create_token(
             session,

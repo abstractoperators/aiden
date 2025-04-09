@@ -4,8 +4,8 @@ import { auth } from "@/auth"
 import { camelize, snakify } from "@/lib/utils"
 
 class UrlResourceNotFoundError extends Error {
-  constructor(url: string, text: string) {
-    super(`Resource at ${url} not found! Got ${text}`)
+  constructor(url: string) {
+    super(`Resource at ${url} not found!`)
     this.name = "UrlResourceNotFoundError"
     // It's recommended to set the prototype explicitly.
     Object.setPrototypeOf(this, UrlResourceNotFoundError.prototype)
@@ -13,8 +13,8 @@ class UrlResourceNotFoundError extends Error {
 }
 
 class UrlResourceForbiddenError extends Error {
-  constructor(url: string, text: string) {
-    super(`Resource at ${url} forbidden! Got ${text}`)
+  constructor(url: string) {
+    super(`Resource at ${url} forbidden!`)
     this.name = "UrlResourceForbiddenError"
     // It's recommended to set the prototype explicitly.
     Object.setPrototypeOf(this, UrlResourceForbiddenError.prototype)
@@ -22,28 +22,21 @@ class UrlResourceForbiddenError extends Error {
 }
 
 class UrlResourceUnauthorizedError extends Error {
-  constructor(url: string, text: string) {
-    super(`Resource at ${url} unauthorized! Got ${text}`)
+  constructor(url: string) {
+    super(`Resource at ${url} unauthorized!`)
     this.name = "UrlResourceUnauthorizedError"
     // It's recommended to set the prototype explicitly.
     Object.setPrototypeOf(this, UrlResourceUnauthorizedError.prototype)
   }
 }
 
-async function checkResponseStatus(response: Response): Promise<void> {
-  const { status, url } = response
-  if (status === 404) {
-    const text = await response.text()
-    throw new UrlResourceNotFoundError(url, text)
-  }
-  if (status === 403) {
-    const text = await response.text()
-    throw new UrlResourceForbiddenError(url, text)
-  }
-  if (status === 401) {
-    const text = await response.text()
-    throw new UrlResourceUnauthorizedError(url, text)
-  }
+function checkResponseStatus(response: Response): void {
+  if (response.status === 404)
+    throw new UrlResourceNotFoundError(response.url)
+  if (response.status === 403)
+    throw new UrlResourceForbiddenError(response.url)
+  if (response.status === 401)
+    throw new UrlResourceUnauthorizedError(response.url)
 }
 
 async function getHeaders<RequestType>(
@@ -55,8 +48,8 @@ async function getHeaders<RequestType>(
     return undefined
 
   return new Headers({
-    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-    ...(body ? { 'Content-Type': 'application/json' } : {}),
+    ...(authToken ? {Authorization: `Bearer ${authToken}`} : {}),
+    ...(body ? {'Content-Type': 'application/json'} : {}),
   })
 }
 
@@ -72,7 +65,7 @@ async function getResource<ResponseType>({
   baseUrl,
   resourceId,
   query,
-}: {
+} : {
   baseUrl: URL | string,
   resourceId?: string,
   query?: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -87,7 +80,7 @@ async function getResource<ResponseType>({
       { headers: await getHeaders(), },
     );
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to GET at ${url} with response ${JSON.stringify(response)}`)
 
@@ -111,7 +104,7 @@ async function createResource<ResponseType, RequestType = undefined>(
       }
     )
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to CREATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -125,7 +118,7 @@ async function updateResource<ResponseType, RequestType = undefined>({
   baseUrl,
   resourceId,
   body,
-}: {
+} : {
   baseUrl: URL | string,
   resourceId: string,
   body?: RequestType,
@@ -141,7 +134,7 @@ async function updateResource<ResponseType, RequestType = undefined>({
       }
     )
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -175,13 +168,13 @@ async function updateOrCreateResource<
       resourceId,
       body: updateBody,
     })
-      .catch((error) => {
-        if (error instanceof UrlResourceNotFoundError) {
-          return createResource(createUrl, createBody)
-        } else {
-          throw error
-        }
-      })
+    .catch((error) => {
+      if (error instanceof UrlResourceNotFoundError) {
+        return createResource(createUrl, createBody)
+      } else {
+        throw error
+      }
+    })
   )
 }
 
@@ -200,7 +193,7 @@ async function deleteResource(
       }
     );
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to DELETE at ${url} with response ${JSON.stringify(response)}`)
 
