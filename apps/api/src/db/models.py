@@ -178,6 +178,7 @@ class AgentBase(Base):
     # character_json: dict = Field(
     #     description="Eliza character json", nullable=False, sa_type=JSON
     # )
+    character: ElizaCharacterJson
     env_file: str = Field(description=".env for the agent", nullable=False)
 
 
