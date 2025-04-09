@@ -88,6 +88,70 @@ class UserUpdate(Base):
     )
 
 
+# Reference elizas/packages/core/src/environment.ts > CharacterSchema
+# Not a faithful recreation - more limited.
+class ElizaCharacterJson(Base):
+    # model_config = ConfigDict(extra="allow")
+    # TODO: Enums for a lot of stuff (clients, modelProvider, plugins)
+    name: str = Field(description="Name of the agent", nullable=False)
+    agent_id: UUID | None = Field(
+        description="Agent id of the eliza agent (different from Agent.id)",
+        nullable=True,
+        default=None,
+    )
+    system: str | None = Field(
+        description="idk what this is", nullable=True, default=None
+    )
+    modelProvider: str = Field(description="LLM Provider", nullable=False)  # TODO: Enum
+    bio: list[str] = Field(
+        description="Bio of the agent, formatted as a json list of strings",
+        nullable=False,
+        default=[],
+        sa_type=JSON,
+    )
+    clients: list[str] = Field(
+        description="Clients of the agent, formatted as a json list of strings",
+        nullable=False,
+        default=[],
+        sa_type=JSON,
+    )
+    adjectives: list[str] = Field(
+        description="Adjectives of the agent, formatted as a json list of strings",
+        nullable=False,
+        default=[],
+        sa_type=JSON,
+    )
+    knowledge: list[str] = Field(
+        description="Knowledge of the agent, formatted as a json list of strings",
+        nullable=False,
+        default=[],
+        sa_type=JSON,
+    )
+    style: dict[str, list[str]] = Field(
+        description="Style of the agent, formatted as a json list of strings",
+        nullable=False,
+        default={"all": [], "chat": [], "post": []},
+        sa_type=JSON,
+    )
+    plugins: list[str] = Field(
+        description="Plugins of the agent, formatted as a json list of strings",
+        nullable=False,
+        default=[],
+        sa_type=JSON,
+    )
+
+    settings: dict[str, Any]
+    lore: list[str]
+    messageExamples: list[list[dict[str, str]]] = Field(
+        description="Message examples of the agent. Outer list is the conversation, inner list is the messages, inner dict is user: content",
+        nullable=False,
+        default=[],
+        sa_type=JSON,
+    )
+    postExamples: list[str]
+    topics: list[str]
+
+
 class AgentBase(Base):
     # TODO: Update to UUID type
     eliza_agent_id: UUID | None = Field(
@@ -111,9 +175,9 @@ class AgentBase(Base):
         default=None,
     )
     # 🤮
-    character_json: dict = Field(
-        description="Eliza character json", nullable=False, sa_type=JSON
-    )
+    # character_json: dict = Field(
+    #     description="Eliza character json", nullable=False, sa_type=JSON
+    # )
     env_file: str = Field(description=".env for the agent", nullable=False)
 
 
@@ -135,9 +199,9 @@ class AgentUpdate(Base):
         nullable=True,
         default=None,
     )
-    character_json: dict | None = Field(
-        description="Eliza character json. Json or dict.", nullable=True, default=None
-    )
+    # character_json: dict | None = Field(
+    #     description="Eliza character json. Json or dict.", nullable=True, default=None
+    # )
     env_file: str | None = Field(
         description=".env for the agent", nullable=True, default=None
     )
