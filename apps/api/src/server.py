@@ -183,9 +183,9 @@ async def get_agents(
     with Session() as session:
         if user_dynamic_id:
             user: User = obj_or_404(
-                session,
                 crud.get_user_by_dynamic_id(
-                    user_dynamic_id=user_dynamic_id,
+                    session,
+                    dynamic_id=user_dynamic_id,
                 ),
                 User,
             )
