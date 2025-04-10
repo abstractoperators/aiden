@@ -1,13 +1,36 @@
 # from unittest.mock import MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import inspect
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from .crud import create_agent, create_token, create_user
-from .models import Agent, AgentBase, Token, TokenBase, User, UserBase
+from .crud import (
+    create_agent,
+    create_runtime_create_task,
+    create_runtime_delete_task,
+    create_runtime_update_task,
+    create_token,
+    create_user,
+    get_runtime_create_task,
+    get_runtime_delete_task,
+    get_runtime_update_task,
+)
+from .models import (
+    Agent,
+    AgentBase,
+    RuntimeCreateTask,
+    RuntimeCreateTaskBase,
+    RuntimeDeleteTask,
+    RuntimeDeleteTaskBase,
+    RuntimeUpdateTask,
+    RuntimeUpdateTaskBase,
+    Token,
+    TokenBase,
+    User,
+    UserBase,
+)
 
 
 @pytest.fixture
@@ -26,6 +49,60 @@ def session():
         sess.close()
         SQLModel.metadata.drop_all(engine)
         engine.dispose()
+
+
+@pytest.fixture
+def runtime_create_task_factory(session):
+    tasks = []
+
+    def factory(**kwargs) -> RuntimeCreateTask:
+        task_base: RuntimeCreateTaskBase = RuntimeCreateTaskBase(**kwargs)
+        task: RuntimeCreateTask = create_runtime_create_task(session, task_base)
+
+        return task
+
+    try:
+        yield factory
+    finally:
+        for task in tasks:
+            session.delete(task)
+        session.commit()
+
+
+@pytest.fixture
+def runtime_update_task_factory(session):
+    tasks = []
+
+    def factory(**kwargs) -> RuntimeUpdateTask:
+        task_base: RuntimeUpdateTaskBase = RuntimeUpdateTaskBase(**kwargs)
+        task: RuntimeUpdateTask = create_runtime_update_task(session, task_base)
+
+        return task
+
+    try:
+        yield factory
+    finally:
+        for task in tasks:
+            session.delete(task)
+        session.commit()
+
+
+@pytest.fixture
+def runtime_delete_task_factory(session):
+    tasks = []
+
+    def factory(**kwargs) -> RuntimeDeleteTask:
+        task_base: RuntimeDeleteTaskBase = RuntimeDeleteTaskBase(**kwargs)
+        task: RuntimeDeleteTask = create_runtime_delete_task(session, task_base)
+
+        return task
+
+    try:
+        yield factory
+    finally:
+        for task in tasks:
+            session.delete(task)
+        session.commit()
 
 
 @pytest.fixture
@@ -149,3 +226,59 @@ def test_create_agent(user_factory, token_factory, agent_factory) -> None:
     assert agent.token_id == token.id
     assert agent.character_json == character_json
     assert agent.env_file == env_file
+
+
+def test_runtimes(
+    session: Session,
+    runtime_create_task_factory,
+    runtime_update_task_factory,
+    runtime_delete_task_factory,
+):
+    runtime_id: UUID = uuid4()
+    create_celery_task_uuid: UUID = uuid4()
+    create_task: RuntimeCreateTask = runtime_create_task_factory(
+        celery_task_id=create_celery_task_uuid,
+        runtime_id=runtime_id,
+    )
+    assert create_task is not None
+    assert create_task.runtime_id == runtime_id
+    assert create_task.celery_task_id == create_celery_task_uuid
+    gotten_create_task: RuntimeCreateTask | None = get_runtime_create_task(
+        session=session,
+        runtime_id=runtime_id,
+    )
+    assert gotten_create_task is not None
+    assert gotten_create_task.runtime_id == create_task.runtime_id
+    assert gotten_create_task.celery_task_id == create_task.celery_task_id
+
+    update_celery_task_id: UUID = uuid4()
+    update_task: RuntimeUpdateTask = runtime_update_task_factory(
+        celery_task_id=update_celery_task_id,
+        runtime_id=runtime_id,
+    )
+    assert update_task is not None
+    assert update_task.runtime_id == runtime_id
+    assert update_task.celery_task_id == update_celery_task_id
+    gotten_update_task: RuntimeUpdateTask | None = get_runtime_update_task(
+        session=session,
+        runtime_id=runtime_id,
+    )
+    assert gotten_update_task is not None
+    assert gotten_update_task.runtime_id == update_task.runtime_id
+    assert gotten_update_task.celery_task_id == update_task.celery_task_id
+
+    delete_celery_task_id: UUID = uuid4()
+    delete_task: RuntimeDeleteTask = runtime_delete_task_factory(
+        celery_task_id=delete_celery_task_id,
+        runtime_id=runtime_id,
+    )
+    assert delete_task is not None
+    assert delete_task.runtime_id == runtime_id
+    assert delete_task.celery_task_id == delete_celery_task_id
+    gotten_delete_task: RuntimeDeleteTask | None = get_runtime_delete_task(
+        session=session,
+        runtime_id=runtime_id,
+    )
+    assert gotten_delete_task is not None
+    assert gotten_delete_task.runtime_id == delete_task.runtime_id
+    assert gotten_delete_task.celery_task_id == delete_task.celery_task_id

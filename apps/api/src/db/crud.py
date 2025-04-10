@@ -156,6 +156,17 @@ def get_wallets_by_owner(session: Session, owner_id: UUID) -> Sequence[Wallet]:
     return session.exec(stmt).all()
 
 
+def get_wallet_by_public_key_hack(
+    session: Session,
+    public_key: str,
+) -> Wallet | None:
+    """
+    TODO: Remove and replace with identification w/ address + chai9n
+    """
+    stmt = select(Wallet).where(Wallet.public_key == public_key)
+    return session.exec(stmt).first()
+
+
 def get_wallet_by_public_key(
     session: Session,
     public_key: str,
@@ -299,6 +310,18 @@ def create_runtime_delete_task(
     return create_generic(
         session, RuntimeDeleteTask(**runtime_delete_task.model_dump())
     )
+
+
+def get_runtime_create_task(
+    session: Session, runtime_id: UUID
+) -> RuntimeCreateTask | None:
+    """
+    Returns the latest create task for a given runtime_id
+    """
+    stmt = select(RuntimeCreateTask).where(RuntimeCreateTask.runtime_id == runtime_id)
+    if RuntimeCreateTask.created_at:
+        stmt = stmt.order_by(col(RuntimeCreateTask.created_at).desc())
+    return session.exec(stmt).first()
 
 
 def get_runtime_update_task(
