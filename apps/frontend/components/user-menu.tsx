@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import AppearanceMenu from "./appearance-menu";
 import { LayoutDashboard, LogOut, Settings2 } from "lucide-react";
+import { getDisplayName } from "@/lib/dynamic/user";
 
 const iconClassName = "h-[1.2rem] w-[1.2rem]"
 
@@ -31,7 +32,7 @@ export default function UserMenu({
   user: UserProfile,
   wallet: Wallet,
 }) {
-  const displayName = user.username || user.email || wallet.address
+  const displayName = getDisplayName(user, wallet)
   const { setShowDynamicUserProfile } = useDynamicContext()
 
   return (
@@ -40,7 +41,7 @@ export default function UserMenu({
         <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:hue-rotate-60 transition duration-300">
           <AvatarFallback className="bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%">
             {
-              (displayName == wallet.address) ?
+              (displayName === wallet.address) ?
               displayName.substring(0, 2) :
               displayName[0]
             }
