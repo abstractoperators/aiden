@@ -1,13 +1,12 @@
 'use server'
 
 import { revalidatePath } from "next/cache"
-import { createResource, fromApiEndpoint, getResource, updateResource } from "./common"
+import { createResource, fromApiEndpoint, getResource } from "./common"
 import { Runtime } from "./runtime"
 import { getToken, Token } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
 import { setTimeout } from "node:timers/promises"
-import { Character } from "@/lib/character"
 
 const AGENT_PATH = '/agents'
 const AGENT_SEGMENT = '/agents/'
@@ -33,22 +32,16 @@ interface AgentBase {
   ownerId: string
   runtimeId?: string | null
   tokenId?: string | null
-  characterJson: Character
+  characterJson: {
+    name: string
+  }
   envFile: string
 }
 
-type AgentUpdate = Partial<AgentBase>
-
-interface Agent {
+interface Agent extends AgentBase {
   id: string
   runtime?: Runtime | null
   token?: Token | null
-  envFile: { key: string, value: string | null }[]
-  elizaAgentId?: string | null
-  ownerId: string
-  runtimeId?: string | null
-  tokenId?: string | null
-  characterJson: Character
 }
 
 async function getAgent(agentId: string): Promise<Agent> {
@@ -108,7 +101,7 @@ async function getEnlightened(
       .map(async agent => {
         const clientAgent = {
           id: agent.id,
-          name: agent.characterJson.name || agent.id,
+          name: agent.characterJson.name || "Nameless",
           ownerId: agent.ownerId,
           // TODO: retrieve financial stats via API
           marketCapitalization: 0,
@@ -139,16 +132,6 @@ async function getIncubating(
   return getEnlightened(query)
 }
 
-async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<Agent> {
-  const ret = updateResource<Agent, AgentUpdate>({
-    baseUrl: baseUrlSegment,
-    resourceId: agentId,
-    body: agentUpdate
-  })
-  revalidatePath(AGENT_PATH)
-  return ret
-}
-
 export {
   createAgent,
   getAgent,
@@ -156,7 +139,6 @@ export {
   getIncubating,
   getAgentStartTaskStatus,
   startAgent,
-  updateAgent,
 }
 
 export type {

@@ -1,14 +1,7 @@
 // https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
-import { auth } from "@/auth"
 import AgentCard from "@/components/agent-card"
 import Chat from "@/components/chat"
-import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAgent } from "@/lib/api/agent"
-import { getUser } from "@/lib/api/user"
-import { cn } from "@/lib/utils"
-import { Pencil } from "lucide-react"
-import Link from "next/link"
 
 // TODO: start agent button
 
@@ -93,6 +86,7 @@ export default async function AgentHome({
         <div className="col-span-5 flex flex-col justify-start items-stretch">
           <Chat init={agent} />
         </div>
-      </main>
+      </div>
+    </main>
   )
 }

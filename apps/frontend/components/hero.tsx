@@ -35,7 +35,7 @@ export default function Hero() {
               buttonVariants({
                 variant: "ghost",
               }),
-              "rounded-xl h-12 w-12",
+              "h-12 w-12",
             )}
           >
             <ChevronsDown

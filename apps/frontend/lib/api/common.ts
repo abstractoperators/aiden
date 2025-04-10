@@ -22,8 +22,8 @@ class UrlResourceUnauthorizedError extends Error {
 }
 
 class UrlResourceForbiddenError extends Error {
-  constructor(url: string, text: string) {
-    super(`Resource at ${url} forbidden! Got ${text}`)
+  constructor(url: string) {
+    super(`Resource at ${url} forbidden!`)
     this.name = "UrlResourceForbiddenError"
     // It's recommended to set the prototype explicitly.
     Object.setPrototypeOf(this, UrlResourceForbiddenError.prototype)
@@ -96,7 +96,7 @@ async function getResource<ResponseType>({
       { headers: await getHeaders(), },
     );
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to GET at ${url} with response ${JSON.stringify(response)}`)
 
@@ -120,7 +120,7 @@ async function createResource<ResponseType, RequestType = undefined>(
       }
     )
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to CREATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -150,7 +150,7 @@ async function updateResource<ResponseType, RequestType = undefined>({
       }
     )
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
 
@@ -209,7 +209,7 @@ async function deleteResource(
       }
     );
 
-    await checkResponseStatus(response)
+    checkResponseStatus(response)
     if (!response.ok)
       throw new Error(`Failed to DELETE at ${url} with response ${JSON.stringify(response)}`)
 
