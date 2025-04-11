@@ -23,7 +23,6 @@ function camelCase(str: string) {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
 }
 
-// TODO: resolve explicit any
 // TODO: extend to more general objects
 // TODO: https://github.com/kbrabrand/camelize-ts/blob/main/src/index.ts
 function camelize(value: string): string;

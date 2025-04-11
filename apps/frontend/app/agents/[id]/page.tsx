@@ -5,7 +5,8 @@ import Chat from "@/components/chat"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAgent } from "@/lib/api/agent"
-import { getUser } from "@/lib/api/user"
+import { isErrorResult, isSuccessResult } from "@/lib/api/result"
+import { getUser, User } from "@/lib/api/user"
 import { cn } from "@/lib/utils"
 import { Pencil, Coins } from "lucide-react"
 import Link from "next/link"
@@ -18,14 +19,34 @@ export default async function AgentHome({
   params: Promise<{ id: string }>,
 }) {
   const { id } = await params
-  const agent = await getAgent(id)
-  const name = agent.characterJson.name || agent.id
+  const agentResult = await getAgent(id)
+
+  if (isErrorResult(agentResult)) {
+    return (
+      <main
+        className={cn(
+          "flex-1 self-stretch m-8 grid grid-cols-12 gap-2 p-12",
+          "bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur",
+          "rounded-xl relative",
+        )}
+      >
+        <h1>Unable to retrieve Agent information!</h1>
+        <h2>{agentResult.message}</h2>
+      </main>
+    )
+  }
+
+  const agent = agentResult.data
+  const { characterJson: character, ownerId } = agent
+  const name = character.name || agent.id
   const tokenId = agent.tokenId
   console.log("Agent has tokenId", tokenId)
-
   const session = await auth()
   const user = session?.user?.id && await getUser({ dynamicId: session.user.id })
-  const userOwnsAgent = user && user.id === agent.ownerId
+  const userOwnsAgent = true
+    && user
+    && isSuccessResult<User>(user)
+    && user.data.id === ownerId
 
   return (
     <main
@@ -35,7 +56,6 @@ export default async function AgentHome({
         "rounded-xl relative",
       )}
     >
-
       {userOwnsAgent &&
         <Link
           href={`/user/agents/edit/${id}`}
@@ -73,34 +93,34 @@ export default async function AgentHome({
             <CardTitle className="text-d5">Basics</CardTitle>
           </CardHeader>
           <CardContent>
-            {agent.characterJson.bio.length ? (
+            {character.bio.length ? (
               <div>
                 <h2 className="font-sans text-d6">Bio</h2>
-                {agent.characterJson.bio.map(str => (
+                {character.bio.map(str => (
                   <p key={str}>{str}</p>
                 ))}
               </div>
             ) : <></>}
-            {agent.characterJson.lore.length ? (
+            {character.lore.length ? (
               <div>
                 <h2 className="font-sans text-d6">Lore</h2>
-                {agent.characterJson.lore.map(str => (
+                {character.lore.map(str => (
                   <p key={str}>{str}</p>
                 ))}
               </div>
             ) : <></>}
-            {agent.characterJson.topics.length ? (
+            {character.topics.length ? (
               <div>
                 <h2 className="font-sans text-d6">Topics</h2>
-                {agent.characterJson.topics.map(str => (
+                {character.topics.map(str => (
                   <p key={str}>{str}</p>
                 ))}
               </div>
             ) : <></>}
-            {agent.characterJson.adjectives.length ? (
+            {character.adjectives.length ? (
               <div>
                 <h2 className="font-sans text-d6">Adjectives</h2>
-                {agent.characterJson.adjectives.map(str => (
+                {character.adjectives.map(str => (
                   <p key={str}>{str}</p>
                 ))}
               </div>

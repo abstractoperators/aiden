@@ -5,6 +5,7 @@ import Header from "@/components/header";
 import { getEnlightened } from "@/lib/api/agent";
 import { auth } from "@/auth";
 import { getUser } from "@/lib/api/user";
+import { isErrorResult } from "@/lib/api/result";
 
 export default async function UserLayout({
   children,
@@ -20,10 +21,17 @@ export default async function UserLayout({
   if (!session.user.id)
     throw new Error(`Session user ${JSON.stringify(session.user)} does not have an ID!`)
 
-  const apiUser = await getUser({dynamicId: session.user.id})
-  const userAgents = (
-    await getEnlightened({userId: apiUser.id})
-  ).sort((a, b) => (a.name < b.name) ? -1 : 1);
+  const userResult = await getUser({dynamicId: session.user.id})
+
+  if (isErrorResult(userResult)) { return (
+    <div>
+      <h1>Unable to retrieve AIDN user!</h1>
+      <h2>{userResult.message}</h2>
+    </div>
+  )}
+
+  const user = userResult.data
+  const userAgents = await getEnlightened({userId: user.id})
 
   return (
     // TODO: figure out sidebar options

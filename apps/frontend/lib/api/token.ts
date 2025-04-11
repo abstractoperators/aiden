@@ -1,6 +1,7 @@
 "use server"
 import { fromApiEndpoint, getResource } from "./common"
-import { createResource } from "./common"
+import { createResource } from "./common"import { Result } from "./result"
+
 const TOKEN_SEGMENT = '/tokens/'
 const TOKEN_PATH = "/tokens"
 
@@ -22,7 +23,7 @@ interface Token extends TokenBase {
   id: string
 }
 
-async function getToken(tokenId: string): Promise<Token> {
+async function getToken(tokenId: string): Promise<Result<Token>> {
   return getResource<Token>({
     baseUrl: baseUrlSegment,
     resourceId: tokenId,

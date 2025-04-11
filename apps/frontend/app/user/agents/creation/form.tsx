@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { z } from "zod";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -29,10 +29,7 @@ import {
   SubmitButton,
   TokenId,
 } from "@/components/agent-form";
-
-// import {
-//   TokenLaunch
-// } from "@/components/token";
+import { useRouter } from "next/navigation";
 
 const MAX_FILE_SIZE = 5000000;
 const tokenSchema = z.object({
@@ -70,6 +67,9 @@ function UploadForm() {
   })
   const { handleSubmit } = form
 
+  const { toast } = useToast()
+  const { push } = useRouter()
+
   // TODO: set up sei and eth addresses if undefined
 
   async function onUploadSubmit(formData: UploadType) {
@@ -88,7 +88,13 @@ function UploadForm() {
       return
 
     const character = JSON.parse(fileText) // TODO: catch SyntaxError
-    return onSubmitCreate({ dynamicId: userId, character, envFile, tokenId });
+    return onSubmitCreate({
+      dynamicId: userId,
+      character,
+      envFile,
+      tokenId,
+      push,
+    })
   }
 
   return (

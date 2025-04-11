@@ -10,16 +10,19 @@ import {
   getOrCreateUser,
   getUser,
   updateUser,
+  User,
 } from "@/lib/api/user";
 import {
   createWallet,
   getWallet,
-  Wallet as ApiWallet,
   updateWallet,
   deleteWallet,
   updateOrCreateWallet,
+  Wallet,
 } from "@/lib/api/wallet";
 import { useRouter } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
+import { isErrorResult, isSuccessResult, Result } from "@/lib/api/result";
 
 export default function DynamicProvider({ children }: React.PropsWithChildren) {
   const router = useRouter()
@@ -73,17 +76,25 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
 
             router.refresh();
             // user initialization if needed
-            const apiUser = await getOrCreateUser(await dynamicToApiUser(user))
-            if (primaryWallet) {
-              updateOrCreateWallet(
-                { publicKey: primaryWallet.address },
-                { ownerId: apiUser.id },
-                {
-                  publicKey: primaryWallet.address,
-                  chain: primaryWallet.chain,
-                  ownerId: apiUser.id,
-                }
-              )
+            const userResult = await getOrCreateUser(await dynamicToApiUser(user))
+            if (isSuccessResult<User>(userResult)) {
+              const validUser = userResult.data
+              if (primaryWallet) {
+                updateOrCreateWallet(
+                  { publicKey: primaryWallet.address },
+                  { ownerId: validUser.id },
+                  {
+                    publicKey: primaryWallet.address,
+                    chain: primaryWallet.chain,
+                    ownerId: validUser.id,
+                  }
+                )
+              }
+            } else {
+              toast({
+                title: "Login error!",
+                description: userResult.message,
+              })
             }
 
             router.refresh()
@@ -99,13 +110,21 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             if (!jwtVerifiedCredential.address)
               throw new Error(`JWT Credential ${jwtVerifiedCredential} has no address!`)
 
-            const apiUser = await getUser({ dynamicId: user.userId })
+            const { address, chain } = jwtVerifiedCredential
 
-            createWallet({
-              publicKey: jwtVerifiedCredential.address,
-              chain: jwtVerifiedCredential.chain,
-              ownerId: apiUser.id,
-            })
+            const apiUser = await getUser({ dynamicId: user.userId })
+            if (isSuccessResult(apiUser)) {
+              createWallet({
+                publicKey: address,
+                chain,
+                ownerId: apiUser.data.id,
+              })
+            } else {
+              toast({
+                title: "User not found",
+                description: `Unable to find AIDN user matching user ID ${user.userId} and attach wallet ${address} on chain ${chain}.`,
+              })
+            }
           },
           onLogout: () => {
             handleLogout();
@@ -114,14 +133,27 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             if (!user.userId)
               throw new Error(`User ${user} has no userId!`)
             const apiUser = await getUser({ dynamicId: user.userId })
-            updateUser(apiUser.id, await dynamicToApiUser(user))
+            if (isSuccessResult<User>(apiUser)) {
+              updateUser(apiUser.data.id, await dynamicToApiUser(user))
+            } else {
+              toast({
+                title: "User not found",
+                description: "Unable to update AIDN user profile.",
+              })
+            }
+
           },
           onWalletAdded: async ({ wallet, userWallets }) => {
-            const user = await Promise.any(
-              userWallets.map(
-                dynamicWallet => getUser({ publicKey: dynamicWallet.address, chain: dynamicWallet.chain })
-              )
-            )
+            const user: Result<User> = await Promise.any(userWallets.map(dynamicWallet => (
+              getUser({ publicKey: dynamicWallet.address, chain: dynamicWallet.chain })
+                .then(result => (isSuccessResult<User>(result) ? result : Promise.reject(result)))
+            ))).catch(reason => {
+              if (reason instanceof AggregateError) {
+                return reason.errors[0] as Result<User>
+              } else {
+                throw reason
+              }
+            })
 
             // Cannot await auth on client >:(
             // https://stackoverflow.com/questions/78452233/error-headers-was-called-outside-a-request-scope
@@ -130,32 +162,40 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             //   throw new Error(`Session ${session} does not exist!`)
             // const user = session.user
 
-            if (!user)
-              throw new Error(`User ${user} does not exist!`)
+            if (isErrorResult(user)) {
+              toast({
+                title: "Unable to add wallet to AIDN user",
+                description: user.message,
+              })
+              return
+            }
 
-            const apiWallet: ApiWallet | null = await (
+            const apiWallet = await (
               getWallet({ publicKey: wallet.address, chain: wallet.chain })
-                .catch(() => null)
             )
 
-            if (apiWallet) {
-              updateWallet(apiWallet.id, { ownerId: user.id })
+            if (isSuccessResult<Wallet>(apiWallet)) {
+              updateWallet(apiWallet.data.id, { ownerId: user.data.id })
             } else {
               createWallet({
                 publicKey: wallet.address,
                 chain: wallet.chain,
-                ownerId: user.id,
+                ownerId: user.data.id,
               })
             }
           },
-          onWalletRemoved: ({ wallet }) => {
-            getWallet({ publicKey: wallet.address, chain: wallet.chain })
-              .then(apiWallet => deleteWallet(apiWallet.id))
-              .catch(() => {
-                // do nothing if it doesn't exist.
-                console.log("Wallet", wallet, "does not exist on API")
+          onWalletRemoved: async ({ wallet }) => {
+            const walletResult = await getWallet({ publicKey: wallet.address, chain: wallet.chain })
+
+            if (isSuccessResult<Wallet>(walletResult)) {
+              deleteWallet(walletResult.data.id)
+            } else {
+              toast({ // do nothing if it doesn't exist.
+                title: "Unable to Remove Wallet",
+                description: walletResult.message,
               })
-          }
+            }
+          },
           // NOTE: by these implementations of onWalletAdded and onWalletRemoved,
           // wallet transfers in Dynamic will manifest as destruction and recreation of the same wallet in the API.
         },
