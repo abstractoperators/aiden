@@ -46,13 +46,11 @@ from src.models import (
     AgentPublic,
     AWSConfig,
     TaskStatus,
-    TokenCreationRequest,
     UserPublic,
     agent_to_agent_public,
     user_to_user_public,
 )
 from src.setup import test_db_connection
-from src.token_deployment import deploy_token
 from src.utils import obj_or_404
 
 # TODO: Change a ton of endpoints to not require information that is already in the JWT token.
@@ -252,39 +250,6 @@ async def save_token(token_base: TokenBase) -> Token:
     """
     with Session() as session:
         token = crud.create_token(session, token_base)
-
-    return token
-
-
-@app.post("/tokens")
-async def deploy_token_api(
-    token_request: TokenCreationRequest,
-    user: User = Security(get_user_from_token),  # noqa
-    # TODO: Access lsit from jwt
-) -> Token:
-    """
-    Deploys a token smart contract to the block chain.
-    Returns the token object.
-    """
-    # Validate inputs
-    name = token_request.name
-    ticker = token_request.ticker
-
-    # Deploy the token
-    contract_address, contract_abi = (
-        await deploy_token(name, ticker),
-        [{"not a real abi": "temporary not a real abi"}],
-    )
-    with Session() as session:
-        token = crud.create_token(
-            session,
-            TokenBase(
-                name=name,
-                ticker=ticker,
-                evm_contract_address=contract_address,
-                abi=contract_abi,
-            ),
-        )
 
     return token
 
