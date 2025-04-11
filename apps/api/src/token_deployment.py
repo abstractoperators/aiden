@@ -40,7 +40,7 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
     deployer_address = account.address
 
     # Deploy contract
-    bonding_contract = w3.eth.contract(
+    bonding_contract = w3.eth.contract(  # type: ignore
         address=BONDING_CONTRACT_ADDRESS,
         abi=contract_abi,
         bytecode=contract_bytecode,
@@ -78,6 +78,8 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
     abi = bonding_contract.events.Launched().abi
     launched_topic_hash = event_abi_to_log_topic(abi)
     launched_event_log = None
+    if not logs:
+        raise ValueError("No logs found in the transaction receipt")
     for log in logs:
         topics = log.get("topics")
         if topics and topics[0] == launched_topic_hash:
