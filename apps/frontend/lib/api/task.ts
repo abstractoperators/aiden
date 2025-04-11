@@ -1,7 +1,7 @@
 interface AgentStartTask {
   agentId: string
-  runtimeId: string
-  celeryTaskId: string
+  runtimeId?: string
+  celeryTaskId?: string
 }
 
 interface RuntimeCreateTask {

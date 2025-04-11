@@ -9,14 +9,20 @@ import { useForm } from "react-hook-form"
 import { useEffect, useState } from "react"
 import { z } from "zod"
 import { toast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card"
-import { Agent, getAgent, getAgentStartTaskStatus, startAgent } from "@/lib/api/agent"
-import { getRuntime } from "@/lib/api/runtime"
-import { AgentStartTask, TaskStatus } from "@/lib/api/task"
+import { Agent, getAgent, pollAgent, startAgent } from "@/lib/api/agent"
+import { AgentStartTask } from "@/lib/api/task"
 import { Skeleton } from "./ui/skeleton"
-import { UrlResourceForbiddenError, UrlResourceUnauthorizedError } from "@/lib/api/common"
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+import { getDisplayName } from "@/lib/dynamic/user"
+import { isErrorResult } from "@/lib/api/result"
 
 const formSchema = z.object({
   message: z.string(),
@@ -43,91 +49,96 @@ export default function Chat({
   init: Agent,
 }) {
   const [agent, setAgent] = useState<Agent>(init)
-  const [agentStartTaskStatus, setAgentStartTaskStatus] = useState<AgentStartTask>()
+  const [agentStartTask, setAgentStartTask] = useState<AgentStartTask>()
   const [chat, setChat] = useState<Message[]>([])
-  const { user } = useDynamicContext()
+  const { user, primaryWallet } = useDynamicContext()
+
+  const failureToast = (description?: string) => toast({
+    title: `Unable to wake Agent ${agent.characterJson.name}!`,
+    description,
+  })
 
   useEffect(() => {
-    if (!agent.runtimeId && !agentStartTaskStatus) {
+    if (!agent.runtimeId && !agentStartTask) {
       const wakeAgent = async () => {
-        try {
-          const runtime = await getRuntime()
-          setAgentStartTaskStatus(await startAgent(agent.id, runtime.id))
-        } catch (error) {
-          console.error(error)
-          if (error instanceof UrlResourceUnauthorizedError) {
-            toast({
-              title: "Unable to wake agent!",
-              description: "You must be logged in and own this agent to wake it up.",
-            })
-          } else if (error instanceof UrlResourceForbiddenError) {
-            toast({
-              title: "Unable to wake agent!",
-              description: "You do not own this agent and cannot wake it up.",
-            })
+        const startResult = await startAgent({agentId: agent.id})
+        if (isErrorResult(startResult)) {
+          console.error(startResult.message)
+          switch (startResult.code) {
+            case 400:
+              failureToast(
+                "AIDEN overloaded! Please contact the AIDEN support team."
+              )
+              return
+            case 401:
+              failureToast(
+                "You must be logged in and own this agent to wake it up."
+              )
+              return
+            case 403:
+              failureToast(
+                "You do not own this agent and cannot wake it up."
+              )
+              return
+            case 404:
+              failureToast(
+                "This agent does not exist on AIDN servers :(."
+              )
+              return
+            case 500:
+              failureToast(
+                "An error occurred on AIDN's servers...please notify the AIDN support team."
+              )
+              return
           }
         }
+        setAgentStartTask(startResult.data)
       }
 
-      console.log("Agent", agent.characterJson.name, "not awake, waking up now")
+      console.debug("Agent", agent.characterJson.name, "not awake, waking up now")
+      toast({
+        title: `Agent ${agent.characterJson.name} not awake.`,
+        description: `Please wait while we wake ${agent.characterJson.name} up!`,
+      })
       wakeAgent()
-    } else if (!agent.runtimeId && agentStartTaskStatus) {
-      const { agentId, runtimeId } = agentStartTaskStatus
-      const pollAgentStartTaskStatus = async () => {
-        try {
-          // TODO: configurable maxTries
-          // TODO: configurable delay (in ms)
-          const delay = 30000
-          const maxTries = 15
-          const arr = [...Array(maxTries).keys()]
-          startLoop: for (const i of arr) {
-            console.debug(
-              "Waiting for agent", agentId,
-              "to start up for runtime", runtimeId,
-            )
+    } else if (!agent.runtimeId && agentStartTask) {
+      const { agentId, runtimeId } = agentStartTask
 
-            const status = await getAgentStartTaskStatus(
-              agentId,
-              runtimeId,
-              delay,
-            )
-            switch (status) {
-              case TaskStatus.SUCCESS:
-                console.log(
-                  "Agent", agentId,
-                  "successfully started on", runtimeId,
-                )
-                break startLoop;
-              case TaskStatus.FAILURE:
-                throw new Error("Agent Start Task Status failed!!!")
-              case TaskStatus.PENDING:
-              case TaskStatus.STARTED:
-            }
-
-            if (i === maxTries - 1)
-              throw new Error(`Couldn't wake up ${agent.characterJson.name} after ${maxTries} tries!!!`)
-          }
-
-          const newAgent = await getAgent(agent.id)
-          setAgent(newAgent)
-        } catch (error) {
-          console.error(error)
-          if (error instanceof Error) {
+      pollAgent({
+        agentId,
+        runtimeId,
+        async successCallback() {
+          const agentResult = await getAgent(agentId)
+          if (isErrorResult(agentResult)) {
             toast({
-              title: "Unable to start agent chat!",
-              description: error.message,
+              title: "Unable to update agent on successful start!",
+              description: agentResult.message,
             })
+            return
           }
-        }
-      }
-      
-      pollAgentStartTaskStatus()
-     } else {
-      console.debug("Agent", agent.characterJson.name, "is up an running")
-    }
-  }, [agent, agentStartTaskStatus])
 
-  const senderName = user ? `${user} (You)` : 'You'
+          toast({
+            title: `Agent ${agent.characterJson.name} is awake!`,
+            description: `You may now interact with ${agent.characterJson.name}`,
+          })
+          setAgent(agentResult.data)
+        },
+        failureCallback() { failureToast(
+          "An error occurred on AIDN's servers! Please notify the AIDN support team."
+        )},
+        pendingStartingCallback() { toast({
+          title: `Still waiting for agent ${agent.characterJson.name} to start...`
+        })},
+        maxTriesCallback() { failureToast(
+          "An error occurred on AIDN's servers! Please notify the AIDN support team."
+        )},
+      })
+     } else {
+      console.debug("Agent", agent.characterJson.name, "is up and running")
+    }
+  }, [agent, agentStartTask])
+
+  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

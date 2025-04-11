@@ -33,14 +33,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   createAgent,
-  getAgentStartTaskStatus,
   startAgent,
   updateAgent,
 } from "@/lib/api/agent"
-import { TaskStatus } from "@/lib/api/task"
 import { toast } from "@/hooks/use-toast"
-import { getRuntime } from "@/lib/api/runtime"
 import { getUser } from "@/lib/api/user"
+import { useRouter } from "next/navigation"
+import { isErrorResult } from "@/lib/api/result"
 
 const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
 const borderStyle = "rounded-xl border border-black dark:border-white"
@@ -117,6 +116,8 @@ function AgentForm({
     name: "messageExamples",
   })
 
+  const { push } = useRouter()
+
   // TODO: set up sei and eth addresses if undefined
   const onSubmitBase = agentId ? onSubmitEdit(agentId, runtimeId) : onSubmitCreate
 
@@ -126,14 +127,17 @@ function AgentForm({
     const character = {
       modelProvider: "openai",
       clients: twitter ? ["twitter"] : [],
-      settings: {
-        secrets: {}
-      },
+      settings: { secrets: {} },
       plugins: [],
       ...data,
     }
 
-    return onSubmitBase({ dynamicId: userId, character, envFile })
+    return onSubmitBase({
+      dynamicId: userId,
+      character,
+      envFile,
+      push,
+    })
   }
 
   return (
@@ -444,78 +448,46 @@ async function onSubmitCreate({
   dynamicId,
   character,
   envFile,
+  push,
 } : {
   dynamicId: string,
   character: Character,
   envFile: string,
+  push: (href: string, options? : { scroll: boolean }) => void,
 }) {
-    console.debug("Character", character)
+  console.debug("Character", character)
+  const userResult = await getUser({ dynamicId })
+  console.debug(dynamicId, userResult)
 
-    try {
-      const apiUser = await getUser({ dynamicId })
+  if (isErrorResult(userResult)) {
+    toast({
+      title: "Unable to retrieve AIDN user!",
+      description: userResult.message,
+    })
+    return
+  }
 
-      const agentPayload = {
-        ownerId: apiUser.id,
-        characterJson: character,
-        envFile,
-      }
+  const agentPayload = {
+    ownerId: userResult.data.id,
+    characterJson: character,
+    envFile,
+  }
 
-      const agentPromise = createAgent(agentPayload)
-      const runtime = await getRuntime()
-      const { id: agentId } = await agentPromise
-      startAgent(agentId, runtime.id)
-      toast({
-        title: "Agent Created!",
-        description: "Agent has been defined, but is still waiting to start up.",
-      })
+  const agentResult = await createAgent(agentPayload)
+  if (isErrorResult(agentResult)) {
+    toast({
+      title: `Unable to create Agent ${character.name}!`,
+      description: agentResult.message,
+    })
+    return
+  }
 
-      // TODO: configurable maxTries
-      // TODO: configurable delay (in ms)
-      const delay = 30000
-      const maxTries = 15
-      const arr = [...Array(maxTries).keys()]
-      startLoop: for (const i of arr) {
-        console.log(
-          "Waiting for agent", agentId,
-          "to start up for runtime", runtime.id,
-          "at", runtime.url,
-        )
+  toast({
+    title: `Agent ${character.name} Created!`,
+  })
 
-        const status = await getAgentStartTaskStatus(
-          agentId,
-          runtime.id,
-          delay,
-        )
-        switch (status) {
-          case TaskStatus.SUCCESS:
-            console.log(
-              "Agent", agentId,
-              "successfully started on", runtime.id,
-            "at", runtime.url,
-          )
-            toast({
-              title: "Success!",
-              description: "Agent defined and started! You can now fully interact with it.",
-            })
-            break startLoop;
-          case TaskStatus.FAILURE:
-            throw new Error("Agent Start Task Status failed!!!")
-          case TaskStatus.PENDING:
-          case TaskStatus.STARTED:
-            toast({
-              title: "Still waiting for agent to start..."
-            })
-        }
-
-        if (i === maxTries - 1)
-          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
-      }
-    } catch (error) {
-      toast({
-        title: "Something went wrong. Please try again",
-      });
-      console.error(error);
-    }
+  const { id } = agentResult.data
+  push(`/agents/${id}`)
 }
 
 function onSubmitEdit(agentId: string, runtimeId?: string) {
@@ -523,76 +495,48 @@ function onSubmitEdit(agentId: string, runtimeId?: string) {
     dynamicId,
     character,
     envFile,
+    push,
   } : {
     dynamicId: string,
     character: Character,
     envFile: string,
+    push: (href: string, options? : { scroll: boolean }) => void,
   }) {
     console.debug("Character", character)
+    const userResult = await getUser({ dynamicId })
+    console.debug(dynamicId, userResult)
 
-    try {
-      const apiUser = await getUser({ dynamicId })
-
-      const agentPayload = {
-        ownerId: apiUser.id,
-        characterJson: character,
-        envFile,
-      }
-
-      // update and (re)start
-      updateAgent(agentId, agentPayload)
-      runtimeId = runtimeId ?? (await getRuntime()).id
-      startAgent(agentId, runtimeId)
+    if (isErrorResult(userResult)) {
       toast({
-        title: "Agent Updated!",
-        description: "Agent has been updated, but is still waiting to start up.",
+        title: "Unable to retrieve AIDN user!",
+        description: userResult.message,
       })
-
-      // TODO: configurable maxTries
-      // TODO: configurable delay (in ms)
-      const delay = 30000
-      const maxTries = 15
-      const arr = [...Array(maxTries).keys()]
-      startLoop: for (const i of arr) {
-        console.debug(
-          "Waiting for agent", agentId,
-          "to start up for runtime", runtimeId,
-        )
-
-        const status = await getAgentStartTaskStatus(
-          agentId,
-          runtimeId,
-          delay,
-        )
-        switch (status) {
-          case TaskStatus.SUCCESS:
-            console.log(
-              "Agent", agentId,
-              "successfully started on", runtimeId,
-            )
-            toast({
-              title: "Success!",
-              description: "Agent defined and started! You can now fully interact with it.",
-            })
-            break startLoop;
-          case TaskStatus.FAILURE:
-            throw new Error("Agent Start Task Status failed!!!")
-          case TaskStatus.PENDING:
-          case TaskStatus.STARTED:
-            toast({
-              title: "Still waiting for agent to start..."
-            })
-        }
-
-        if (i === maxTries - 1)
-          throw new Error(`Agent Start Task Status timed out after ${maxTries} tries!!!`)
-      }
-    } catch (error) {
-      toast({
-        title: "Something went wrong. Please try again",
-      });
-      console.error(error);
+      return
     }
+
+    const agentPayload = {
+      ownerId: userResult.data.id,
+      characterJson: character,
+      envFile,
+    }
+
+    // update and stop agent
+    const updateResult = await updateAgent(agentId, agentPayload)
+    if (isErrorResult(updateResult)) {
+      toast({
+        title: `Unable to update Agent ${character.name}`,
+        description: updateResult.message,
+      })
+      return
+    }
+    startAgent({ agentId, runtimeId })
+
+    toast({
+      title: `Agent ${character.name} Updated!`,
+      description: "Agent has been updated, and is restarting.",
+    })
+
+    push(`/agents/${agentId}`)
   }
 
   return onSubmitEditHelper
