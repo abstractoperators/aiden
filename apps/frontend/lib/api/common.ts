@@ -3,21 +3,12 @@
 import { auth } from "@/auth"
 import { camelize, snakify } from "@/lib/utils"
 
-class UrlResourceNotFoundError extends Error {
+class UrlResourceBadRequestError extends Error {
   constructor(url: string, text: string) {
-    super(`Resource at ${url} not found! Got ${text}`)
-    this.name = "UrlResourceNotFoundError"
+    super(`Made a bad request to ${url}! Got ${text}`)
+    this.name = "UrlResourceBadRequestError"
     // It's recommended to set the prototype explicitly.
-    Object.setPrototypeOf(this, UrlResourceNotFoundError.prototype)
-  }
-}
-
-class UrlResourceForbiddenError extends Error {
-  constructor(url: string, text: string) {
-    super(`Resource at ${url} forbidden! Got ${text}`)
-    this.name = "UrlResourceForbiddenError"
-    // It's recommended to set the prototype explicitly.
-    Object.setPrototypeOf(this, UrlResourceForbiddenError.prototype)
+    Object.setPrototypeOf(this, UrlResourceBadRequestError.prototype)
   }
 }
 
@@ -30,19 +21,37 @@ class UrlResourceUnauthorizedError extends Error {
   }
 }
 
+class UrlResourceForbiddenError extends Error {
+  constructor(url: string, text: string) {
+    super(`Resource at ${url} forbidden! Got ${text}`)
+    this.name = "UrlResourceForbiddenError"
+    // It's recommended to set the prototype explicitly.
+    Object.setPrototypeOf(this, UrlResourceForbiddenError.prototype)
+  }
+}
+
+class UrlResourceNotFoundError extends Error {
+  constructor(url: string, text: string) {
+    super(`Resource at ${url} not found! Got ${text}`)
+    this.name = "UrlResourceNotFoundError"
+    // It's recommended to set the prototype explicitly.
+    Object.setPrototypeOf(this, UrlResourceNotFoundError.prototype)
+  }
+}
+
 async function checkResponseStatus(response: Response): Promise<void> {
   const { status, url } = response
-  if (status === 404) {
-    const text = await response.text()
-    throw new UrlResourceNotFoundError(url, text)
-  }
-  if (status === 403) {
-    const text = await response.text()
-    throw new UrlResourceForbiddenError(url, text)
-  }
-  if (status === 401) {
-    const text = await response.text()
-    throw new UrlResourceUnauthorizedError(url, text)
+  const text = await response.text()
+
+  switch (status) {
+    case 400:
+      throw new UrlResourceBadRequestError(url, text)
+    case 401:
+      throw new UrlResourceUnauthorizedError(url, text)
+    case 403:
+      throw new UrlResourceForbiddenError(url, text)
+    case 404:
+      throw new UrlResourceNotFoundError(url, text)
   }
 }
 
@@ -217,5 +226,8 @@ export {
   getResource,
   updateResource,
   updateOrCreateResource,
+  UrlResourceBadRequestError,
+  UrlResourceForbiddenError,
   UrlResourceNotFoundError,
+  UrlResourceUnauthorizedError,
 }

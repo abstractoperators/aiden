@@ -17,11 +17,8 @@ export default async function AgentHome({
 }: {
   params: Promise<{ id: string }>,
 }) {
-  const id = (await params).id
+  const { id } = await params
   const agent = await getAgent(id)
-  if (!agent.runtime) {
-    console.log("Agent", agent, "has no runtime! Starting agent")
-  }
   const name = agent.characterJson.name || agent.id
   const tokenId = agent.tokenId
   console.log("Agent has tokenId", tokenId)
@@ -112,15 +109,7 @@ export default async function AgentHome({
         </Card>
       </div>
       <div className="col-span-5 flex flex-col justify-start items-stretch">
-        {
-          (agent.runtime && agent.elizaAgentId) ?
-            <Chat
-              elizaId={agent.elizaAgentId}
-              runtimeUrl={agent.runtime.url}
-            /> : <p className="text-center">
-              This agent has no chat.
-            </p>
-        }
+        <Chat init={agent} />
       </div>
     </main>
   )
