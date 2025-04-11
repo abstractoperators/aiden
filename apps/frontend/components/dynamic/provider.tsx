@@ -57,20 +57,21 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                 authToken
               )}`,
             })
-            .then((res) => {
-              if (res.ok) {
-                console.log('LOGGED IN', res);
-                // Handle success - maybe redirect to the home page or user dashboard
-              } else {
-                // Handle any errors - maybe show an error message to the user
-                console.error("Failed to log in");
-              }
-            })
-            .catch((error) => {
-              // Handle any exceptions
-              console.error("Error logging in", error);
-            });
+              .then((res) => {
+                if (res.ok) {
+                  console.log('LOGGED IN', res);
+                  // Handle success - maybe redirect to the home page or user dashboard
+                } else {
+                  // Handle any errors - maybe show an error message to the user
+                  console.error("Failed to log in");
+                }
+              })
+              .catch((error) => {
+                // Handle any exceptions
+                console.error("Error logging in", error);
+              });
 
+            router.refresh();
             // user initialization if needed
             const apiUser = await getOrCreateUser(await dynamicToApiUser(user))
             if (primaryWallet) {
@@ -134,7 +135,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
 
             const apiWallet: ApiWallet | null = await (
               getWallet({ publicKey: wallet.address, chain: wallet.chain })
-              .catch(() => null)
+                .catch(() => null)
             )
 
             if (apiWallet) {
@@ -149,11 +150,11 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
           },
           onWalletRemoved: ({ wallet }) => {
             getWallet({ publicKey: wallet.address, chain: wallet.chain })
-            .then(apiWallet => deleteWallet(apiWallet.id))
-            .catch(() => {
-              // do nothing if it doesn't exist.
-              console.log("Wallet", wallet, "does not exist on API")
-            })
+              .then(apiWallet => deleteWallet(apiWallet.id))
+              .catch(() => {
+                // do nothing if it doesn't exist.
+                console.log("Wallet", wallet, "does not exist on API")
+              })
           }
           // NOTE: by these implementations of onWalletAdded and onWalletRemoved,
           // wallet transfers in Dynamic will manifest as destruction and recreation of the same wallet in the API.
