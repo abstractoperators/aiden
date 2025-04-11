@@ -75,7 +75,7 @@ services:
       - "6379:6379"
   
   postgres:
-    image: postgres:latest
+    image: pgvector/pgvector:pg17
     container_name: postgres
     platform: linux/amd64
     ports:
