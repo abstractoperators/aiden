@@ -149,7 +149,7 @@ async def ping():
 def create_agent(
     agent: AgentBase,
     # Require that the user be signed in, but don't do any other verification
-    user: User = Security(get_user_from_token),  # noqa
+    # user: User = Security(get_user_from_token),  # noqa
 ) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
