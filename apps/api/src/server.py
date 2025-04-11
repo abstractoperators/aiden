@@ -271,7 +271,6 @@ async def deploy_token_api(
     ticker = token_request.ticker
 
     # Deploy the token
-    await deploy_token(name, ticker)
     contract_address, contract_abi = (
         await deploy_token(name, ticker),
         [{"not a real abi": "temporary not a real abi"}],
