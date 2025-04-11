@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import CreateAgentButton from "../create-agent-button"
 
 const common = (
   [
@@ -88,11 +89,14 @@ function LoginButtonHeader({className}: {className?: string}) {
     {
       user &&
       primaryWallet &&
-      <UserMenu
-        logout={handleLogOut}
-        user={user}
-        wallet={primaryWallet}
-      />
+      <div className="flex items-center justify-between space-x-2">
+        <CreateAgentButton />
+        <UserMenu
+          logout={handleLogOut}
+          user={user}
+          wallet={primaryWallet}
+        />
+      </div>
     }
   </LoginButton>
 }

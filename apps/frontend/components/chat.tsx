@@ -53,12 +53,12 @@ export default function Chat({
   const [chat, setChat] = useState<Message[]>([])
   const { user, primaryWallet } = useDynamicContext()
 
-  const failureToast = (description?: string) => toast({
-    title: `Unable to wake Agent ${agent.characterJson.name}!`,
-    description,
-  })
-
   useEffect(() => {
+    const failureToast = (description?: string) => toast({
+      title: `Unable to wake Agent ${agent.characterJson.name}!`,
+      description,
+    })
+
     if (!agent.runtimeId && !agentStartTask) {
       const wakeAgent = async () => {
         const startResult = await startAgent({agentId: agent.id})

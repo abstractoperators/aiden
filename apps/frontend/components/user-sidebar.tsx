@@ -1,4 +1,9 @@
-import { Bot, ChevronRight, LayoutDashboard, LucideIcon, Plus } from "lucide-react"
+import {
+  Bot,
+  ChevronRight,
+  LayoutDashboard,
+  LucideIcon,
+} from "lucide-react"
 
 import {
   Collapsible,
@@ -19,10 +24,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { ClientAgent } from "@/lib/api/agent"
-import { cn } from "@/lib/utils"
 import { Result, isSuccessResult } from "@/lib/api/result"
+import CreateAgentButton from "./create-agent-button"
 
 interface NavigationGroup {
   title: string,
@@ -121,21 +125,7 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
         ))}
       </SidebarContent>
       <SidebarFooter className="flex flex-col w-full justify-center items-center">
-        <Button
-          className={cn(
-            "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%",
-            "font-semibold text-black dark:text-white",
-            "transition duration-300 hover:hue-rotate-60",
-            "rounded-xl",
-          )}
-          size='lg'
-          asChild
-        >
-          <Link href="/user/agents/creation">
-            <Plus strokeWidth={5}/>
-            <span>Create an Agent</span>
-          </Link>
-        </Button>
+        <CreateAgentButton />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

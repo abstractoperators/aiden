@@ -13,7 +13,14 @@ import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
 import { setTimeout } from "node:timers/promises"
 import { Character } from "@/lib/character"
-import { createInternalServerError, createSuccessResult, isBadRequest, isErrorResult, isSuccessResult, Result } from "./result"
+import {
+  createInternalServerError,
+  createSuccessResult,
+  isBadRequest,
+  isErrorResult,
+  isSuccessResult,
+  Result,
+} from "./result"
 
 const AGENT_PATH = '/agents'
 const AGENT_SEGMENT = '/agents/'
@@ -130,7 +137,7 @@ async function pollAgent({
   maxTries?: number,
 }): Promise<Result<TaskStatus>> {
   const arr = [...Array(maxTries).keys()]
-  loop: for (const i of arr) {
+  for (const _ of arr) { // eslint-disable-line @typescript-eslint/no-unused-vars
     console.debug(
       "Waiting for agent", agentId,
       "to start up for runtime", runtimeId,
