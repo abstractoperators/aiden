@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { z } from "zod";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ import {
   onSubmitCreate,
   SubmitButton,
 } from "@/components/agent-form";
+import { useRouter } from "next/navigation";
 
 const MAX_FILE_SIZE = 5000000;
 const uploadSchema = z.object({
@@ -61,6 +62,9 @@ function UploadForm() {
   })
   const { handleSubmit } = form
 
+  const { toast } = useToast()
+  const { push } = useRouter()
+
   // TODO: set up sei and eth addresses if undefined
 
   async function onUploadSubmit(formData: UploadType) {
@@ -79,7 +83,12 @@ function UploadForm() {
       return
 
     const character = JSON.parse(fileText) // TODO: catch SyntaxError
-    return onSubmitCreate({ dynamicId: userId, character, envFile })
+    return onSubmitCreate({
+      dynamicId: userId,
+      character,
+      envFile,
+      push,
+    })
   }
 
   return (
