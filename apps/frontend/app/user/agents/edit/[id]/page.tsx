@@ -20,7 +20,7 @@ export default async function AgentEdit({
     </div>
   )}
 
-  const { characterJson, envFile, ownerId, runtimeId } = agentResult.data
+  const { characterJson, envFile, ownerId } = agentResult.data
 
   const session = await auth()
   const user = session?.user?.id && await getUser({dynamicId: session.user.id})
@@ -38,7 +38,6 @@ export default async function AgentEdit({
           ...characterJson
         }}
         agentId={id}
-        runtimeId={runtimeId || undefined}
       />
     </div> : <div className="my-16 mx-16">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl my-8">

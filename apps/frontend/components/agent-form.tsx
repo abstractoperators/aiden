@@ -75,11 +75,9 @@ type FormType = z.infer<typeof formSchema>
 function AgentForm({
   defaultValues,
   agentId,
-  runtimeId,
 } : {
   defaultValues?: FormType,
   agentId?: string,
-  runtimeId?: string,
 }) {
   const { user } = useDynamicContext()
   if (!user)
@@ -119,7 +117,7 @@ function AgentForm({
   const { push } = useRouter()
 
   // TODO: set up sei and eth addresses if undefined
-  const onSubmitBase = agentId ? onSubmitEdit(agentId, runtimeId) : onSubmitCreate
+  const onSubmitBase = agentId ? onSubmitEdit(agentId) : onSubmitCreate
 
   async function onSubmit(formData: FormType) {
     console.debug("AgentForm", formData)
@@ -490,7 +488,7 @@ async function onSubmitCreate({
   push(`/agents/${id}`)
 }
 
-function onSubmitEdit(agentId: string, runtimeId?: string) {
+function onSubmitEdit(agentId: string) {
   async function onSubmitEditHelper({
     dynamicId,
     character,
