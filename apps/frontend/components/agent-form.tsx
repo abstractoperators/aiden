@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   createAgent,
-  startAgent,
+  stopAgent,
   updateAgent,
 } from "@/lib/api/agent"
 import { toast } from "@/hooks/use-toast"
@@ -529,8 +529,16 @@ function onSubmitEdit(agentId: string, runtimeId?: string) {
       })
       return
     }
-    startAgent({ agentId, runtimeId })
 
+    const stopResult = await stopAgent(agentId)
+    if (isErrorResult(stopResult)) {
+      console.error(`Failed to stop Agent ${agentId} status code ${stopResult.code}, ${stopResult.message}`)
+      toast({
+        title: `Unable to stop Agent ${character.name}`,
+        description: stopResult.message,
+      })
+      return
+    }
     toast({
       title: `Agent ${character.name} Updated!`,
       description: "Agent has been updated, and is restarting.",

@@ -17,12 +17,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card"
-import { Agent, getAgent, pollAgent, startAgent } from "@/lib/api/agent"
-import { AgentStartTask } from "@/lib/api/task"
+import { Agent, getAgent, getAgentStartTaskStatus, startAgent } from "@/lib/api/agent"
+import { AgentStartTask, TaskStatus } from "@/lib/api/task"
 import { Skeleton } from "./ui/skeleton"
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 import { getDisplayName } from "@/lib/dynamic/user"
-import { isErrorResult } from "@/lib/api/result"
+import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 
 const formSchema = z.object({
   message: z.string(),
@@ -238,4 +238,64 @@ export default function Chat({
     </div>
   }
   </div>)
+}
+
+async function pollAgent({
+  agentId,
+  runtimeId,
+  successCallback = () => {},
+  failureCallback = () => {},
+  pendingStartingCallback = () => {},
+  maxTriesCallback = () => {},
+  delay = 30000,
+  maxTries = 15,
+}: {
+  agentId: string,
+  runtimeId?: string,
+  successCallback?: () => void,
+  failureCallback?: () => void,
+  pendingStartingCallback?: () => void,
+  maxTriesCallback?: () => void,
+  delay?: number,
+  maxTries?: number,
+}): Promise<void> {
+  const arr = [...Array(maxTries).keys()]
+  for (const _ of arr) { // eslint-disable-line @typescript-eslint/no-unused-vars
+    console.debug(
+      "Waiting for agent", agentId,
+      "to start up for runtime", runtimeId,
+    )
+
+    const taskStatus = await getAgentStartTaskStatus(
+      {
+        agentId,
+        runtimeId,
+      },
+      delay,
+    )
+
+    if (isSuccessResult(taskStatus)) {
+      switch (taskStatus.data) {
+        case TaskStatus.SUCCESS:
+          console.log(
+            "Agent", agentId,
+            "successfully started on", runtimeId,
+          )
+          successCallback()
+          return
+        case TaskStatus.FAILURE:
+          failureCallback()
+          console.error(
+            `Agent Start Task Status failed for agent ${agentId} runtime ${runtimeId} !!!`
+          )
+          return
+        case TaskStatus.PENDING:
+        case TaskStatus.STARTED:
+          pendingStartingCallback()
+      }
+    }
+  }
+
+  maxTriesCallback()
+  console.error(`Agent Start Task Status for agent ${agentId} runtime ${runtimeId} timed out after ${maxTries} tries!!!`)
 }
