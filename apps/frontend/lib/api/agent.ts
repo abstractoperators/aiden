@@ -18,6 +18,7 @@ import {
   createSuccessResult,
   isBadRequest,
   isErrorResult,
+  isSuccessResult,
   Result,
 } from "./result"
 
@@ -192,10 +193,14 @@ async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<R
 }
 
 async function deleteAgent(agentId: string) {
-  return deleteResource(
+  const deleteResult = await deleteResource(
     baseUrlSegment,
     agentId,
   )
+
+  if (isSuccessResult(deleteResult))
+    revalidatePath(AGENT_PATH)
+  return deleteResult
 }
 
 export {
