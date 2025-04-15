@@ -6,9 +6,9 @@ import {
   fromApiEndpoint,
   getResource,
   updateResource,
-  UrlResourceNotFoundError,
 } from "./common";
 import { WalletBase } from "./wallet";
+import { Result, isNotFound } from "./result";
 
 const USER_PATH = '/users'
 const USER_SEGMENT = '/users/'
@@ -51,18 +51,18 @@ async function getUser(
     { publicKey: string, chain?: string } |
     { dynamicId: string }
   )
-): Promise<User> {
+): Promise<Result<User>> {
   return getResource<User>({
     baseUrl: baseUrlPath,
     query,
   })
 }
 
-async function createUser(userPayload: UserBase): Promise<User> {
+async function createUser(userPayload: UserBase): Promise<Result<User>> {
   return createResource<User, UserBase>(baseUrlPath, userPayload)
 }
 
-async function updateUser(userId: string, userUpdate: UserUpdate): Promise<User> {
+async function updateUser(userId: string, userUpdate: UserUpdate): Promise<Result<User>> {
   return updateResource({
     baseUrl: baseUrlSegment,
     resourceId: userId,
@@ -72,15 +72,15 @@ async function updateUser(userId: string, userUpdate: UserUpdate): Promise<User>
 
 async function getOrCreateUser(
   userPayload: UserBase,
-): Promise<User> {
+): Promise<Result<User>> {
   const { dynamicId } = userPayload
-  return getUser({ dynamicId: dynamicId }).catch(error => {
-    if (error instanceof UrlResourceNotFoundError) {
-      return createUser(userPayload)
-    } else {
-      throw error
-    }
-  })
+  return getUser({
+    dynamicId
+  }).then(result => (
+    ( isNotFound(result) )
+    ? createUser(userPayload)
+    : result
+  ))
 }
 
 export {
@@ -89,4 +89,8 @@ export {
   getUser,
   getOrCreateUser,
   updateUser,
+}
+
+export type {
+  User,
 }

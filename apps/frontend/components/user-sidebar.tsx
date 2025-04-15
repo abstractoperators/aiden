@@ -1,4 +1,9 @@
-import { Bot, ChevronRight, LayoutDashboard, LucideIcon, Plus } from "lucide-react"
+import {
+  Bot,
+  ChevronRight,
+  LayoutDashboard,
+  LucideIcon,
+} from "lucide-react"
 
 import {
   Collapsible,
@@ -19,8 +24,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { ClientAgent } from "@/lib/api/agent"
+import { Result, isSuccessResult } from "@/lib/api/result"
+import CreateAgentButton from "./create-agent-button"
 
 interface NavigationGroup {
   title: string,
@@ -34,10 +40,8 @@ interface NavigationGroup {
 }
 
 interface UserSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  userAgents: ClientAgent[]
+  userAgents: Result<ClientAgent[]>
 }
-
-const bg = "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%"
 
 export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
   const navigation: NavigationGroup[] = []
@@ -56,11 +60,20 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
     title: "Your Agents",
     url: "#",
     icon: Bot,
-    items: userAgents.map(agent => ({
-      key: agent.id,
-      title: agent.name,
-      url: `/agents/${agent.id}`,
-    }))
+    items: 
+      ( isSuccessResult(userAgents) )
+      ? userAgents.data
+        .sort((a, b) => (a.name < b.name) ? -1 : 1)
+        .map(agent => ({
+          key: agent.id,
+          title: agent.name,
+          url: `/agents/${agent.id}`,
+        }))
+      : [{
+          key: userAgents.message,
+          title: `Unable to retrieve your agents! Error Status ${userAgents.code}`,
+          url: "/user",
+        }],
   })
 
   return (
@@ -112,15 +125,7 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
         ))}
       </SidebarContent>
       <SidebarFooter className="flex flex-col w-full justify-center items-center">
-        <Link href="/user/agents/creation">
-          <Button
-            className={`${bg} text-black dark:text-white transition duration-300 hover:hue-rotate-60`}
-            size='lg'
-          >
-            <Plus strokeWidth={5}/>
-            <span>Create an Agent</span>
-          </Button>
-        </Link>
+        <CreateAgentButton />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

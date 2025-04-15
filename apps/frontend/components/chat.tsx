@@ -6,11 +6,23 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { z } from "zod"
 import { toast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card"
+import { Agent, getAgent, getAgentStartTaskStatus, startAgent } from "@/lib/api/agent"
+import { AgentStartTask, TaskStatus } from "@/lib/api/task"
+import { Skeleton } from "./ui/skeleton"
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+import { getDisplayName } from "@/lib/dynamic/user"
+import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 
 const formSchema = z.object({
   message: z.string(),
@@ -32,15 +44,101 @@ const left = "m-4 flex flex-col justify-center items-start text-left"
 const right = "m-4 flex flex-col justify-center items-end text-right"
 
 export default function Chat({
-  elizaId,
-  runtimeUrl,
+  init,
 }: {
-  elizaId: string,
-  runtimeUrl: string,
+  init: Agent,
 }) {
-  const chatUrl = new URL(`${elizaId}/message`, runtimeUrl)
+  const [agent, setAgent] = useState<Agent>(init)
+  const [agentStartTask, setAgentStartTask] = useState<AgentStartTask>()
   const [chat, setChat] = useState<Message[]>([])
-  const senderName = 'You'
+  const { user, primaryWallet } = useDynamicContext()
+
+  useEffect(() => {
+    const failureToast = (description?: string) => toast({
+      title: `Unable to wake Agent ${agent.characterJson.name}!`,
+      description,
+    })
+
+    if (!agent.runtimeId && !agentStartTask) {
+      const wakeAgent = async () => {
+        const startResult = await startAgent({agentId: agent.id})
+        if (isErrorResult(startResult)) {
+          console.error(startResult.message)
+          switch (startResult.code) {
+            case 400:
+              failureToast(
+                "AIDEN overloaded! Please contact the AIDEN support team."
+              )
+              return
+            case 401:
+              failureToast(
+                "You must be logged in and own this agent to wake it up."
+              )
+              return
+            case 403:
+              failureToast(
+                "You do not own this agent and cannot wake it up."
+              )
+              return
+            case 404:
+              failureToast(
+                "This agent does not exist on AIDN servers :(."
+              )
+              return
+            case 500:
+              failureToast(
+                "An error occurred on AIDN's servers...please notify the AIDN support team."
+              )
+              return
+          }
+        }
+        setAgentStartTask(startResult.data)
+      }
+
+      console.debug("Agent", agent.characterJson.name, "not awake, waking up now")
+      toast({
+        title: `Agent ${agent.characterJson.name} not awake.`,
+        description: `Please wait while we wake ${agent.characterJson.name} up!`,
+      })
+      wakeAgent()
+    } else if (!agent.runtimeId && agentStartTask) {
+      const { agentId, runtimeId } = agentStartTask
+
+      pollAgent({
+        agentId,
+        runtimeId,
+        async successCallback() {
+          const agentResult = await getAgent(agentId)
+          if (isErrorResult(agentResult)) {
+            toast({
+              title: "Unable to update agent on successful start!",
+              description: agentResult.message,
+            })
+            return
+          }
+
+          toast({
+            title: `Agent ${agent.characterJson.name} is awake!`,
+            description: `You may now interact with ${agent.characterJson.name}`,
+          })
+          setAgent(agentResult.data)
+        },
+        failureCallback() { failureToast(
+          "An error occurred on AIDN's servers! Please notify the AIDN support team."
+        )},
+        pendingStartingCallback() { toast({
+          title: `Still waiting for agent ${agent.characterJson.name} to start...`
+        })},
+        maxTriesCallback() { failureToast(
+          "An error occurred on AIDN's servers! Please notify the AIDN support team."
+        )},
+      })
+     } else {
+      console.debug("Agent", agent.characterJson.name, "is up and running")
+    }
+  }, [agent, agentStartTask])
+
+  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,7 +159,7 @@ export default function Chat({
       // TODO: better wait indicator/feedback
       // TODO: move to server side
       const response = await fetch(
-        chatUrl,
+        new URL(`${agent.elizaAgentId}/message`, agent.runtime?.url),
         {
           method: "POST",
           headers: {
@@ -96,8 +194,10 @@ export default function Chat({
   }
 
   return (
+  <div>
+  {agent.runtimeId ? 
     <div className="flex flex-col w-full justify-start items-center gap-8">
-      <ScrollArea className="w-full h-96 lg:h-[600px] rounded-md border p-2">
+      <ScrollArea className="bg-anakiwa-darker/50 w-full h-96 lg:h-[600px] rounded-xl p-2">
         <ol className="flex flex-col w-full">
           {chat.map(message => (
             <li
@@ -132,6 +232,70 @@ export default function Chat({
           <Button type="submit">Send message</Button>
         </form>
       </Form>
+    </div> : <div className="flex flex-col w-full justify-start items-center gap-8">
+      <Skeleton className="w-full h-96 lg:h-[600px] rounded-xl p-2" />
+      Waking agent up
     </div>
-  )
+  }
+  </div>)
+}
+
+async function pollAgent({
+  agentId,
+  runtimeId,
+  successCallback = () => {},
+  failureCallback = () => {},
+  pendingStartingCallback = () => {},
+  maxTriesCallback = () => {},
+  delay = 30000,
+  maxTries = 15,
+}: {
+  agentId: string,
+  runtimeId?: string,
+  successCallback?: () => void,
+  failureCallback?: () => void,
+  pendingStartingCallback?: () => void,
+  maxTriesCallback?: () => void,
+  delay?: number,
+  maxTries?: number,
+}): Promise<void> {
+  const arr = [...Array(maxTries).keys()]
+  for (const _ of arr) { // eslint-disable-line @typescript-eslint/no-unused-vars
+    console.debug(
+      "Waiting for agent", agentId,
+      "to start up for runtime", runtimeId,
+    )
+
+    const taskStatus = await getAgentStartTaskStatus(
+      {
+        agentId,
+        runtimeId,
+      },
+      delay,
+    )
+
+    if (isSuccessResult(taskStatus)) {
+      switch (taskStatus.data) {
+        case TaskStatus.SUCCESS:
+          console.log(
+            "Agent", agentId,
+            "successfully started on", runtimeId,
+          )
+          successCallback()
+          return
+        case TaskStatus.FAILURE:
+          failureCallback()
+          console.error(
+            `Agent Start Task Status failed for agent ${agentId} runtime ${runtimeId} !!!`
+          )
+          return
+        case TaskStatus.PENDING:
+        case TaskStatus.STARTED:
+          pendingStartingCallback()
+      }
+    }
+  }
+
+  maxTriesCallback()
+  console.error(`Agent Start Task Status for agent ${agentId} runtime ${runtimeId} timed out after ${maxTries} tries!!!`)
 }

@@ -1,8 +1,15 @@
 'use client'
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { z } from "zod";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button"
@@ -35,6 +42,7 @@ export default function ProfileForm() {
       phoneNumber: "",
     }
   })
+  const { toast } = useToast()
 
   async function onSubmit(formData: z.infer<typeof formSchema>) {
     try {

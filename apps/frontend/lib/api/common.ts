@@ -1,43 +1,8 @@
 'use server'
 
 import { auth } from "@/auth"
-import { camelize, snakify } from "@/lib/utils"
-
-class UrlResourceNotFoundError extends Error {
-  constructor(url: string) {
-    super(`Resource at ${url} not found!`)
-    this.name = "UrlResourceNotFoundError"
-    // It's recommended to set the prototype explicitly.
-    Object.setPrototypeOf(this, UrlResourceNotFoundError.prototype)
-  }
-}
-
-class UrlResourceForbiddenError extends Error {
-  constructor(url: string) {
-    super(`Resource at ${url} forbidden!`)
-    this.name = "UrlResourceForbiddenError"
-    // It's recommended to set the prototype explicitly.
-    Object.setPrototypeOf(this, UrlResourceForbiddenError.prototype)
-  }
-}
-
-class UrlResourceUnauthorizedError extends Error {
-  constructor(url: string) {
-    super(`Resource at ${url} unauthorized!`)
-    this.name = "UrlResourceUnauthorizedError"
-    // It's recommended to set the prototype explicitly.
-    Object.setPrototypeOf(this, UrlResourceUnauthorizedError.prototype)
-  }
-}
-
-function checkResponseStatus(response: Response): void {
-  if (response.status === 404)
-    throw new UrlResourceNotFoundError(response.url)
-  if (response.status === 403)
-    throw new UrlResourceForbiddenError(response.url)
-  if (response.status === 401)
-    throw new UrlResourceUnauthorizedError(response.url)
-}
+import { snakify } from "@/lib/utils"
+import { createResult, isNotFound, Result } from "./result"
 
 async function getHeaders<RequestType>(
   body?: RequestType
@@ -61,93 +26,85 @@ function fromApiEndpoint(url: string): URL {
   return new URL(url, process.env.API_ENDPOINT)
 }
 
-async function getResource<ResponseType>({
+async function getResource<T>({
   baseUrl,
   resourceId,
   query,
 } : {
   baseUrl: URL | string,
   resourceId?: string,
-  query?: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
-}): Promise<ResponseType> {
-  try {
-    const resourceUrl = resourceId ? new URL(resourceId, baseUrl) : new URL(baseUrl)
-    const params = query && new URLSearchParams(snakify(query))
-    const url = params ? new URL(`${resourceUrl.href}?${params.toString()}`) : resourceUrl
+  query?: Record<string, unknown>,
+}): Promise<Result<T>> {
+  const resourceUrl = resourceId ? new URL(resourceId, baseUrl) : new URL(baseUrl)
+  const snakifiedQuery = query && snakify(query)
+  const params = snakifiedQuery && new URLSearchParams(
+    ( typeof(snakifiedQuery) === "string" )
+    ? snakifiedQuery
+    : Object.fromEntries(Object.entries(snakifiedQuery).map(([key, value]) => (
+      [key, String(value)]
+    )))
+  )
+  const url = params ? new URL(`${resourceUrl.href}?${params.toString()}`) : resourceUrl
 
-    const response = await fetch(
-      url,
-      { headers: await getHeaders(), },
-    );
+  const response = await fetch(
+    url,
+    { headers: await getHeaders(), },
+  );
 
-    checkResponseStatus(response)
-    if (!response.ok)
-      throw new Error(`Failed to GET at ${url} with response ${JSON.stringify(response)}`)
-
-    return camelize(await response.json() as Record<string, any>) // eslint-disable-line @typescript-eslint/no-explicit-any
-  } catch (error) {
-    throw error
-  }
+  return createResult<T>(
+    response,
+    `Failed to GET at ${url} with response ${JSON.stringify(response)}`,
+  )
 }
 
-async function createResource<ResponseType, RequestType = undefined>(
+async function createResource<O, I = undefined>(
   url: URL | string,
-  body?: RequestType,
-): Promise<ResponseType> {
-  try {
-    const response = await fetch(
-      url,
-      {
-        method: 'POST',
-        headers: await getHeaders(body),
-        body: jsonifyBody(body),
-      }
-    )
+  body?: I,
+): Promise<Result<O>> {
+  const response = await fetch(
+    url,
+    {
+      method: 'POST',
+      headers: await getHeaders(body),
+      body: jsonifyBody(body),
+    }
+  )
 
-    checkResponseStatus(response)
-    if (!response.ok)
-      throw new Error(`Failed to CREATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
-
-    return camelize(await response.json() as Record<string, any>) // eslint-disable-line @typescript-eslint/no-explicit-any
-  } catch (error) {
-    throw error
-  }
+  return createResult(
+    response,
+    `Failed to CREATE at ${url} with body ${body} and response ${JSON.stringify(response)}`,
+  )
 }
 
-async function updateResource<ResponseType, RequestType = undefined>({
+async function updateResource<O, I = undefined>({
   baseUrl,
   resourceId,
   body,
 } : {
   baseUrl: URL | string,
   resourceId: string,
-  body?: RequestType,
-}): Promise<ResponseType> {
-  try {
-    const url = new URL(resourceId, baseUrl)
-    const response = await fetch(
-      url,
-      {
-        method: 'PATCH',
-        headers: await getHeaders(body),
-        body: jsonifyBody(body),
-      }
-    )
+  body?: I,
+}): Promise<Result<O>> {
+  const url = new URL(resourceId, baseUrl)
+  const response = await fetch(
+    url,
+    {
+      method: 'PATCH',
+      headers: await getHeaders(body),
+      body: jsonifyBody(body),
+    }
+  )
 
-    checkResponseStatus(response)
-    if (!response.ok)
-      throw new Error(`Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`)
-
-    return camelize(await response.json() as Record<string, any>) // eslint-disable-line @typescript-eslint/no-explicit-any
-  } catch (error) {
-    throw error
-  }
+  return createResult(
+    response,
+    `Failed to UPDATE at ${url} with body ${body} and response ${JSON.stringify(response)}`,
+  )
 }
 
 async function updateOrCreateResource<
-  ResponseType,
-  UpdateRequestType = undefined,
-  CreateRequestType = undefined,
+  O,
+  U = undefined,
+  C = undefined,
 >({
   baseUpdateUrl,
   resourceId,
@@ -157,50 +114,43 @@ async function updateOrCreateResource<
 }: {
   baseUpdateUrl: URL | string,
   resourceId: string,
-  updateBody?: UpdateRequestType,
+  updateBody?: U,
   createUrl: URL | string,
-  createBody?: CreateRequestType,
-}): Promise<ResponseType> {
+  createBody?: C,
+}): Promise<Result<O>> {
 
   return (
-    updateResource<ResponseType, UpdateRequestType>({
+    updateResource<O, U>({
       baseUrl: baseUpdateUrl,
       resourceId,
       body: updateBody,
     })
-    .catch((error) => {
-      if (error instanceof UrlResourceNotFoundError) {
-        return createResource(createUrl, createBody)
-      } else {
-        throw error
-      }
-    })
+    .then(result => (
+      ( isNotFound(result) )
+      ? createResource(createUrl, createBody)
+      : result
+    ))
   )
 }
 
 async function deleteResource(
   baseUrl: URL | string,
   resourceId: string,
-): Promise<any> { // eslint-disable-line  @typescript-eslint/no-explicit-any
+): Promise<Result<unknown>> {
+  const url = new URL(resourceId, baseUrl)
+  const response = await fetch(
+    url,
+    {
+      method: 'DELETE',
+      headers: await getHeaders(),
+    }
+  );
 
-  try {
-    const url = new URL(resourceId, baseUrl)
-    const response = await fetch(
-      url,
-      {
-        method: 'DELETE',
-        headers: await getHeaders(),
-      }
-    );
-
-    checkResponseStatus(response)
-    if (!response.ok)
-      throw new Error(`Failed to DELETE at ${url} with response ${JSON.stringify(response)}`)
-
-    return response.json()
-  } catch (error) {
-    throw error
-  }
+  return createResult(
+    response,
+    `Failed to DELETE at ${url} with response ${JSON.stringify(response)}`,
+    false,
+  )
 }
 
 export {
@@ -210,5 +160,4 @@ export {
   getResource,
   updateResource,
   updateOrCreateResource,
-  UrlResourceNotFoundError,
 }

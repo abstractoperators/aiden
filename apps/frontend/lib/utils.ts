@@ -9,9 +9,9 @@ function snakeCase(str: string) {
   return str.replace(/([A-Z])/g, (group) => "_" + group.toLowerCase())
 }
 
-function snakify<ValueType>(
-  value: string | Record<string, ValueType>,
-): string | Record<string, ValueType> {
+function snakify<T>(
+  value: string | Record<string, T>,
+): string | Record<string, T> {
   return (typeof value === "string")
     ? snakeCase(value)
     : Object.fromEntries(Object.entries(value).map(([k, v]) => (
@@ -23,14 +23,13 @@ function camelCase(str: string) {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
 }
 
-// TODO: resolve explicit any
 // TODO: extend to more general objects
 // TODO: https://github.com/kbrabrand/camelize-ts/blob/main/src/index.ts
 function camelize(value: string): string;
-function camelize<O>(value: Record<string, any>): O; // eslint-disable-line @typescript-eslint/no-explicit-any
-function camelize<O>(value: Record<string, any>[]): O; // eslint-disable-line @typescript-eslint/no-explicit-any
+function camelize<O>(value: Record<string, unknown>): O;
+function camelize<O>(value: Record<string, unknown>[]): O;
 function camelize<O>(
-  value: string | Record<string, any> | Record<string, any>[], // eslint-disable-line @typescript-eslint/no-explicit-any
+  value: string | Record<string, unknown> | Record<string, unknown>[],
 ): string | O {
   if (typeof value === "string") {
     return camelCase(value)

@@ -7,8 +7,8 @@ import {
   getResource,
   updateOrCreateResource,
   updateResource,
-  UrlResourceNotFoundError,
 } from "./common"
+import { Result, isErrorResult, isNotFound } from "./result"
 
 const WALLET_PATH = '/wallets'
 const WALLET_SEGMENT = '/wallets/'
@@ -33,18 +33,21 @@ interface Wallet extends WalletBase {
 
 async function getWallet(
   query: { publicKey: string, chain?: string } | { walletId: string }
-): Promise<Wallet> {
+): Promise<Result<Wallet>> {
   return getResource<Wallet>({
     baseUrl: baseUrlPath,
     query,
   })
 }
 
-async function createWallet(wallet: WalletBase): Promise<Wallet> {
+async function createWallet(wallet: WalletBase): Promise<Result<Wallet>> {
   return createResource(baseUrlPath, wallet)
 }
 
-async function updateWallet(walletId: string, walletUpdate: WalletUpdate): Promise<Wallet> {
+async function updateWallet(
+  walletId: string,
+  walletUpdate: WalletUpdate,
+): Promise<Result<Wallet>> {
   return updateResource({
     baseUrl: baseUrlSegment,
     resourceId: walletId,
@@ -56,7 +59,7 @@ async function updateOrCreateWallet(
   id: { publicKey: string, chain?: string } | { walletId: string},
   walletUpdate: WalletUpdate,
   wallet: WalletBase,
-): Promise<Wallet> {
+): Promise<Result<Wallet>> {
   if ("walletId" in id) {
     return updateOrCreateResource({
       baseUpdateUrl: baseUrlSegment,
@@ -67,18 +70,18 @@ async function updateOrCreateWallet(
     })
   }
 
-  return (
-    getWallet(id)
-    .then(apiWallet => (updateWallet(apiWallet.id, walletUpdate)))
-    .catch((error) => {
-      if (error instanceof UrlResourceNotFoundError) {
-        return createWallet(wallet)
-      } else {
-        console.error(error)
-        throw error
-      }
-    })
-  )
+  const apiWallet = await getWallet(id)
+  if (isErrorResult(apiWallet))
+    return apiWallet
+  
+  return updateWallet(
+    apiWallet.data.id,
+    walletUpdate,
+  ).then(result => (
+    ( isNotFound(result) )
+    ? createWallet(wallet)
+    : result
+  ))
 }
 
 async function deleteWallet(walletId: string) {
