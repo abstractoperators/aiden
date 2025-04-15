@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import {
   createResource,
+  deleteResource,
   fromApiEndpoint,
   getResource,
   updateResource,
@@ -190,8 +191,16 @@ async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<R
   return ret
 }
 
+async function deleteAgent(agentId: string) {
+  return deleteResource(
+    baseUrlSegment,
+    agentId,
+  )
+}
+
 export {
   createAgent,
+  deleteAgent,
   getAgent,
   getEnlightened,
   getIncubating,
