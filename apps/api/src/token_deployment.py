@@ -5,8 +5,6 @@ from eth_account import Account
 from eth_utils import event_abi_to_log_topic
 from web3 import AsyncHTTPProvider, AsyncWeb3
 
-# from web3.eth import Interface
-
 SEI_RPC_URL = os.getenv("SEI_RPC_URL")  # Get the SEI EVM RPC URL
 
 
@@ -53,7 +51,6 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
 
     launch_fee = await bonding_contract.functions.assetLaunchFee().call()
 
-    # print(contract.functions)
     launch_token_with_sei_txn = await bonding_contract.functions.launchWithSei(
         name,
         ticker,
