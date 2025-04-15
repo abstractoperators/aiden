@@ -36,6 +36,7 @@ export default async function AgentHome({
 
   const agent = agentResult.data
   const { characterJson: character, ownerId } = agent
+  const { bio, lore, topics, adjectives } = character
   const name = character.name || agent.id
   const tokenId = agent.tokenId
   const session = await auth()
@@ -90,38 +91,14 @@ export default async function AgentHome({
             <CardTitle className="text-d5">Basics</CardTitle>
           </CardHeader>
           <CardContent>
-          {character.bio.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Bio</h2>
-              {character.bio.map(str => (
-                <p key={str}>{str}</p>
+          {Object.entries({ bio, lore, topics, adjectives }).filter(item => item[1].length).map(([title, list]) => (
+            <div key={title}>
+              <h2 className="font-sans text-d6">{title[0].toUpperCase() + title.slice(1)}</h2>
+              {list.map((str, index) => (
+                <p key={`${title}.${index}`}>{str}</p>
               ))}
             </div>
-          ) : <></>}
-          {character.lore.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Lore</h2>
-              {character.lore.map(str => (
-                <p key={str}>{str}</p>
-              ))}
-            </div>
-          ) : <></>}
-          {character.topics.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Topics</h2>
-              {character.topics.map(str => (
-                <p key={str}>{str}</p>
-              ))}
-            </div>
-          ) : <></>}
-          {character.adjectives.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Adjectives</h2>
-              {character.adjectives.map(str => (
-                <p key={str}>{str}</p>
-              ))}
-            </div>
-          ) : <></>}
+          ))}
           </CardContent>
         </Card>
       </div>
