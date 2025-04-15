@@ -31,8 +31,8 @@ export default auth((req) => {
       token: auth?.user?.token.length,
     }
   }
-  console.log("pathname:", pathname)
-  console.log("auth:", consoleAuth)
+  console.debug("pathname:", pathname)
+  console.debug("auth:", consoleAuth)
 
   if (!auth || !auth.user) {
     console.log(
@@ -71,7 +71,6 @@ export default auth((req) => {
       }
     }
   }
-  console.log("Successfully authenticated and authorized!")
 })
 
 export const config = {
