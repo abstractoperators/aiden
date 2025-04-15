@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   createAgent,
-  startAgent,
+  stopAgent,
   updateAgent,
 } from "@/lib/api/agent"
 import { toast } from "@/hooks/use-toast"
@@ -80,11 +80,9 @@ type FormType = z.infer<typeof formSchema>
 function AgentForm({
   defaultValues,
   agentId,
-  runtimeId,
-}: {
+} : {
   defaultValues?: FormType,
   agentId?: string,
-  runtimeId?: string,
 }) {
   const { user } = useDynamicContext()
   if (!user)
@@ -124,7 +122,7 @@ function AgentForm({
   const { push } = useRouter()
 
   // TODO: set up sei and eth addresses if undefined
-  const onSubmitBase = agentId ? onSubmitEdit(agentId, runtimeId) : onSubmitCreate
+  const onSubmitBase = agentId ? onSubmitEdit(agentId) : onSubmitCreate
 
   async function onSubmit(formData: FormType) {
     console.debug("AgentForm", formData)
@@ -188,14 +186,14 @@ function AgentForm({
             </AccordionTrigger>
             <AccordionContent className="space-y-8">
               <div className="space-y-4">
-                {messageExamplesFields.map((example, exampleIndex) => (
-                  <MessageExample
-                    key={example.id}
-                    control={control}
-                    exampleIndex={exampleIndex}
-                    parentRemove={messageExamplesRemove}
-                  />
-                ))}
+              {messageExamplesFields.map((example, exampleIndex) => (
+                <MessageExample
+                  key={example.id}
+                  control={control}
+                  exampleIndex={exampleIndex}
+                  parentRemove={messageExamplesRemove}
+                />
+              ))}
               </div>
               <Button
                 type="button"
@@ -260,35 +258,35 @@ function MessageExample({
   return (
     <div className={cn(borderStyle, "p-4 space-y-8")}>
       <div className="space-y-2">
-        {fields.map((field, messageIndex) => (
-          <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
-            <div>
-              {Object.entries(messageExampleTitles).map(([name, title]) => (
-                <FormField
-                  key={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
-                  name={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{title}</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="placeholder:text-neutral-400"
-                          placeholder={title}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
-            </div>
-            <Button type="button" variant="destructive" onClick={() => remove(messageIndex)}>
-              Remove Message
-            </Button>
+      {fields.map((field, messageIndex) => (
+        <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
+          <div>
+          {Object.entries(messageExampleTitles).map(([name, title]) => (
+            <FormField
+              key={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
+              name={`messageExamples.${exampleIndex}.${messageIndex}.${name}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{title}</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="placeholder:text-neutral-400"
+                      placeholder={title}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
           </div>
-        ))}
+          <Button type="button" variant="destructive" onClick={() => remove(messageIndex)}>
+            Remove Message
+          </Button>
+        </div>
+      ))}
       </div>
       <div className="flex flex-row justify-between">
         <Button
@@ -332,9 +330,9 @@ function Style({ control }: { control: Control<FormType> }) {
     <AccordionItem value="Style" className={accordionItemStyle}>
       <AccordionTrigger className="font-semibold text-d6">Style</AccordionTrigger>
       <AccordionContent className="space-y-4">
-        {Object.entries(styleTitles).map(([name, title]) => (
-          <StyleHelper key={getFullName(name)} name={name} title={title} />
-        ))}
+      {Object.entries(styleTitles).map(([ name, title ]) => (
+        <StyleHelper key={getFullName(name)} name={name} title={title} />
+      ))}
       </AccordionContent>
     </AccordionItem>
   )
@@ -381,29 +379,29 @@ function FieldArray({
 }) {
   return (
     <div className="space-y-4">
-      {fields.map((formField, index) => (
-        <FormField
-          key={formField.id}
-          name={`${name}.${index}`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel></FormLabel>
-              <FormControl>
-                <Input
-                  className="placeholder:text-neutral-400"
-                  placeholder={title}
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription />
-              <FormMessage />
-              <Button type="button" variant="destructive" onClick={() => remove(index)}>
-                Remove
-              </Button>
-            </FormItem>
-          )}
-        />
-      ))}
+    {fields.map((formField, index) => (
+      <FormField
+        key={formField.id}
+        name={`${name}.${index}`}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel></FormLabel>
+            <FormControl>
+              <Input
+                className="placeholder:text-neutral-400"
+                placeholder={title}
+                {...field}
+              />
+            </FormControl>
+            <FormDescription />
+            <FormMessage />
+            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+              Remove
+            </Button>
+          </FormItem>
+        )}
+      />
+    ))}
     </div>
   )
 }
@@ -477,7 +475,6 @@ function EnvironmentVariables() {
   )
 }
 
-
 function SubmitButton() {
   return (
     <Button
@@ -533,15 +530,15 @@ async function onSubmitCreate({
     })
     return
   }
+
   toast({
     title: `Agent ${character.name} Created!`,
   })
-
   const { id } = agentResult.data
   push(`/agents/${id}`)
 }
 
-function onSubmitEdit(agentId: string, runtimeId?: string) {
+function onSubmitEdit(agentId: string) {
   async function onSubmitEditHelper({
     dynamicId,
     character,
@@ -580,8 +577,16 @@ function onSubmitEdit(agentId: string, runtimeId?: string) {
       })
       return
     }
-    startAgent({ agentId, runtimeId })
 
+    const stopResult = await stopAgent(agentId)
+    if (isErrorResult(stopResult)) {
+      console.error(`Failed to stop Agent ${agentId} status code ${stopResult.code}, ${stopResult.message}`)
+      toast({
+        title: `Unable to stop Agent ${character.name}`,
+        description: stopResult.message,
+      })
+      return
+    }
     toast({
       title: `Agent ${character.name} Updated!`,
       description: "Agent has been updated, and is restarting.",

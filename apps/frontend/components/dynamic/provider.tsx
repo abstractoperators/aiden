@@ -60,19 +60,19 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                 authToken
               )}`,
             })
-              .then((res) => {
-                if (res.ok) {
-                  console.log('LOGGED IN', res);
-                  // Handle success - maybe redirect to the home page or user dashboard
-                } else {
-                  // Handle any errors - maybe show an error message to the user
-                  console.error("Failed to log in");
-                }
-              })
-              .catch((error) => {
-                // Handle any exceptions
-                console.error("Error logging in", error);
-              });
+            .then((res) => {
+              if (res.ok) {
+                console.log('LOGGED IN', res);
+                // Handle success - maybe redirect to the home page or user dashboard
+              } else {
+                // Handle any errors - maybe show an error message to the user
+                console.error("Failed to log in");
+              }
+            })
+            .catch((error) => {
+              // Handle any exceptions
+              console.error("Error logging in", error);
+            });
 
             router.refresh();
             // user initialization if needed
@@ -90,12 +90,10 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                   }
                 )
               }
-            } else {
-              toast({
-                title: "Login error!",
-                description: userResult.message,
-              })
-            }
+            } else { toast({
+              title: "Login error!",
+              description: userResult.message,
+            })}
 
             router.refresh()
           },
@@ -119,12 +117,10 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                 chain,
                 ownerId: apiUser.data.id,
               })
-            } else {
-              toast({
-                title: "User not found",
-                description: `Unable to find AIDN user matching user ID ${user.userId} and attach wallet ${address} on chain ${chain}.`,
-              })
-            }
+            } else { toast({
+              title: "User not found",
+              description: `Unable to find AIDN user matching user ID ${user.userId} and attach wallet ${address} on chain ${chain}.`,
+            })}
           },
           onLogout: () => {
             handleLogout();
@@ -135,18 +131,16 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             const apiUser = await getUser({ dynamicId: user.userId })
             if (isSuccessResult<User>(apiUser)) {
               updateUser(apiUser.data.id, await dynamicToApiUser(user))
-            } else {
-              toast({
-                title: "User not found",
-                description: "Unable to update AIDN user profile.",
-              })
-            }
-
+            } else { toast({
+              title: "User not found",
+              description: "Unable to update AIDN user profile.",
+            })}
+            
           },
           onWalletAdded: async ({ wallet, userWallets }) => {
             const user: Result<User> = await Promise.any(userWallets.map(dynamicWallet => (
               getUser({ publicKey: dynamicWallet.address, chain: dynamicWallet.chain })
-                .then(result => (isSuccessResult<User>(result) ? result : Promise.reject(result)))
+              .then(result => (isSuccessResult<User>(result) ? result : Promise.reject(result)))
             ))).catch(reason => {
               if (reason instanceof AggregateError) {
                 return reason.errors[0] as Result<User>
@@ -189,12 +183,10 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
 
             if (isSuccessResult<Wallet>(walletResult)) {
               deleteWallet(walletResult.data.id)
-            } else {
-              toast({ // do nothing if it doesn't exist.
-                title: "Unable to Remove Wallet",
-                description: walletResult.message,
-              })
-            }
+            } else { toast({ // do nothing if it doesn't exist.
+              title: "Unable to Remove Wallet",
+              description: walletResult.message,
+            })}
           },
           // NOTE: by these implementations of onWalletAdded and onWalletRemoved,
           // wallet transfers in Dynamic will manifest as destruction and recreation of the same wallet in the API.

@@ -14,11 +14,9 @@ import { AgentStartTask, TaskStatus } from "./task"
 import { setTimeout } from "node:timers/promises"
 import { Character } from "@/lib/character"
 import {
-  createInternalServerError,
   createSuccessResult,
   isBadRequest,
   isErrorResult,
-  isSuccessResult,
   Result,
 } from "./result"
 
@@ -117,65 +115,10 @@ async function startAgent({
   return result
 }
 
-async function pollAgent({
-  agentId,
-  runtimeId,
-  successCallback = () => {},
-  failureCallback = () => {},
-  pendingStartingCallback = () => {},
-  maxTriesCallback = () => {},
-  delay = 30000,
-  maxTries = 15,
-}: {
-  agentId: string,
-  runtimeId?: string,
-  successCallback?: () => void,
-  failureCallback?: () => void,
-  pendingStartingCallback?: () => void,
-  maxTriesCallback?: () => void,
-  delay?: number,
-  maxTries?: number,
-}): Promise<Result<TaskStatus>> {
-  const arr = [...Array(maxTries).keys()]
-  for (const _ of arr) { // eslint-disable-line @typescript-eslint/no-unused-vars
-    console.debug(
-      "Waiting for agent", agentId,
-      "to start up for runtime", runtimeId,
-    )
-
-    const taskStatus = await getAgentStartTaskStatus(
-      {
-        agentId,
-        runtimeId,
-      },
-      delay,
-    )
-
-    if (isSuccessResult(taskStatus)) {
-      switch (taskStatus.data) {
-        case TaskStatus.SUCCESS:
-          console.log(
-            "Agent", agentId,
-            "successfully started on", runtimeId,
-          )
-          successCallback()
-          return taskStatus
-        case TaskStatus.FAILURE:
-          failureCallback()
-          return createInternalServerError(
-            `Agent Start Task Status failed for agent ${agentId} runtime ${runtimeId} !!!`
-          )
-        case TaskStatus.PENDING:
-        case TaskStatus.STARTED:
-          pendingStartingCallback()
-      }
-    }
-  }
-
-  maxTriesCallback()
-  return createInternalServerError(
-    `Agent Start Task Status for agent ${agentId} runtime ${runtimeId} timed out after ${maxTries} tries!!!`
-  )
+async function stopAgent(agentId: string): Promise<Result<Agent>> {
+  return createResource<Agent>(new URL(
+    `${baseUrlPath.href}/${agentId}/stop`
+  ))
 }
 
 async function getAgentStartTaskStatus(
@@ -253,8 +196,8 @@ export {
   getEnlightened,
   getIncubating,
   getAgentStartTaskStatus,
-  pollAgent,
   startAgent,
+  stopAgent,
   updateAgent,
 }
 

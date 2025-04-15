@@ -84,10 +84,13 @@ function UploadForm() {
       return undefined
     })
 
-    if (typeof (fileText) === "undefined")
+    if (typeof(fileText) === "undefined")
       return
 
     const character = JSON.parse(fileText) // TODO: catch SyntaxError
+    /** onSubmitCreate wraps the API creation of the agent.
+     * It retrieves the API user ID and informs the user of success
+     * before redirecting the user to the agent's profile page. */
     return onSubmitCreate({
       dynamicId: userId,
       character,
