@@ -589,7 +589,7 @@ function onSubmitEdit(agentId: string) {
     }
     toast({
       title: `Agent ${character.name} Updated!`,
-      description: "Agent has been updated, and is restarting.",
+      description: "Agent has been updated and stopped.",
     })
 
     push(`/agents/${agentId}`)
