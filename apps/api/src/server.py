@@ -520,7 +520,7 @@ def stop_agent(
         if not eliza_agent_id:
             raise HTTPException(status_code=404, detail="Agent does not have an Eliza ID")
 
-        stop_endpoint = f"{runtime.url}/stop_agent/{eliza_agent_id}"
+        stop_endpoint = f"{runtime.url}/controller/character/stop"
         resp = requests.post(stop_endpoint, timeout=3)
         resp.raise_for_status()
         stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
