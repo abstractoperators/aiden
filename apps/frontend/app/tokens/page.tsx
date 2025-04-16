@@ -1,4 +1,7 @@
+import { Button } from "@/components/ui/button";
 import TokenTabs from "./tabs";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function TokensDashboard() {
   return (
@@ -7,6 +10,22 @@ export default function TokensDashboard() {
         Tokens
       </h1>
       <TokenTabs />
+      <div>
+        <Button
+          className={cn(
+            "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%",
+            "font-semibold text-black dark:text-white",
+            "transition duration-300 hover:hue-rotate-60",
+            "rounded-xl",
+          )}
+          size="lg"
+          asChild
+        >
+          <Link href='/tokens/launch' >
+            Launch a Token
+          </Link>
+        </Button>
+      </div>
     </main>
   )
 }
