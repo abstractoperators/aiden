@@ -510,13 +510,17 @@ def stop_agent(
 
         runtime_id = agent.runtime_id
         if not runtime_id:
-            raise HTTPException(status_code=404, detail="Agent is not running")
+            raise HTTPException(status_code=404, detail="Agent has no runtime")
 
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
-        stop_endpoint = f"{runtime.url}/stop_agent/{agent_id}"
+        eliza_agent_id = agent.eliza_agent_id
+        if not eliza_agent_id:
+            raise HTTPException(status_code=404, detail="Agent does not have an Eliza ID")
+
+        stop_endpoint = f"{runtime.url}/stop_agent/{eliza_agent_id}"
         resp = requests.post(stop_endpoint, timeout=3)
         resp.raise_for_status()
         stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
