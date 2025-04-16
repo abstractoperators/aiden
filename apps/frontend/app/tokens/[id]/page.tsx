@@ -25,8 +25,11 @@ export default async function TokenPage({
   const seitrace_link = `https://seitrace.com/address/${address}?chain=atlantic-2`
   return (
     <main className="flex-1 self-stretch flex flex-col gap-8 m-8 bg-neutral-600/40 backdrop-blur p-8 rounded-xl">
-      <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
-        <Link href={seitrace_link} >
+      <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl transition duration-300 hover:invert-[.8]">
+        <Link
+          href={seitrace_link}
+          target="_blank"
+        >
           {name}: ({ticker})
         </Link>
       </h1>
