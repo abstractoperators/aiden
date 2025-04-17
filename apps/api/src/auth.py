@@ -161,7 +161,7 @@ def get_wallets_from_token(
 
 
 def access_list(
-    *required_permissions: tuple[str, ...],
+    *required_permissions: str,
 ) -> Callable:
     """
     If the JWT token is valid, returns the access list associated with the token
@@ -179,7 +179,7 @@ def access_list(
         payload_access_list: list[str] = payload.get("lists", [])
         if not set(required_permissions).issubset(set(payload_access_list)):
             raise HTTPException(
-                detail=f"User does not have the required permissions {required_permissions} {set(required_permissions)} in {payload_access_list} {set(payload_access_list)}",
+                detail=f"User does not have the required permissions {set(required_permissions)} in {set(payload_access_list)}",
                 status_code=403,
             )
 
