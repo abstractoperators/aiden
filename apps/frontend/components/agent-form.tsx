@@ -34,15 +34,18 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   createAgent,
   stopAgent,
+  Token,
   updateAgent,
 } from "@/lib/api/agent"
 import { toast } from "@/hooks/use-toast"
 import { getUser } from "@/lib/api/user"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { isErrorResult } from "@/lib/api/result"
+import { isErrorResult, isSuccessResult } from "@/lib/api/result"
+import { FormCombobox } from "./ui/combobox"
+import { useEffect, useState } from "react"
+import { getTokens } from "@/lib/api/token"
 
-const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
 const stringListTitles = {
@@ -71,8 +74,8 @@ const integrationsSchema = z.object({
   twitter: z.boolean()
 })
 const tokenSchema = z.object({
-  tokenId: z.string(),
-}) // idk don't use id? idgaf.
+  tokenId: z.string().nullable().optional(),
+})
 
 const formSchema = characterSchema.merge(envSchema).merge(integrationsSchema).merge(tokenSchema)
 type FormType = z.infer<typeof formSchema>
@@ -89,8 +92,8 @@ function AgentForm({
     throw new Error(`User ${user} does not exist!`)
   if (!user.userId)
     throw new Error(`User ${user} has no userId!`)
-
   const userId: string = user.userId
+  const [tokens, setTokens] = useState<Token[]>([])
 
   const form = useForm<FormType>({
     resolver: zodResolver(formSchema),
@@ -105,11 +108,10 @@ function AgentForm({
       postExamples: [],
       adjectives: [],
       topics: [],
-      style: { all: [], chat: [], post: [], }
+      style: { all: [], chat: [], post: [], },
     }
   })
   const { control, handleSubmit } = form
-
   const {
     fields: messageExamplesFields,
     append: messageExamplesAppend,
@@ -144,12 +146,23 @@ function AgentForm({
     })
   }
 
+  useEffect(() => {
+    getTokens().then(result => {
+      if (isSuccessResult(result)) {
+        setTokens(result.data)
+      } else { toast({
+        title: "Unable to fetch tokens!",
+        description: result.message,
+      })}
+    })
+  }, [])
+
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
-          <AccordionItem value="Name" className={accordionItemStyle}>
-            <AccordionTrigger className="font-semibold text-d6">Name</AccordionTrigger>
+          <AccordionItem value="Name">
+            <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
                 name="name"
@@ -180,8 +193,8 @@ function AgentForm({
             />
           ))}
 
-          <AccordionItem value="Message Examples" className={accordionItemStyle}>
-            <AccordionTrigger className="font-semibold text-d6">
+          <AccordionItem value="Message Examples">
+            <AccordionTrigger>
               Message Examples
             </AccordionTrigger>
             <AccordionContent className="space-y-8">
@@ -209,8 +222,8 @@ function AgentForm({
           <Style control={control} />
           <EnvironmentVariables />
 
-          <AccordionItem value="Twitter" className={accordionItemStyle}>
-            <AccordionTrigger className="font-semibold text-d6">Twitter</AccordionTrigger>
+          <AccordionItem value="Twitter">
+            <AccordionTrigger>Twitter</AccordionTrigger>
             <AccordionContent>
               <FormField
                 name="twitter"
@@ -231,7 +244,45 @@ function AgentForm({
             </AccordionContent>
           </AccordionItem>
 
-          <TokenId />
+          <AccordionItem value="Token">
+            <AccordionTrigger>Token</AccordionTrigger>
+            <AccordionContent>
+              <FormField
+                name="tokenId"
+                render={({ field: { value, onChange } }) => (
+                  <FormItem>
+                    <FormLabel></FormLabel>
+                      <FormCombobox
+                        value={value}
+                        setValue={onChange}
+                        instructions="Select a token..."
+                        empty="No tokens found."
+                        search="Search tokens..."
+                        items={tokens.map(token => ({
+                          label: `${token.name} ($${token.ticker})`,
+                          value: token.id,
+                        }))}
+                      />
+                    <FormDescription>
+                      Link a token actual uuid here.
+                      <Link
+                        href="/tokens"
+                        className={cn(
+                          "text-blue-600 underline text-sm mt-1",
+                          "hover:text-blue-700 dark:hover:text-blue-500",
+                          "transition duration-300",
+                          "inline-block",
+                        )}
+                      >
+                        Need to find a token? Click here.
+                      </Link>
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
 
         </Accordion>
 
@@ -327,8 +378,8 @@ function Style({ control }: { control: Control<FormType> }) {
   }
 
   return (
-    <AccordionItem value="Style" className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">Style</AccordionTrigger>
+    <AccordionItem value="Style">
+      <AccordionTrigger>Style</AccordionTrigger>
       <AccordionContent className="space-y-4">
       {Object.entries(styleTitles).map(([ name, title ]) => (
         <StyleHelper key={getFullName(name)} name={name} title={title} />
@@ -354,8 +405,8 @@ function AccordionList({
   })
 
   return (
-    <AccordionItem value={title} className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">{title}</AccordionTrigger>
+    <AccordionItem value={title}>
+      <AccordionTrigger>{title}</AccordionTrigger>
       <AccordionContent className="space-y-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
@@ -405,52 +456,11 @@ function FieldArray({
     </div>
   )
 }
-function TokenId() {
-  return (
-    <AccordionItem value="Token Id" className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">
-        TokenId
-      </AccordionTrigger>
-      <AccordionContent>
-        <FormField
-          name="tokenId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel></FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Token Id"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Link a token actual uuid here.
-              </FormDescription>
-              <Link
-                href="/tokens"
-                className={cn(
-                  "text-blue-600 underline text-sm mt-1",
-                  "hover:text-blue-700 dark:hover:text-blue-500",
-                  "transition duration-300",
-                  "inline-block",
-                )}
-              >
-                Need to find a token? Click here.
-              </Link>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
 
 function EnvironmentVariables() {
   return (
-    <AccordionItem value="Environment Variables" className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">
+    <AccordionItem value="Environment Variables">
+      <AccordionTrigger>
         Environment Variables
       </AccordionTrigger>
       <AccordionContent>
@@ -475,6 +485,13 @@ function EnvironmentVariables() {
   )
 }
 
+function TokenAccordion() {
+  return (
+    <></>
+    // TODO
+  )
+}
+
 function SubmitButton() {
   return (
     <Button
@@ -491,19 +508,21 @@ function SubmitButton() {
   )
 }
 
+interface SubmitProps {
+  dynamicId: string
+  character: Character
+  envFile: string
+  tokenId?: string | null
+  push: (href: string, options?: { scroll: boolean }) => void
+}
+
 async function onSubmitCreate({
   dynamicId,
   character,
   envFile,
   tokenId,
   push,
-}: {
-  dynamicId: string,
-  character: Character,
-  envFile: string,
-  tokenId: string,
-  push: (href: string, options?: { scroll: boolean }) => void,
-}) {
+}: SubmitProps) {
   console.debug("Character", character)
   const userResult = await getUser({ dynamicId })
   console.debug(dynamicId, userResult)
@@ -543,13 +562,9 @@ function onSubmitEdit(agentId: string) {
     dynamicId,
     character,
     envFile,
+    tokenId,
     push,
-  }: {
-    dynamicId: string,
-    character: Character,
-    envFile: string,
-    push: (href: string, options?: { scroll: boolean }) => void,
-  }) {
+  }: SubmitProps) {
     console.debug("Character", character)
     const userResult = await getUser({ dynamicId })
     console.debug(dynamicId, userResult)
@@ -566,6 +581,7 @@ function onSubmitEdit(agentId: string) {
       ownerId: userResult.data.id,
       characterJson: character,
       envFile,
+      tokenId,
     }
 
     // update and stop agent
@@ -599,13 +615,11 @@ function onSubmitEdit(agentId: string) {
 }
 
 export {
-  accordionItemStyle,
   envSchema,
   onSubmitCreate,
   onSubmitEdit,
   EnvironmentVariables,
   SubmitButton,
-  TokenId,
 }
 
 export default AgentForm
