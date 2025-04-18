@@ -34,14 +34,18 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   createAgent,
   stopAgent,
+  Token,
   updateAgent,
 } from "@/lib/api/agent"
 import { toast } from "@/hooks/use-toast"
 import { getUser } from "@/lib/api/user"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { isErrorResult } from "@/lib/api/result"
+import { isErrorResult, isSuccessResult } from "@/lib/api/result"
+import { FormCombobox } from "./ui/combobox"
+import { useEffect, useState } from "react"
+import { getTokens } from "@/lib/api/token"
 
-const accordionItemStyle = "data-[state=open]:bg-anakiwa-lighter/70 data-[state=open]:dark:bg-anakiwa-darker/70 rounded-xl px-4"
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
 const stringListTitles = {
@@ -51,7 +55,7 @@ const stringListTitles = {
   "postExamples": "Post Examples",
   "adjectives": "Adjectives",
   "topics": "Topics",
- }
+}
 const messageExampleTitles = {
   "user": "User",
   "content.text": "Text",
@@ -69,7 +73,11 @@ const envSchema = z.object({
 const integrationsSchema = z.object({
   twitter: z.boolean()
 })
-const formSchema = characterSchema.merge(envSchema).merge(integrationsSchema)
+const tokenSchema = z.object({
+  tokenId: z.string().nullable().optional(),
+})
+
+const formSchema = characterSchema.merge(envSchema).merge(integrationsSchema).merge(tokenSchema)
 type FormType = z.infer<typeof formSchema>
 
 function AgentForm({
@@ -84,8 +92,8 @@ function AgentForm({
     throw new Error(`User ${user} does not exist!`)
   if (!user.userId)
     throw new Error(`User ${user} has no userId!`)
-
   const userId: string = user.userId
+  const [tokens, setTokens] = useState<Token[]>([])
 
   const form = useForm<FormType>({
     resolver: zodResolver(formSchema),
@@ -100,11 +108,10 @@ function AgentForm({
       postExamples: [],
       adjectives: [],
       topics: [],
-      style: { all: [], chat: [], post: [], }
+      style: { all: [], chat: [], post: [], },
     }
   })
   const { control, handleSubmit } = form
-
   const {
     fields: messageExamplesFields,
     append: messageExamplesAppend,
@@ -121,7 +128,7 @@ function AgentForm({
 
   async function onSubmit(formData: FormType) {
     console.debug("AgentForm", formData)
-    const {env: envFile, twitter, ...data} = formData
+    const { env: envFile, tokenId, twitter, ...data } = formData
     const character = {
       modelProvider: "openai",
       clients: twitter ? ["twitter"] : [],
@@ -134,20 +141,32 @@ function AgentForm({
       dynamicId: userId,
       character,
       envFile,
+      tokenId,
       push,
     })
   }
+
+  useEffect(() => {
+    getTokens().then(result => {
+      if (isSuccessResult(result)) {
+        setTokens(result.data)
+      } else { toast({
+        title: "Unable to fetch tokens!",
+        description: result.message,
+      })}
+    })
+  }, [])
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
-          <AccordionItem value="Name" className={accordionItemStyle}>
-            <AccordionTrigger className="font-semibold text-d6">Name</AccordionTrigger>
+          <AccordionItem value="Name">
+            <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
                 name="name"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel></FormLabel>
                     <FormControl>
@@ -165,17 +184,17 @@ function AgentForm({
             </AccordionContent>
           </AccordionItem>
 
-        {Object.entries(stringListTitles).map(([name, title]) => (
-          <AccordionList
-            key={name}
-            title={title}
-            name={name}
-            control={control}
-          />
-        ))}
+          {Object.entries(stringListTitles).map(([name, title]) => (
+            <AccordionList
+              key={name}
+              title={title}
+              name={name}
+              control={control}
+            />
+          ))}
 
-          <AccordionItem value="Message Examples" className={accordionItemStyle}>
-            <AccordionTrigger className="font-semibold text-d6">
+          <AccordionItem value="Message Examples">
+            <AccordionTrigger>
               Message Examples
             </AccordionTrigger>
             <AccordionContent className="space-y-8">
@@ -203,12 +222,12 @@ function AgentForm({
           <Style control={control} />
           <EnvironmentVariables />
 
-          <AccordionItem value="Twitter" className={accordionItemStyle}>
-            <AccordionTrigger className="font-semibold text-d6">Twitter</AccordionTrigger>
+          <AccordionItem value="Twitter">
+            <AccordionTrigger>Twitter</AccordionTrigger>
             <AccordionContent>
               <FormField
                 name="twitter"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-start space-x-2">
                     <FormControl>
                       <Checkbox
@@ -218,6 +237,46 @@ function AgentForm({
                     </FormControl>
                     <FormLabel className="!my-2">Connect the agent to Twitter</FormLabel>
                     <FormDescription></FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="Token">
+            <AccordionTrigger>Token</AccordionTrigger>
+            <AccordionContent>
+              <FormField
+                name="tokenId"
+                render={({ field: { value, onChange } }) => (
+                  <FormItem>
+                    <FormLabel></FormLabel>
+                      <FormCombobox
+                        value={value}
+                        setValue={onChange}
+                        instructions="Select a token..."
+                        empty="No tokens found."
+                        search="Search tokens..."
+                        items={tokens.map(token => ({
+                          label: `${token.name} ($${token.ticker})`,
+                          value: token.id,
+                        }))}
+                      />
+                    <FormDescription>
+                      Link a token actual uuid here.
+                      <Link
+                        href="/tokens"
+                        className={cn(
+                          "text-blue-600 underline text-sm mt-1",
+                          "hover:text-blue-700 dark:hover:text-blue-500",
+                          "transition duration-300",
+                          "inline-block",
+                        )}
+                      >
+                        Need to find a token? Click here.
+                      </Link>
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -301,10 +360,10 @@ function MessageExample({
 
 function Style({ control }: { control: Control<FormType> }) {
   const getFullName = (name: string) => `style.${name}`
-  function StyleHelper({name, title}: {name: string, title: string}) {
+  function StyleHelper({ name, title }: { name: string, title: string }) {
     const fullName = getFullName(name)
     const { fields, append, remove } = useFieldArray({
-    // @ts-expect-error TS not recognizing other property types
+      // @ts-expect-error TS not recognizing other property types
       control, name: fullName,
     })
     return (
@@ -319,8 +378,8 @@ function Style({ control }: { control: Control<FormType> }) {
   }
 
   return (
-    <AccordionItem value="Style" className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">Style</AccordionTrigger>
+    <AccordionItem value="Style">
+      <AccordionTrigger>Style</AccordionTrigger>
       <AccordionContent className="space-y-4">
       {Object.entries(styleTitles).map(([ name, title ]) => (
         <StyleHelper key={getFullName(name)} name={name} title={title} />
@@ -346,8 +405,8 @@ function AccordionList({
   })
 
   return (
-    <AccordionItem value={title} className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">{title}</AccordionTrigger>
+    <AccordionItem value={title}>
+      <AccordionTrigger>{title}</AccordionTrigger>
       <AccordionContent className="space-y-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
@@ -400,8 +459,8 @@ function FieldArray({
 
 function EnvironmentVariables() {
   return (
-    <AccordionItem value="Environment Variables" className={accordionItemStyle}>
-      <AccordionTrigger className="font-semibold text-d6">
+    <AccordionItem value="Environment Variables">
+      <AccordionTrigger>
         Environment Variables
       </AccordionTrigger>
       <AccordionContent>
@@ -426,6 +485,13 @@ function EnvironmentVariables() {
   )
 }
 
+function TokenAccordion() {
+  return (
+    <></>
+    // TODO
+  )
+}
+
 function SubmitButton() {
   return (
     <Button
@@ -442,17 +508,21 @@ function SubmitButton() {
   )
 }
 
+interface SubmitProps {
+  dynamicId: string
+  character: Character
+  envFile: string
+  tokenId?: string | null
+  push: (href: string, options?: { scroll: boolean }) => void
+}
+
 async function onSubmitCreate({
   dynamicId,
   character,
   envFile,
+  tokenId,
   push,
-} : {
-  dynamicId: string,
-  character: Character,
-  envFile: string,
-  push: (href: string, options? : { scroll: boolean }) => void,
-}) {
+}: SubmitProps) {
   console.debug("Character", character)
   const userResult = await getUser({ dynamicId })
   console.debug(dynamicId, userResult)
@@ -469,8 +539,8 @@ async function onSubmitCreate({
     ownerId: userResult.data.id,
     characterJson: character,
     envFile,
+    tokenId,
   }
-
   const agentResult = await createAgent(agentPayload)
   if (isErrorResult(agentResult)) {
     toast({
@@ -483,7 +553,6 @@ async function onSubmitCreate({
   toast({
     title: `Agent ${character.name} Created!`,
   })
-
   const { id } = agentResult.data
   push(`/agents/${id}`)
 }
@@ -493,13 +562,9 @@ function onSubmitEdit(agentId: string) {
     dynamicId,
     character,
     envFile,
+    tokenId,
     push,
-  } : {
-    dynamicId: string,
-    character: Character,
-    envFile: string,
-    push: (href: string, options? : { scroll: boolean }) => void,
-  }) {
+  }: SubmitProps) {
     console.debug("Character", character)
     const userResult = await getUser({ dynamicId })
     console.debug(dynamicId, userResult)
@@ -516,6 +581,7 @@ function onSubmitEdit(agentId: string) {
       ownerId: userResult.data.id,
       characterJson: character,
       envFile,
+      tokenId,
     }
 
     // update and stop agent
@@ -539,7 +605,7 @@ function onSubmitEdit(agentId: string) {
     }
     toast({
       title: `Agent ${character.name} Updated!`,
-      description: "Agent has been updated, and is restarting.",
+      description: "Agent has been updated and stopped.",
     })
 
     push(`/agents/${agentId}`)
@@ -549,7 +615,6 @@ function onSubmitEdit(agentId: string) {
 }
 
 export {
-  accordionItemStyle,
   envSchema,
   onSubmitCreate,
   onSubmitEdit,

@@ -8,7 +8,7 @@ import { getAgent } from "@/lib/api/agent"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 import { getUser, User } from "@/lib/api/user"
 import { cn } from "@/lib/utils"
-import { Pencil } from "lucide-react"
+import { Pencil, Coins } from "lucide-react"
 import Link from "next/link"
 
 // TODO: start agent button
@@ -36,9 +36,11 @@ export default async function AgentHome({
 
   const agent = agentResult.data
   const { characterJson: character, ownerId } = agent
+  const { bio, lore, topics, adjectives } = character
   const name = character.name || agent.id
+  const tokenId = agent.tokenId
   const session = await auth()
-  const user = session?.user?.id && await getUser({dynamicId: session.user.id})
+  const user = session?.user?.id && await getUser({ dynamicId: session.user.id })
   const userOwnsAgent = true
     && user
     && isSuccessResult<User>(user)
@@ -52,60 +54,51 @@ export default async function AgentHome({
         "rounded-xl relative",
       )}
     >
-    { userOwnsAgent &&
-      <Link
-        href={`/user/agents/edit/${id}`}
-        className={cn(
-          buttonVariants({
-            variant: "ghost",
-            size: "icon",
-          }),
-          "rounded-xl absolute top-2 right-2",
-          "hover:bg-anakiwa-lighter/60 dark:hover:bg-anakiwa-dark/40",
-        )}
-      >
-        <Pencil strokeWidth={3}/>
-      </Link>
-    }
+      {userOwnsAgent &&
+        <Link
+          href={`/user/agents/edit/${id}`}
+          className={cn(
+            buttonVariants({
+              variant: "ghost",
+              size: "icon",
+            }),
+            "rounded-xl absolute top-2 right-2",
+            "hover:bg-anakiwa-lighter/60 dark:hover:bg-anakiwa-dark/40",
+          )}
+        >
+          <Pencil strokeWidth={3} />
+        </Link>
+      }
       <div className="col-span-7 flex flex-col items-stretch gap-2">
+        {tokenId && (
+          <Link
+            href={`/tokens/${tokenId}`}
+            className={cn(
+              buttonVariants({
+                variant: "ghost",
+                size: "icon",
+              }),
+              "rounded-xl",
+              "hover:bg-anakiwa-lighter/60 dark:hover:bg-anakiwa-dark/40",
+            )}
+          >
+            <Coins strokeWidth={3} />
+          </Link>
+        )}
         <AgentCard name={name} />
         <Card className="bg-anakiwa-darker/30 dark:bg-anakiwa/30 rounded-xl border-none">
           <CardHeader>
             <CardTitle className="text-d5">Basics</CardTitle>
           </CardHeader>
           <CardContent>
-          {character.bio.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Bio</h2>
-            {character.bio.map(str => (
-              <p key={str}>{str}</p>
-            ))}
+          {Object.entries({ bio, lore, topics, adjectives }).filter(item => item[1].length).map(([title, list]) => (
+            <div key={title}>
+              <h2 className="font-sans text-d6">{title[0].toUpperCase() + title.slice(1)}</h2>
+              {list.map((str, index) => (
+                <p key={`${title}.${index}`}>{str}</p>
+              ))}
             </div>
-          ) : <></>}
-          {character.lore.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Lore</h2>
-            {character.lore.map(str => (
-              <p key={str}>{str}</p>
-            ))}
-            </div>
-          ) : <></>}
-          {character.topics.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Topics</h2>
-            {character.topics.map(str => (
-              <p key={str}>{str}</p>
-            ))}
-            </div>
-          ) : <></>}
-          {character.adjectives.length ? (
-            <div>
-              <h2 className="font-sans text-d6">Adjectives</h2>
-            {character.adjectives.map(str => (
-              <p key={str}>{str}</p>
-            ))}
-            </div>
-          ) : <></>}
+          ))}
           </CardContent>
         </Card>
       </div>

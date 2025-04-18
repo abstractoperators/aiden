@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const stringListSchema = z.object({
   bio: z.string().trim().min(4, "Cannot be empty").array().min(1),
-  lore: z.string().trim().min(1 "Cannot be empty").array(),
+  lore: z.string().trim().min(1, "Cannot be empty").array(),
   knowledge: z.string().trim().min(1, "Cannot be empty").array().optional(),
   postExamples: z.string().trim().min(1, "Cannot be empty").array(),
   adjectives: z.string().trim().min(1, "Cannot be empty").array(),

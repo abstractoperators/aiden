@@ -49,7 +49,7 @@ function LoginButton({
       )}
       onClick={() => setShowAuthFlow(true)}
     >
-      Join the Waitlist
+      Login
     </Button>
   )
 }

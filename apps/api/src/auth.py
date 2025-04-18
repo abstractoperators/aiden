@@ -177,9 +177,9 @@ def access_list(
         # Access lists will be in lists field of payload
         # https://docs.dynamic.xyz/authentication-methods/auth-tokens
         payload_access_list: list[str] = payload.get("lists", [])
-        if not set(payload_access_list) == set(required_permissions):
+        if not set(required_permissions).issubset(set(payload_access_list)):
             raise HTTPException(
-                detail="User does not have the required permissions",
+                detail=f"User does not have the required permissions {set(required_permissions)} in {set(payload_access_list)}",
                 status_code=403,
             )
 

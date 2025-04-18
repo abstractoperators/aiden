@@ -2,3 +2,6 @@
 	path = eliza
 	url = git@github.com:abstractoperators/eliza.git
 	update = checkout
+[submodule "apps/api/src/launchpad-contracts"]
+	path = apps/api/src/launchpad-contracts
+	url = git@github.com:abstractoperators/launchpad-contracts.git

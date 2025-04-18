@@ -22,7 +22,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  accordionItemStyle,
   EnvironmentVariables,
   envSchema,
   onSubmitCreate,
@@ -31,6 +30,10 @@ import {
 import { useRouter } from "next/navigation";
 
 const MAX_FILE_SIZE = 5000000;
+const tokenSchema = z.object({
+  tokenId: z.string(),
+})
+
 const uploadSchema = z.object({
   characterFile: z
     .instanceof(File)
@@ -43,8 +46,8 @@ const uploadSchema = z.object({
       ].includes(file.type),
       { message: "Invalid file type, must be JSON." }
     ),
-    // TODO validate against Character JSON schema
-}).merge(envSchema)
+  // TODO validate against Character JSON schema
+}).merge(envSchema).merge(tokenSchema)
 type UploadType = z.infer<typeof uploadSchema>
 
 function UploadForm() {
@@ -58,7 +61,7 @@ function UploadForm() {
 
   const form = useForm<UploadType>({
     resolver: zodResolver(uploadSchema),
-    defaultValues: { env: "", },
+    defaultValues: { env: "", tokenId: "" },
   })
   const { handleSubmit } = form
 
@@ -69,7 +72,7 @@ function UploadForm() {
 
   async function onUploadSubmit(formData: UploadType) {
     console.debug("UploadForm", formData)
-    const { env: envFile, characterFile } = formData
+    const { env: envFile, characterFile, tokenId } = formData
 
     const fileText = await characterFile.text().catch(error => {
       toast({
@@ -90,6 +93,7 @@ function UploadForm() {
       dynamicId: userId,
       character,
       envFile,
+      tokenId,
       push,
     })
   }
@@ -98,7 +102,7 @@ function UploadForm() {
     <Form {...form}>
       <form onSubmit={handleSubmit(onUploadSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
-          <AccordionItem value="file" className={accordionItemStyle}>
+          <AccordionItem value="file">
             <AccordionTrigger className="font-semibold text-d6">
               Character JSON File
             </AccordionTrigger>
@@ -112,7 +116,7 @@ function UploadForm() {
                       <Input
                         type="file"
                         accept=".json,application/json"
-                        onChange={ event =>
+                        onChange={event =>
                           onChange(event.target.files && event.target.files[0])
                         }
                         {...{ onBlur, disabled, name, ref }}

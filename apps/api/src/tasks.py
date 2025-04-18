@@ -210,10 +210,10 @@ def start_agent(agent_id: UUID, runtime_id: UUID) -> None:
         if agent is None:
             raise ValueError(f"Agent {agent_id} does not exist")
 
+        stop_endpoint = f"{runtime.url}/controller/character/stop"
+        resp = requests.post(stop_endpoint)
+        resp.raise_for_status()
         if (old_agent := runtime.agent) is not None:
-            stop_endpoint = f"{runtime.url}/controller/character/stop"
-            resp = requests.post(stop_endpoint)
-            resp.raise_for_status()
             if old_agent:
                 crud.update_agent(
                     session,
