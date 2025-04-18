@@ -22,12 +22,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  accordionItemStyle,
   EnvironmentVariables,
   envSchema,
   onSubmitCreate,
   SubmitButton,
-  TokenId,
 } from "@/components/agent-form";
 import { useRouter } from "next/navigation";
 
@@ -104,7 +102,7 @@ function UploadForm() {
     <Form {...form}>
       <form onSubmit={handleSubmit(onUploadSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
-          <AccordionItem value="file" className={accordionItemStyle}>
+          <AccordionItem value="file">
             <AccordionTrigger className="font-semibold text-d6">
               Character JSON File
             </AccordionTrigger>
@@ -135,7 +133,6 @@ function UploadForm() {
           </AccordionItem>
 
           <EnvironmentVariables />
-          <TokenId />
         </Accordion>
         <SubmitButton />
       </form>

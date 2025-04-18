@@ -20,7 +20,7 @@ export default async function AgentEdit({
     </div>
   )}
 
-  const { characterJson, envFile, ownerId } = agentResult.data
+  const { characterJson, envFile, ownerId, tokenId } = agentResult.data
 
   const session = await auth()
   const user = session?.user?.id && await getUser({dynamicId: session.user.id})
@@ -35,7 +35,7 @@ export default async function AgentEdit({
         defaultValues={{
           env: envFile.map(({ key, value }) => `${key}=${value || ""}`).join("\n"),
           twitter: characterJson.clients.includes("twitter"),
-          tokenId: "",
+          tokenId,
           ...characterJson
         }}
         agentId={id}
