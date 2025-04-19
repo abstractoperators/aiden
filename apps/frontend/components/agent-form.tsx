@@ -77,7 +77,12 @@ const tokenSchema = z.object({
   tokenId: z.string().nullable().optional(),
 })
 
-const formSchema = characterSchema.merge(envSchema).merge(integrationsSchema).merge(tokenSchema)
+const formSchema = (
+  characterSchema
+  .merge(envSchema)
+  .merge(integrationsSchema)
+  .merge(tokenSchema)
+)
 type FormType = z.infer<typeof formSchema>
 
 function AgentForm({
@@ -93,7 +98,6 @@ function AgentForm({
   if (!user.userId)
     throw new Error(`User ${user} has no userId!`)
   const userId: string = user.userId
-  const [tokens, setTokens] = useState<Token[]>([])
 
   const form = useForm<FormType>({
     resolver: zodResolver(formSchema),
@@ -145,17 +149,6 @@ function AgentForm({
       push,
     })
   }
-
-  useEffect(() => {
-    getTokens().then(result => {
-      if (isSuccessResult(result)) {
-        setTokens(result.data)
-      } else { toast({
-        title: "Unable to fetch tokens!",
-        description: result.message,
-      })}
-    })
-  }, [])
 
   return (
     <Form {...form}>
@@ -244,45 +237,7 @@ function AgentForm({
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="Token">
-            <AccordionTrigger>Token</AccordionTrigger>
-            <AccordionContent>
-              <FormField
-                name="tokenId"
-                render={({ field: { value, onChange } }) => (
-                  <FormItem>
-                    <FormLabel></FormLabel>
-                      <FormCombobox
-                        value={value}
-                        setValue={onChange}
-                        instructions="Select a token..."
-                        empty="No tokens found."
-                        search="Search tokens..."
-                        items={tokens.map(token => ({
-                          label: `${token.name} ($${token.ticker})`,
-                          value: token.id,
-                        }))}
-                      />
-                    <FormDescription>
-                      Link a token actual uuid here.
-                      <Link
-                        href="/tokens"
-                        className={cn(
-                          "text-blue-600 underline text-sm mt-1",
-                          "hover:text-blue-700 dark:hover:text-blue-500",
-                          "transition duration-300",
-                          "inline-block",
-                        )}
-                      >
-                        Need to find a token? Click here.
-                      </Link>
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </AccordionContent>
-          </AccordionItem>
+          <TokenAccordion />
 
         </Accordion>
 
@@ -486,9 +441,58 @@ function EnvironmentVariables() {
 }
 
 function TokenAccordion() {
+  const [tokens, setTokens] = useState<Token[]>([])
+  useEffect(() => {
+    getTokens().then(result => {
+      if (isSuccessResult(result)) {
+        setTokens(result.data)
+      } else { toast({
+        title: "Unable to fetch tokens!",
+        description: result.message,
+      })}
+    })
+  }, [])
+
   return (
-    <></>
-    // TODO
+    <AccordionItem value="Token">
+      <AccordionTrigger>Token</AccordionTrigger>
+      <AccordionContent>
+        <FormField
+          name="tokenId"
+          render={({ field: { value, onChange } }) => (
+            <FormItem>
+              <FormLabel></FormLabel>
+                <FormCombobox
+                  value={value}
+                  setValue={onChange}
+                  instructions="Select a token..."
+                  empty="No tokens found."
+                  search="Search tokens..."
+                  items={tokens.map(token => ({
+                    label: `${token.name} ($${token.ticker})`,
+                    value: token.id,
+                  }))}
+                />
+              <FormDescription>
+                Link a token actual uuid here.
+                <Link
+                  href="/tokens"
+                  className={cn(
+                    "text-blue-600 underline text-sm mt-1",
+                    "hover:text-blue-700 dark:hover:text-blue-500",
+                    "transition duration-300",
+                    "inline-block",
+                  )}
+                >
+                  Need to find a token? Click here.
+                </Link>
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </AccordionContent>
+    </AccordionItem>
   )
 }
 
@@ -620,6 +624,7 @@ export {
   onSubmitEdit,
   EnvironmentVariables,
   SubmitButton,
+  TokenAccordion,
 }
 
 export default AgentForm

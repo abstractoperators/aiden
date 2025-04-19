@@ -26,6 +26,7 @@ import {
   envSchema,
   onSubmitCreate,
   SubmitButton,
+  TokenAccordion,
 } from "@/components/agent-form";
 import { useRouter } from "next/navigation";
 
@@ -133,6 +134,9 @@ function UploadForm() {
           </AccordionItem>
 
           <EnvironmentVariables />
+
+          <TokenAccordion />
+
         </Accordion>
         <SubmitButton />
       </form>
