@@ -53,9 +53,11 @@ function FormCombobox({
               !value && "text-muted-foreground",
             )}
           >
+            <p className="truncate">
             {value
               ? items.find(item => item.value === value)?.label
               : instructions}
+            </p>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </FormControl>

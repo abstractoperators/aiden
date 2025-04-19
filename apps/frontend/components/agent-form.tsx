@@ -474,7 +474,7 @@ function TokenAccordion() {
                   }))}
                 />
               <FormDescription>
-                Link a token actual uuid here.
+                Want more token details? Click&nbsp;
                 <Link
                   href="/tokens"
                   className={cn(
@@ -484,8 +484,9 @@ function TokenAccordion() {
                     "inline-block",
                   )}
                 >
-                  Need to find a token? Click here.
+                  here
                 </Link>
+                .
               </FormDescription>
               <FormMessage />
             </FormItem>
