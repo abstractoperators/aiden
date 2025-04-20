@@ -8,7 +8,7 @@ import { getAgent } from "@/lib/api/agent"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 import { getUser, User } from "@/lib/api/user"
 import { cn } from "@/lib/utils"
-import { Pencil, Coins } from "lucide-react"
+import { Pencil } from "lucide-react"
 import Link from "next/link"
 
 // TODO: start agent button
