@@ -54,4 +54,5 @@ export {
 
 export type {
   Token,
+  TokenBase,
 }

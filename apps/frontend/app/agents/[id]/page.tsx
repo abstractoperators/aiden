@@ -35,10 +35,9 @@ export default async function AgentHome({
   )}
 
   const agent = agentResult.data
-  const { characterJson: character, ownerId } = agent
+  const { characterJson: character, ownerId, token, tokenId } = agent
   const { bio, lore, topics, adjectives } = character
   const name = character.name || agent.id
-  const tokenId = agent.tokenId
   const session = await auth()
   const user = session?.user?.id && await getUser({ dynamicId: session.user.id })
   const userOwnsAgent = true
@@ -70,22 +69,7 @@ export default async function AgentHome({
         </Link>
       }
       <div className="col-span-7 flex flex-col items-stretch gap-2">
-        {tokenId && (
-          <Link
-            href={`/tokens/${tokenId}`}
-            className={cn(
-              buttonVariants({
-                variant: "ghost",
-                size: "icon",
-              }),
-              "rounded-xl",
-              "hover:bg-anakiwa-lighter/60 dark:hover:bg-anakiwa-dark/40",
-            )}
-          >
-            <Coins strokeWidth={3} />
-          </Link>
-        )}
-        <AgentCard name={name} />
+        <AgentCard name={name} tokenId = {tokenId} token={token} />
         <Card className="bg-anakiwa-darker/30 dark:bg-anakiwa/30 rounded-xl border-none">
           <CardHeader>
             <CardTitle className="text-d5">Basics</CardTitle>

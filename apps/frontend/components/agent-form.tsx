@@ -34,7 +34,6 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   createAgent,
   stopAgent,
-  Token,
   updateAgent,
 } from "@/lib/api/agent"
 import { toast } from "@/hooks/use-toast"
@@ -44,7 +43,7 @@ import { useRouter } from "next/navigation"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 import { FormCombobox } from "./ui/combobox"
 import { useEffect, useState } from "react"
-import { getTokens } from "@/lib/api/token"
+import { getTokens, Token } from "@/lib/api/token"
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
