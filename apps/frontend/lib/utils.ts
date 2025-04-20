@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { Chain, sei, seiTestnet } from "viem/chains"
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -42,8 +43,19 @@ function camelize<O>(
   }
 }
 
+function getSeiNet(): Chain {
+  switch (process.env.NEXT_SEI_NET) {
+    case "main":
+      return sei
+    case "test":
+    default:
+      return seiTestnet
+  }
+}
+
 export {
   cn,
   camelize,
+  getSeiNet,
   snakify,
 }

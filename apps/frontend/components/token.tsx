@@ -1,8 +1,9 @@
 "use client";
+
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
-import { FC, useState } from "react";
-import { getContract, formatUnits } from "viem";
+import { FC } from "react";
+import { getContract } from "viem";
 import { parseEther } from "viem";
 import { parseEventLogs } from "viem";
 import { FormEventHandler } from "react";
@@ -18,7 +19,6 @@ const TokenLaunch: FC = () => {
     const { primaryWallet } = useDynamicContext();
 
     if (!primaryWallet || !isEthereumWallet(primaryWallet)) return (<>Please sign into an Ethereum wallet.</>);
-
 
     const onSubmit: FormEventHandler = async (event) => {
         event.preventDefault();
@@ -165,44 +165,6 @@ const BuyWithSei: FC<{
         );
     };
 
-
-const Balance: FC<{
-    tokenAddress: `0x${string}`;
-}> = ({ tokenAddress }) => {
-    const { primaryWallet } = useDynamicContext();
-    const [formattedBalance, setBalance] = useState<string | null>(null);
-
-    if (!primaryWallet || !isEthereumWallet(primaryWallet))
-        return <>Must be connected to ethereum wallet.</>;
-
-    const fetchBalance = async () => {
-        try {
-            const publicClient = await primaryWallet.getPublicClient();
-            if (!publicClient) throw new Error("No public client available");
-
-            const tokenContract = getContract({
-                address: tokenAddress,
-                abi: ERC20_ABI,
-                client: publicClient,
-            });
-
-            const balance = await tokenContract.read.balanceOf([primaryWallet.address]) as bigint;
-            const decimals = await tokenContract.read.decimals() as number;
-            const formattedBalance = formatUnits(balance, decimals);
-            setBalance(formattedBalance.toString());
-        } catch (error) {
-            console.error("Error fetching balance:", error);
-        }
-    };
-
-    return (
-        <div>
-            <p>Token Balance: {formattedBalance}</p>
-            <button onClick={fetchBalance}>Fetch Balance</button>
-        </div>
-    );
-};
-
 const SellForSei: FC<{
     tokenAddress: `0x${string}`;
 }> = ({ tokenAddress }) => {
@@ -274,4 +236,9 @@ const SellForSei: FC<{
         </form>
     );
 }
-export { TokenLaunch, BuyWithSei, SellForSei, Balance };
+
+export {
+  TokenLaunch,
+  BuyWithSei,
+  SellForSei,
+};

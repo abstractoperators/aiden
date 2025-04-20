@@ -15,6 +15,7 @@ interface ThemeImageProps extends Omit<ImageProps, "src"> {
 export default function ThemeImage({
   lightSrc,
   darkSrc,
+  alt,
   ...props
 }: ThemeImageProps) {
   const [mounted, setMounted] = useState(false)
@@ -33,5 +34,5 @@ export default function ThemeImage({
 
   const src = currentTheme === "light" ? lightSrc : darkSrc;
 
-  return <Image src={src} {...props} />
+  return <Image src={src} alt={alt} {...props} />
 }

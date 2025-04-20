@@ -1,8 +1,9 @@
 import { getToken } from "@/lib/api/token"
 import { BuyWithSei } from "@/components/token";
-import { SellForSei, Balance } from "@/components/token";
+import { SellForSei } from "@/components/token";
 import { isErrorResult } from "@/lib/api/result";
 import Link from "next/link";
+import TokenBalance from "@/components/token-balance";
 
 export default async function TokenPage({
   params,
@@ -39,9 +40,7 @@ export default async function TokenPage({
       <SellForSei
         tokenAddress={address}>
       </SellForSei>
-      <Balance
-        tokenAddress={address}>
-      </Balance>
+      <TokenBalance address={address} />
     </main >
   )
 }
