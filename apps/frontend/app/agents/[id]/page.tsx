@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAgent } from "@/lib/api/agent"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 import { getUser, User } from "@/lib/api/user"
-import { cn } from "@/lib/utils"
+import { capitalize, cn } from "@/lib/utils"
 import { Pencil } from "lucide-react"
 import Link from "next/link"
 
@@ -77,7 +77,7 @@ export default async function AgentHome({
           <CardContent>
           {Object.entries({ bio, lore, topics, adjectives }).filter(item => item[1].length).map(([title, list]) => (
             <div key={title}>
-              <h2 className="font-sans text-d6">{title[0].toUpperCase() + title.slice(1)}</h2>
+              <h2 className="font-sans text-d6">{capitalize(title)}</h2>
               {list.map((str, index) => (
                 <p key={`${title}.${index}`}>{str}</p>
               ))}

@@ -43,6 +43,10 @@ function camelize<O>(
   }
 }
 
+function capitalize(value: string): string {
+  return value.length ? value[0].toUpperCase() + value.slice(1) : value
+}
+
 function getSeiNet(): Chain {
   switch (process.env.NEXT_SEI_NET) {
     case "main":
@@ -56,6 +60,7 @@ function getSeiNet(): Chain {
 export {
   cn,
   camelize,
+  capitalize,
   getSeiNet,
   snakify,
 }
