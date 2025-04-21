@@ -1,4 +1,4 @@
-import { TokenLaunch } from "@/components/token";
+import { TokenLaunch } from "@/components/token/launch";
 
 export default async function TokensLaunchPage() {
   return (

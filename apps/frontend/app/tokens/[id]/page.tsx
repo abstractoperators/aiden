@@ -1,10 +1,10 @@
 import { getToken } from "@/lib/api/token"
-import { BuyWithSei } from "@/components/token";
-import { SellForSei } from "@/components/token";
+import { BuyWithSei } from "@/components/token/launch";
+import { SellForSei } from "@/components/token/launch";
 import { isErrorResult } from "@/lib/api/result";
 import Link from "next/link";
-import TokenBalance from "@/components/token-balance";
-import TokenStats from "@/components/token-stats";
+import TokenBalance from "@/components/token/balance";
+import TokenStats from "@/components/token/stats";
 
 export default async function TokenPage({
   params,

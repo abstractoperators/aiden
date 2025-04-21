@@ -5,7 +5,7 @@ import { isEthereumWallet } from "@dynamic-labs/ethereum";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useCallback, useEffect, useState } from "react";
 import { createPublicClient, formatUnits, getContract, http } from "viem";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { RefreshCcw } from "lucide-react";
 import ERC20_JSON from "@/lib/abis/ferc20.json";
 
