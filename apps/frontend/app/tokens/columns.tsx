@@ -39,13 +39,8 @@ export const columns: ColumnDef<Token>[] = [
       />
     ),
     cell: ({ row }) => (
-      <Link
-        href={`/tokens/${row.original.id}`}
-      >
-        <hgroup>
-          <h2 className="text-base">{row.getValue("name")}</h2>
-          {row.original.ticker && <h3>${row.original.ticker}</h3>}
-        </hgroup>
+      <Link href={`/tokens/${row.original.id}`}>
+        <h2 className="text-base">{row.getValue("name")}</h2>
       </Link>
     )
   },
@@ -55,7 +50,7 @@ export const columns: ColumnDef<Token>[] = [
       <DataTableColumnHeader
         className="text-neutral-300"
         column={column}
-        title="ticker"
+        title="Ticker"
       />
     ),
   },
