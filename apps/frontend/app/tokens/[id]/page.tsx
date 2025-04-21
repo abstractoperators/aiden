@@ -4,6 +4,7 @@ import { SellForSei } from "@/components/token";
 import { isErrorResult } from "@/lib/api/result";
 import Link from "next/link";
 import TokenBalance from "@/components/token-balance";
+import TokenStats from "@/components/token-stats";
 
 export default async function TokenPage({
   params,
@@ -34,6 +35,7 @@ export default async function TokenPage({
           {name}: ({ticker})
         </Link>
       </h1>
+      <TokenStats address={address} />
       <BuyWithSei
         tokenAddress={address}>
       </BuyWithSei>
