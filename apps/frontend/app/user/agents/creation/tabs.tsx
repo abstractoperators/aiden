@@ -1,6 +1,10 @@
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UploadForm } from "./form";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import UploadForm from "./upload-form";
 import AgentForm from "@/components/agent-form";
 
 export default function FormTabs() {

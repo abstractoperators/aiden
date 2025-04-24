@@ -144,6 +144,4 @@ function UploadForm() {
   )
 }
 
-export {
-  UploadForm,
-}
+export default UploadForm
