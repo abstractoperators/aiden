@@ -49,7 +49,7 @@ def decode_bearer_token(jwt_token: str) -> dict[str, Any]:
     params:
       jwt_token (str): JWT token to decode - does not include the "Bearer " prefix
     raises:
-      `jwt.exceptions.PyJWTError` if the token is invalid
+      jwt.exceptions.PyJWTError if the token is invalid
     """
     signing_key: PyJWK = pyjwk_client.get_signing_key_from_jwt(jwt_token)
     return py_jwt.decode_complete(jwt_token, signing_key, leeway=10)
