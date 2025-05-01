@@ -74,6 +74,9 @@ def parse_jwt(
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> dict[str, Any]:
     """
+    Standard JWTs contains the aud, iss, sub, iat, and exp fields.
+    Dynamic adds the fields email, environment_id, given_name, family_name, lists, verified_credentials, verified_accounts.
+    See https://docs.dynamic.xyz/authentication-methods/auth-tokens
     params:
       token (HTTPAuthorizationCredentials): JWT token
     returns:
@@ -103,7 +106,7 @@ def get_user_from_token(
     """
     Retrieve a user using their JWT
     params:
-      token (str): JWT token
+      token (HTTPAuthorizationCredentials): JWT token
     returns:
       user (User | 404)
     """
@@ -128,7 +131,7 @@ def get_wallets_from_token(
     """
     Retrieve a wallet based on its JWT
     params:
-      token (str): JWT token
+      token (HTTPAuthorizationCredentials): JWT token
     raises:
       HTTPException with status code 401 unauthorized
     """
@@ -163,8 +166,6 @@ def check_scopes(
 ) -> Callable:
     """
     Check if a user has the necessary permissions.
-    params:
-      token (str): JWT token
     raises:
       HTTPException with status code 403 forbidden
     """
@@ -172,9 +173,6 @@ def check_scopes(
         token: HTTPAuthorizationCredentials = Security(auth_scheme),
     ) -> None:
         payload = parse_jwt(token)
-
-        # Access lists will be in lists field of payload
-        # https://docs.dynamic.xyz/authentication-methods/auth-tokens
         payload_access_list: list[str] = payload.get("lists", [])
         if not set(payload_access_list) == set(required_permissions):
             raise HTTPException(
