@@ -64,12 +64,12 @@ export default function Header({ variant }: variantProp) {
           >
             Agents
           </Link>
-          <Link
+          {/* <Link
             className="transition duration-300 hover:invert-[.5]"
             href='/tokens'
           >
             Tokens
-          </Link>
+          </Link> */}
           <div className="flex items-center justify-between space-x-2">
             <LoginButtonHeader className="px-4 py-2" />
             {

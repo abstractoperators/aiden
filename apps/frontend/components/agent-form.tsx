@@ -2,7 +2,7 @@
 
 import { Character, characterSchema } from "@/lib/character"
 import { cn } from "@/lib/utils"
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
+import { useDynamicContext, Wallet } from "@dynamic-labs/sdk-react-core"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Accordion,
@@ -44,6 +44,7 @@ import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 import { FormCombobox } from "./ui/combobox"
 import { useEffect, useState } from "react"
 import { getTokens, Token } from "@/lib/api/token"
+import { launchSchema, launchTokenFactory, TokenLaunchType } from "./token/launch"
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
@@ -70,17 +71,27 @@ const envSchema = z.object({
   env: z.string(),
 })
 const integrationsSchema = z.object({
-  twitter: z.boolean()
-})
-const tokenSchema = z.object({
-  tokenId: z.string().nullable().optional(),
+  twitter: z.boolean(),
 })
 
-const formSchema = (
+const newTokenSchema = launchSchema.extend({
+  isNewToken: z.literal(true),
+})
+const existingTokenSchema = z.object({
+  isNewToken: z.literal(false),
+  tokenId: z.string(),
+})
+const tokenSchema = z.discriminatedUnion(
+  "isNewToken", [
+  newTokenSchema,
+  existingTokenSchema,
+])
+
+const formSchema = z.intersection(
   characterSchema
   .merge(envSchema)
-  .merge(integrationsSchema)
-  .merge(tokenSchema)
+  .merge(integrationsSchema),
+  tokenSchema,
 )
 type FormType = z.infer<typeof formSchema>
 
@@ -91,7 +102,7 @@ function AgentForm({
   defaultValues?: FormType,
   agentId?: string,
 }) {
-  const { user } = useDynamicContext()
+  const { user, primaryWallet: wallet } = useDynamicContext()
   if (!user)
     throw new Error(`User ${user} does not exist!`)
   if (!user.userId)
@@ -112,6 +123,9 @@ function AgentForm({
       adjectives: [],
       topics: [],
       style: { all: [], chat: [], post: [], },
+      isNewToken: true,
+      tokenName: "",
+      ticker: "",
     }
   })
   const { control, handleSubmit } = form
@@ -131,7 +145,7 @@ function AgentForm({
 
   async function onSubmit(formData: FormType) {
     console.debug("AgentForm", formData)
-    const { env: envFile, tokenId, twitter, ...data } = formData
+    const { env: envFile, isNewToken, twitter, ...data } = formData
     const character = {
       modelProvider: "openai",
       clients: twitter ? ["twitter"] : [],
@@ -144,8 +158,9 @@ function AgentForm({
       dynamicId: userId,
       character,
       envFile,
-      tokenId,
+      token: isNewToken ? formData : formData.tokenId,
       push,
+      wallet,
     })
   }
 
@@ -236,7 +251,7 @@ function AgentForm({
             </AccordionContent>
           </AccordionItem>
 
-          <TokenAccordion />
+          { !agentId && <TokenAccordion /> }
 
         </Accordion>
 
@@ -516,16 +531,18 @@ interface SubmitProps {
   dynamicId: string
   character: Character
   envFile: string
-  tokenId?: string | null
+  token: string | TokenLaunchType
   push: (href: string, options?: { scroll: boolean }) => void
+  wallet: Wallet | null
 }
 
 async function onSubmitCreate({
   dynamicId,
   character,
   envFile,
-  tokenId,
+  token,
   push,
+  wallet,
 }: SubmitProps) {
   console.debug("Character", character)
   const userResult = await getUser({ dynamicId })
@@ -538,6 +555,8 @@ async function onSubmitCreate({
     })
     return
   }
+
+  const tokenId = (typeof token === "string") ? token : await launchTokenFactory(wallet)(token)
 
   const agentPayload = {
     ownerId: userResult.data.id,
@@ -566,7 +585,6 @@ function onSubmitEdit(agentId: string) {
     dynamicId,
     character,
     envFile,
-    tokenId,
     push,
   }: SubmitProps) {
     console.debug("Character", character)
@@ -585,7 +603,6 @@ function onSubmitEdit(agentId: string) {
       ownerId: userResult.data.id,
       characterJson: character,
       envFile,
-      tokenId,
     }
 
     // update and stop agent
