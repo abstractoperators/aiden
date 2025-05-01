@@ -248,7 +248,7 @@ async def update_agent(
 async def deploy_token_api(
     token_request: TokenCreationRequest,
     user: User = Security(get_user_from_token),  # noqa
-    # TODO: Access lsit from jwt
+    # TODO: Access list from jwt
 ) -> Token:
     """
     Deploys a token smart contract to the block chain.

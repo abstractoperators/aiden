@@ -174,11 +174,10 @@ def check_scopes(
     ) -> None:
         payload = parse_jwt(token)
         payload_access_list: list[str] = payload.get("lists", [])
-        if not set(payload_access_list) == set(required_permissions):
+        if missing_permissions := (set(required_permissions) - set(payload_access_list)):
             raise HTTPException(
-                detail="User does not have the required permissions",
+                detail=f"Missing permissions: {missing_permissions}",
                 status_code=403,
             )
-
         return None
     return helper
