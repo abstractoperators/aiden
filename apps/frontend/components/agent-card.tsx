@@ -8,12 +8,10 @@ import Link from "next/link"
 export default function AgentCard({
   name,
   token,
-  tokenId,
   avatarSource,
 }: {
   name: string,
   token?: TokenBase | null,
-  tokenId?: string | null,
   avatarSource?: string,
 }) {
   return (
@@ -34,10 +32,13 @@ export default function AgentCard({
       </Avatar>
       <hgroup>
         <h1 className="text-4xl font-bold text-center">{name}</h1>
-        {token && tokenId && (
+        {token && (
           <h2 className="text-2xl font-bold text-center text-muted-foreground transition duration-300 hover:text-carnation">
-            <Link href={`/tokens/${tokenId}`}>
-              {token.name} (${token.ticker})
+            <Link
+              href={`https://seitrace.com/address/${token.evmContractAddress}?chain=atlantic-2`}
+              target="_blank"
+            >
+              {token.name} ${token.ticker}
             </Link>
           </h2>
         )}

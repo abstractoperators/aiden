@@ -1,7 +1,7 @@
 "use client"
 
 import { Character, characterSchema } from "@/lib/character"
-import { cn } from "@/lib/utils"
+import { capitalize, cn } from "@/lib/utils"
 import { useDynamicContext, Wallet } from "@dynamic-labs/sdk-react-core"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -38,13 +38,13 @@ import {
 } from "@/lib/api/agent"
 import { toast } from "@/hooks/use-toast"
 import { getUser } from "@/lib/api/user"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
-import { FormCombobox } from "./ui/combobox"
 import { useEffect, useState } from "react"
 import { getTokens, Token } from "@/lib/api/token"
 import { launchSchema, launchTokenFactory, TokenLaunchType } from "./token/launch"
+import { FormCombobox } from "./ui/combobox"
+import Link from "next/link"
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
@@ -103,11 +103,6 @@ function AgentForm({
   agentId?: string,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
-  if (!user)
-    throw new Error(`User ${user} does not exist!`)
-  if (!user.userId)
-    throw new Error(`User ${user} has no userId!`)
-  const userId: string = user.userId
 
   const form = useForm<FormType>({
     resolver: zodResolver(formSchema),
@@ -154,8 +149,11 @@ function AgentForm({
       ...data,
     }
 
+    if (!user) throw new Error(`User ${user} does not exist!`)
+    if (!user.userId) throw new Error(`User ${user} has no userId!`)
+
     return onSubmitBase({
-      dynamicId: userId,
+      dynamicId: user.userId,
       character,
       envFile,
       token: isNewToken ? formData : formData.tokenId,
@@ -164,7 +162,7 @@ function AgentForm({
     })
   }
 
-  return (
+  return ( user ?
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
@@ -257,7 +255,10 @@ function AgentForm({
 
         <SubmitButton />
       </form>
-    </Form>
+    </Form> : 
+    <h1>
+      Please login to create an agent.
+    </h1>
   )
 }
 
@@ -455,6 +456,38 @@ function EnvironmentVariables() {
 }
 
 function TokenAccordion() {
+  return (
+    <AccordionItem value="Token">
+      <AccordionTrigger>Token</AccordionTrigger>
+      <AccordionContent>
+      {launchSchema.keyof().options.map(name => (
+        <FormField
+          key={name}
+          name={name}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel></FormLabel>
+              <FormControl>
+                <Input
+                  className="placeholder:text-neutral-400"
+                  placeholder={capitalize(name)}
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Provide a {name} for your agent&apos;s token.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ))}
+      </AccordionContent>
+    </AccordionItem>
+  )
+}
+
+function TokenComboboxAccordion() {
   const [tokens, setTokens] = useState<Token[]>([])
   useEffect(() => {
     getTokens().then(result => {
@@ -642,6 +675,7 @@ export {
   EnvironmentVariables,
   SubmitButton,
   TokenAccordion,
+  TokenComboboxAccordion,
 }
 
 export default AgentForm

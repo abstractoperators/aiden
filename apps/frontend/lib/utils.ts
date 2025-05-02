@@ -37,9 +37,17 @@ function camelize<O>(
   } else if (value instanceof Array) {
     return value.map(item => camelize(item)) as O
   } else {
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => (
-      [camelCase(k), v]))
-    ) as O
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => ([
+      camelCase(k),
+      (
+        ( true
+          && v instanceof Object
+          && Object.keys(v).every(key => typeof key === "string")
+        )
+        ? camelize(v as Record<string, unknown>)
+        : v
+      ),
+    ]))) as O
   }
 }
 

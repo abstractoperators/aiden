@@ -1,8 +1,10 @@
 import { auth } from "@/auth";
 import AgentForm from "@/components/agent-form";
+import { Button } from "@/components/ui/button";
 import { getAgent } from "@/lib/api/agent";
 import { isErrorResult, isSuccessResult } from "@/lib/api/result";
 import { getUser, User } from "@/lib/api/user";
+import Link from "next/link";
 
 export default async function AgentEdit({
   params,
@@ -27,19 +29,32 @@ export default async function AgentEdit({
   const userOwnsAgent = user && isSuccessResult<User>(user) && user.data.id === ownerId
 
   return (userOwnsAgent ? 
-    <div className="my-16 mx-16">
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl my-8">
+    <div className="my-16 mx-16 space-y-8">
+      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
         Edit Agent {characterJson.name}
       </h1>
       <AgentForm
         defaultValues={{
           env: envFile.map(({ key, value }) => `${key}=${value || ""}`).join("\n"),
           twitter: characterJson.clients.includes("twitter"),
-          tokenId,
+          isNewToken: false,
+          tokenId: tokenId || "",
           ...characterJson
         }}
         agentId={id}
       />
+      <Button
+        variant="destructive"
+        size="lg"
+        className="transition duration-300 hover:hue-rotate-60"
+        asChild
+      >
+        <Link
+          href={`/agents/${id}`}
+        >
+          Abort
+        </Link>
+      </Button>
     </div> : <div className="my-16 mx-16">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl my-8">
         You don&#39;t own agent {characterJson.name}!
