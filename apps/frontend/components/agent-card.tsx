@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { TokenBase } from "@/lib/api/token"
 import Link from "next/link"
+import { Card } from "./ui/card"
 
 export default function AgentCard({
   name,
@@ -15,10 +16,9 @@ export default function AgentCard({
   avatarSource?: string,
 }) {
   return (
-    <div
+    <Card
       className={cn(
-        "flex flex-col justify-center items-center space-y-8 p-8",
-        "bg-anakiwa-darker/30 dark:bg-anakiwa/30 rounded-xl"
+        "justify-center items-center",
       )}
     >
       <Avatar className="w-32 h-32 rounded-full border-2 overflow-hidden relative">
@@ -43,6 +43,6 @@ export default function AgentCard({
           </h2>
         )}
       </hgroup>
-    </div>
+    </Card>
   )
 }

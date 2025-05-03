@@ -196,7 +196,7 @@ export default function Chat({
   return (
   <div>
   {agent.runtimeId ? 
-    <div className="flex flex-col w-full justify-start items-center gap-8">
+    <Card className="justify-start items-center">
       <ScrollArea className="bg-anakiwa-darker/50 w-full h-96 lg:h-[600px] rounded-xl p-2">
         <ol className="flex flex-col w-full">
           {chat.map(message => (
@@ -232,10 +232,10 @@ export default function Chat({
           <Button type="submit">Send message</Button>
         </form>
       </Form>
-    </div> : <div className="flex flex-col w-full justify-start items-center gap-8">
+    </Card> : <Card className="justify-start items-center">
       <Skeleton className="w-full h-96 lg:h-[600px] rounded-xl p-2" />
-      Waking agent up
-    </div>
+      <p>Waking agent up</p>
+    </Card>
   }
   </div>)
 }
