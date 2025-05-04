@@ -3,7 +3,7 @@ import { fromApiEndpoint, getResource } from "./common"
 import { createResource } from "./common"
 import { Result } from "./result"
 
-const TOKEN_SEGMENT = '/tokens/'
+const TOKEN_SEGMENT = "/tokens/"
 const TOKEN_PATH = "/tokens"
 
 const baseUrlSegment = fromApiEndpoint(TOKEN_SEGMENT)
