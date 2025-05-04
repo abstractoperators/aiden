@@ -22,33 +22,38 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  accordionItemStyle,
   EnvironmentVariables,
   envSchema,
   onSubmitCreate,
   SubmitButton,
+  TokenAccordion,
+  tokenSchema,
 } from "@/components/agent-form";
 import { useRouter } from "next/navigation";
 
 const MAX_FILE_SIZE = 5000000;
-const uploadSchema = z.object({
-  characterFile: z
-    .instanceof(File)
-    .refine(file => file.size !== 0, "File may not be empty.")
-    .refine(file => file.size < MAX_FILE_SIZE, "Max file size is 5MB.")
-    .refine(file =>
-      [
-        ".json",
-        "application/json",
-      ].includes(file.type),
-      { message: "Invalid file type, must be JSON." }
-    ),
+
+const uploadSchema = z.intersection(
+  z.object({
+    characterFile: z
+      .instanceof(File)
+      .refine(file => file.size !== 0, "File may not be empty.")
+      .refine(file => file.size < MAX_FILE_SIZE, "Max file size is 5MB.")
+      .refine(file =>
+        [
+          ".json",
+          "application/json",
+        ].includes(file.type),
+        { message: "Invalid file type, must be JSON." }
+      ),
     // TODO validate against Character JSON schema
-}).merge(envSchema)
+  }).merge(envSchema),
+  tokenSchema,
+)
 type UploadType = z.infer<typeof uploadSchema>
 
 function UploadForm() {
-  const { user } = useDynamicContext()
+  const { user, primaryWallet: wallet } = useDynamicContext()
   if (!user)
     throw new Error(`User ${user} does not exist!`)
   if (!user.userId)
@@ -58,7 +63,12 @@ function UploadForm() {
 
   const form = useForm<UploadType>({
     resolver: zodResolver(uploadSchema),
-    defaultValues: { env: "", },
+    defaultValues: {
+      env: "",
+      isNewToken: true,
+      tokenName: "",
+      ticker: "",
+    },
   })
   const { handleSubmit } = form
 
@@ -69,7 +79,7 @@ function UploadForm() {
 
   async function onUploadSubmit(formData: UploadType) {
     console.debug("UploadForm", formData)
-    const { env: envFile, characterFile } = formData
+    const { env: envFile, characterFile, isNewToken } = formData
 
     const fileText = await characterFile.text().catch(error => {
       toast({
@@ -90,7 +100,9 @@ function UploadForm() {
       dynamicId: userId,
       character,
       envFile,
+      token: isNewToken ? formData : formData.tokenId,
       push,
+      wallet,
     })
   }
 
@@ -98,7 +110,7 @@ function UploadForm() {
     <Form {...form}>
       <form onSubmit={handleSubmit(onUploadSubmit)} className="space-y-4">
         <Accordion type="multiple" className="space-y-2">
-          <AccordionItem value="file" className={accordionItemStyle}>
+          <AccordionItem value="file">
             <AccordionTrigger className="font-semibold text-d6">
               Character JSON File
             </AccordionTrigger>
@@ -112,7 +124,7 @@ function UploadForm() {
                       <Input
                         type="file"
                         accept=".json,application/json"
-                        onChange={ event =>
+                        onChange={event =>
                           onChange(event.target.files && event.target.files[0])
                         }
                         {...{ onBlur, disabled, name, ref }}
@@ -129,6 +141,9 @@ function UploadForm() {
           </AccordionItem>
 
           <EnvironmentVariables />
+
+          <TokenAccordion />
+
         </Accordion>
         <SubmitButton />
       </form>
@@ -136,6 +151,4 @@ function UploadForm() {
   )
 }
 
-export {
-  UploadForm,
-}
+export default UploadForm

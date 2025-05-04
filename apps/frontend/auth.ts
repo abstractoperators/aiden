@@ -22,6 +22,7 @@ export const config = {
         const jwtPayload = await validateJWT(token);
 
         if (jwtPayload) {
+          console.debug(jwtPayload)
           // Transform the JWT payload into your user object
           if (!jwtPayload.sub)
             throw new Error(`JWT ${jwtPayload} has no Dynamic ID!!!`)

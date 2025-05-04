@@ -74,6 +74,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
               console.error("Error logging in", error);
             });
 
+            router.refresh();
             // user initialization if needed
             const userResult = await getOrCreateUser(await dynamicToApiUser(user))
             if (isSuccessResult<User>(userResult)) {

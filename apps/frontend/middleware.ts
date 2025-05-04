@@ -35,7 +35,7 @@ export default auth((req) => {
   console.debug("auth:", consoleAuth)
 
   if (!auth || !auth.user) {
-    console.log(
+    console.debug(
       "User is trying to access protected route",
       pathname,
       "without any authorization!",
@@ -51,7 +51,7 @@ export default auth((req) => {
     if (pathname.startsWith(path)) {
       // Check if the user has scopes
       if (!auth.user.scopes) {
-        console.log(
+        console.debug(
           "User is trying to access scoped route",
           pathname,
           "without any scopes!",
@@ -65,7 +65,7 @@ export default auth((req) => {
         );
 
         if (!hasScope) {
-          console.log("User does not have any scope to access route", pathname)
+          console.debug("User does not have any scope to access route", pathname)
           return get403Message()
         }
       }
