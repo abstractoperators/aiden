@@ -1,3 +1,7 @@
+"""
+Handles JWT-based authentication and authorization with FastAPI and Dynamic.
+"""
+
 import os
 from typing import Any, Callable
 from uuid import UUID
@@ -42,12 +46,12 @@ pyjwk_client: PyJWKClient = PyJWKClient(
 
 def decode_bearer_token(jwt_token: str) -> dict[str, Any]:
     """
-    Decodes a JWT token and returns its payload
-    jwt_token (str): JWT token to decode - does not include the "Bearer " prefix
-    Raises an jwt.exceptions.PyJWTError if the token is invalid (that is, if it either can't be decoded or standard claims as defined by options can't be verified) # noqa
+    params:
+      jwt_token (str): JWT token to decode - does not include the "Bearer " prefix
+    raises:
+      jwt.exceptions.PyJWTError if the token is invalid
     """
     signing_key: PyJWK = pyjwk_client.get_signing_key_from_jwt(jwt_token)
-
     return py_jwt.decode_complete(jwt_token, signing_key, leeway=10)
 
 
@@ -66,14 +70,19 @@ def optional_jwt(
     return token
 
 
-def valid_jwt(
+def parse_jwt(
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> dict[str, Any]:
     """
-    If the JWT token is valid, returns None
-    Otherwise, raises an HTTPException with status code 401
-    token (str): JWT token to decode representing a user claim.
-    Returns the payload of the JWT token.
+    Standard JWTs contains the aud, iss, sub, iat, and exp fields.
+    Dynamic adds the fields email, environment_id, given_name, family_name, lists, verified_credentials, verified_accounts.
+    See https://docs.dynamic.xyz/authentication-methods/auth-tokens
+    params:
+      token (HTTPAuthorizationCredentials): JWT token
+    returns:
+      payload (dict): user credentials details
+    raises:
+      HTTPException with status code 401 unauthorized
     """
     if not token:
         raise HTTPException(detail="No token was provided", status_code=401)
@@ -88,28 +97,20 @@ def valid_jwt(
             detail="Expected payload in token",
             status_code=401,
         )
-
     return payload
-
-
-# TODO: Use JWT payload to create users/wallets if they don't exist.
-# Maybe?
-
-# TODO: Auth endpoints that *don't* require the user to be logged in
-# For example, creating a new user.
-# Or updating a runtime - maybe we do the same pattern with backend-runtime.
 
 
 def get_user_from_token(
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> User:
     """
-    If the JWT token is valid, returns the User object associated with the token
-    Otherwise, raises an HTTPException with status code 401
-    request (Request): FastAPI Request object TODO Remove it after debugging
-    token (str): JWT token to decode representing a user claim.
+    Retrieve a user using their JWT
+    params:
+      token (HTTPAuthorizationCredentials): JWT token
+    returns:
+      user (User | 404)
     """
-    payload = valid_jwt(token)
+    payload = parse_jwt(token)
 
     subject = payload.get("sub")
     if not subject:
@@ -121,7 +122,6 @@ def get_user_from_token(
         user: User = obj_or_404(
             crud.get_user_by_dynamic_id(session, dynamic_id=dynamic_user_id), User
         )
-
     return user
 
 
@@ -129,12 +129,13 @@ def get_wallets_from_token(
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> list[Wallet]:
     """
-    If the JWT token is valid, returns the wallets associated with the token
-    TODO: Associate wallets with User object in crud
-    Otherwise, raises an HTTPException with status code 401
-    token (str): JWT token to decode representing a user claim.
+    Retrieve a wallet based on its JWT
+    params:
+      token (HTTPAuthorizationCredentials): JWT token
+    raises:
+      HTTPException with status code 401 unauthorized
     """
-    payload = valid_jwt(token)
+    payload = parse_jwt(token)
 
     credentials: list[dict] | None = payload.get("verified_credentials")
     if not credentials:
@@ -160,29 +161,23 @@ def get_wallets_from_token(
     return [wallet for wallet in wallets if wallet is not None]
 
 
-def access_list(
+def check_scopes(
     *required_permissions: str,
 ) -> Callable:
     """
-    If the JWT token is valid, returns the access list associated with the token
-    Otherwise, raises an HTTPException with status code 401
-    token (str): JWT token to decode representing a user claim.
+    Check if a user has the necessary permissions.
+    raises:
+      HTTPException with status code 403 forbidden
     """
-
     def helper(
         token: HTTPAuthorizationCredentials = Security(auth_scheme),
     ) -> None:
-        payload = valid_jwt(token)
-
-        # Access lists will be in lists field of payload
-        # https://docs.dynamic.xyz/authentication-methods/auth-tokens
+        payload = parse_jwt(token)
         payload_access_list: list[str] = payload.get("lists", [])
-        if not set(payload_access_list) == set(required_permissions):
+        if missing_permissions := (set(required_permissions) - set(payload_access_list)):
             raise HTTPException(
-                detail="User does not have the required permissions",
+                detail=f"Missing permissions: {missing_permissions}",
                 status_code=403,
             )
-
         return None
-
     return helper
