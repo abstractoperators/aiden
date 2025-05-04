@@ -12,10 +12,10 @@ from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
 from src.auth import (  # decode_bearer_token,
-    access_list,
+    check_scopes,
     get_user_from_token,
     get_wallets_from_token,
-    valid_jwt,
+    parse_jwt,
 )
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -282,7 +282,7 @@ async def get_token(token_id: UUID) -> Token:
 # TODO: Admin page for creating this.
 @app.post(
     "/runtimes",
-    dependencies=[Security(access_list("admin"))],
+    dependencies=[Security(check_scopes("admin"))],
 )
 def create_runtime() -> RuntimeCreateTask:
     """
@@ -655,7 +655,7 @@ async def delete_wallet(
 @app.post("/users")
 async def create_user(
     user: UserBase,
-    decoded_token: dict = Security(valid_jwt),
+    decoded_token: dict = Security(parse_jwt),
 ) -> User:
     """
     Creates a new user in the database, and returns the full user.
@@ -759,7 +759,7 @@ async def delete_user(
 
 @app.patch(
     "/runtimes/{runtime_id}",
-    dependencies=[Depends(access_list("admin"))],
+    dependencies=[Depends(check_scopes("admin"))],
 )
 def update_runtime(
     runtime_id: UUID,
@@ -810,7 +810,7 @@ def update_runtime(
 
 @app.delete(
     "/runtimes/{runtime_id}",
-    dependencies=[Depends(access_list("admin"))],
+    dependencies=[Depends(check_scopes("admin"))],
 )
 def delete_runtime(
     runtime_id: UUID,
