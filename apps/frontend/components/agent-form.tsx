@@ -676,6 +676,7 @@ export {
   SubmitButton,
   TokenAccordion,
   TokenComboboxAccordion,
+  tokenSchema,
 }
 
 export default AgentForm
