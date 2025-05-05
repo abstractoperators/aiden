@@ -19,14 +19,13 @@ export default function SwapCard({
   const [ seiAmount, setSeiAmount ] = useState(0)
 
   return token ? (
-    <Card className="items-center gap-y-2">
+    <Card className="items-center gap-2">
       <CardHeader className="self-start">
         <TokenBalance address={token.evmContractAddress} />
       </CardHeader>
       <CardContent
         className={cn(
-          "w-full flex flex-col gap-y-2 items-center",
-          "xl:flex-row xl:gap-y-0 xl:gap-x-2 ",
+          "w-full flex flex-col gap-2 items-center xl:flex-row",
         )}
       >
         <TokenCard
@@ -80,7 +79,7 @@ function TokenCard({
   return (
     <Card className="w-full justify-between self-stretch">
       <CardHeader>
-        <CardTitle className="flex justify-between gap-x-2 flex-wrap">
+        <CardTitle className="flex justify-between gap-2 flex-wrap">
           <p>{isInput ? "From" : "To"}:</p>
           <p>{token.name}</p>
         </CardTitle>

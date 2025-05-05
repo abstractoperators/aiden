@@ -87,7 +87,7 @@ function LoginButtonHeader({className}: {className?: string}) {
     {
       user &&
       primaryWallet &&
-      <div className="flex items-center justify-between gap-x-2">
+      <div className="flex items-center justify-between gap-2">
         <CreateAgentButton />
         <UserMenu
           logout={handleLogOut}
