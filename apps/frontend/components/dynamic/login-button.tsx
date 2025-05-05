@@ -37,9 +37,7 @@ function LoginButton({
   const { primaryWallet, user, setShowAuthFlow } = useDynamicContext()
 
   return (primaryWallet && user) ? (
-    <div>
-      {children}
-    </div>
+    <>{children}</>
   ) : (
     <Button
       className={cn(
@@ -89,7 +87,7 @@ function LoginButtonHeader({className}: {className?: string}) {
     {
       user &&
       primaryWallet &&
-      <div className="flex items-center justify-between space-x-2">
+      <div className="flex items-center justify-between gap-x-2">
         <CreateAgentButton />
         <UserMenu
           logout={handleLogOut}
@@ -101,7 +99,23 @@ function LoginButtonHeader({className}: {className?: string}) {
   </LoginButton>
 }
 
+function LoginButtonSwap({className}: {className?: string}) {
+  const { primaryWallet, user } = useDynamicContext()
+  return (
+    <LoginButton className={className}>
+    {
+      user &&
+      primaryWallet &&
+      <Button className={cn(className)}>
+        Swap
+      </Button>
+    }
+    </LoginButton>
+  )
+}
+
 export {
   LoginButtonHeader,
   LoginButtonHero,
+  LoginButtonSwap,
 }
