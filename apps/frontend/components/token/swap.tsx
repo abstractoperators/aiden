@@ -9,14 +9,24 @@ import TokenBalance from "./balance";
 import { cn } from "@/lib/utils";
 import { LoginButtonSwap } from "../dynamic/login-button";
 
+// const routeSchema = z.object({
+//   address: z.string().startsWith("0x", "Must be a valid EVM address"),
+//   amount: z.number(),
+// })
+// const swapSchema = z.object({
+//   in: routeSchema,
+//   out: routeSchema,
+// })
+// type FormType = z.infer<typeof swapSchema>
+
 export default function SwapCard({
   token,
 }: {
   token?: TokenBase | null,
 }) {
   const [ isBuying, setIsBuying ] = useState(true)
-  const [ tokenAmount, setTokenAmount ] = useState(0)
-  const [ seiAmount, setSeiAmount ] = useState(0)
+  const [ tokenAmount, ] = useState(0)
+  const [ seiAmount, ] = useState(0)
 
   return token ? (
     <Card className="items-center gap-2">
