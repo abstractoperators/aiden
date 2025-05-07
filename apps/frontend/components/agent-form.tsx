@@ -164,8 +164,8 @@ function AgentForm({
 
   return ( user ?
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Accordion type="multiple" className="space-y-2">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <Accordion type="multiple" className="flex flex-col gap-2">
           <AccordionItem value="Name">
             <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
@@ -202,8 +202,8 @@ function AgentForm({
             <AccordionTrigger>
               Message Examples
             </AccordionTrigger>
-            <AccordionContent className="space-y-8">
-              <div className="space-y-4">
+            <AccordionContent className="flex flex-col gap-8">
+              <div className="flex flex-col gap-4">
               {messageExamplesFields.map((example, exampleIndex) => (
                 <MessageExample
                   key={example.id}
@@ -233,7 +233,7 @@ function AgentForm({
               <FormField
                 name="twitter"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-start space-x-2">
+                  <FormItem className="flex flex-row items-center justify-start gap-2">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -277,10 +277,10 @@ function MessageExample({
   })
 
   return (
-    <div className={cn(borderStyle, "p-4 space-y-8")}>
-      <div className="space-y-2">
+    <div className={cn(borderStyle, "flex flex-col p-4 gap-8")}>
+      <div className="flex flex-col gap-2">
       {fields.map((field, messageIndex) => (
-        <div key={field.id} className={cn(borderStyle, "space-y-8 p-4")}>
+        <div key={field.id} className={cn(borderStyle, "flex flex-col gap-8 p-4")}>
           <div>
           {Object.entries(messageExampleTitles).map(([name, title]) => (
             <FormField
@@ -337,7 +337,7 @@ function Style({ control }: { control: Control<FormType> }) {
       control, name: fullName,
     })
     return (
-      <div className={cn(borderStyle, "space-y-8 p-4")}>
+      <div className={cn(borderStyle, "flex flex-col gap-8 p-4")}>
         <h3 className="font-semibold">{title}</h3>
         <FieldArray name={fullName} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
@@ -350,7 +350,7 @@ function Style({ control }: { control: Control<FormType> }) {
   return (
     <AccordionItem value="Style">
       <AccordionTrigger>Style</AccordionTrigger>
-      <AccordionContent className="space-y-4">
+      <AccordionContent className="flex flex-col gap-4">
       {Object.entries(styleTitles).map(([ name, title ]) => (
         <StyleHelper key={getFullName(name)} name={name} title={title} />
       ))}
@@ -377,7 +377,7 @@ function AccordionList({
   return (
     <AccordionItem value={title}>
       <AccordionTrigger>{title}</AccordionTrigger>
-      <AccordionContent className="space-y-8">
+      <AccordionContent className="flex flex-col gap-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
         <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
@@ -399,7 +399,7 @@ function FieldArray({
   remove: UseFieldArrayRemove,
 }) {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
     {fields.map((formField, index) => (
       <FormField
         key={formField.id}

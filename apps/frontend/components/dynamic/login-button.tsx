@@ -41,9 +41,9 @@ function LoginButton({
   ) : (
     <Button
       className={cn(
-        className,
         common,
         bg,
+        className,
       )}
       onClick={() => setShowAuthFlow(true)}
     >
@@ -99,23 +99,8 @@ function LoginButtonHeader({className}: {className?: string}) {
   </LoginButton>
 }
 
-function LoginButtonSwap({className}: {className?: string}) {
-  const { primaryWallet, user } = useDynamicContext()
-  return (
-    <LoginButton className={className}>
-    {
-      user &&
-      primaryWallet &&
-      <Button className={cn(className)}>
-        Swap
-      </Button>
-    }
-    </LoginButton>
-  )
-}
-
 export {
+  LoginButton,
   LoginButtonHeader,
   LoginButtonHero,
-  LoginButtonSwap,
 }

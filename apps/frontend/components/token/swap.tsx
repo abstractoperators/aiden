@@ -1,23 +1,30 @@
 "use client"
 
 import { TokenBase } from "@/lib/api/token";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import {
+  Dispatch,
+  ReactNode,
+  SetStateAction,
+  useState,
+} from "react";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "../ui/button";
 import TokenBalance from "./balance";
 import { cn } from "@/lib/utils";
-import { LoginButtonSwap } from "../dynamic/login-button";
+import { LoginButton } from "../dynamic/login-button";
+import { Input } from "../ui/input";
 
-// const routeSchema = z.object({
-//   address: z.string().startsWith("0x", "Must be a valid EVM address"),
-//   amount: z.number(),
-// })
-// const swapSchema = z.object({
-//   in: routeSchema,
-//   out: routeSchema,
-// })
-// type FormType = z.infer<typeof swapSchema>
+const amountStyle = [
+  "!text-d3 pl-0 py-2 font-serif h-fit place-content-center border-none",
+  "shadow-none",
+].join(" ")
 
 export default function SwapCard({
   token,
@@ -25,49 +32,74 @@ export default function SwapCard({
   token?: TokenBase | null,
 }) {
   const [ isBuying, setIsBuying ] = useState(true)
-  const [ tokenAmount, ] = useState(0)
-  const [ seiAmount, ] = useState(0)
+  const [ tokenAmount, setTokenAmount ] = useState<number | "">("")
+  const [ seiAmount, setSeiAmount ] = useState<number | "">("")
 
-  return token ? (
-    <Card className="items-center gap-2">
-      <CardHeader className="self-start">
-        <TokenBalance address={token.evmContractAddress} />
-      </CardHeader>
-      <CardContent
-        className={cn(
-          "w-full flex flex-col gap-2 items-center xl:flex-row",
-        )}
-      >
-        <TokenCard
-          isInput={true}
-          token={isBuying ? seiTokenDisplay : token}
-          amount={tokenAmount}
-        />
-        <Button
-          variant="ghost"
-          className="w-4 h-8"
-          onClick={() => setIsBuying(!isBuying)}
+  const onClick = async () => {
+
+  }
+
+  if (token) {
+    const inProps = isBuying ? {
+      token: seiTokenDisplay,
+      inAmount: seiAmount,
+      setInAmount: setSeiAmount,
+      setOutAmount: setTokenAmount,
+      // TODO: replace
+      convert: (x: number) => x * 2,
+    } : {
+      token,
+      inAmount: tokenAmount,
+      setInAmount: setTokenAmount,
+      setOutAmount: setSeiAmount,
+      // TODO: replace
+      convert: (x: number) => x / 2,
+    }
+    const outProps = isBuying ? {
+      token,
+      amount: tokenAmount,
+    } : {
+      token: seiTokenDisplay,
+      amount: seiAmount,
+    }
+
+    return (
+      <Card className="items-center gap-2">
+        <CardHeader className="self-start">
+          <TokenBalance address={token.evmContractAddress} />
+        </CardHeader>
+        <CardContent
+          className={cn(
+            "w-full flex flex-col gap-2 items-center",
+          )}
         >
-          <ArrowUpDown
-            className={cn(
-              "transition duration-300",
-              isBuying ? "xl:rotate-90" : "rotate-180 xl:-rotate-90",
-            )}
-          />
-        </Button>
-        <TokenCard
-          isInput={false}
-          token={isBuying ? token : seiTokenDisplay}
-          amount={seiAmount}
-        />
-      </CardContent>
-      <CardFooter>
-        <LoginButtonSwap className="w-full" />
-      </CardFooter>
-    </Card>
-  ) : (
-    <></>
-  )
+          <InCard {...inProps} />
+          <Button
+            variant="ghost"
+            className="w-4 h-8"
+            onClick={() => setIsBuying(!isBuying)}
+          >
+            <ArrowUpDown
+              className={cn(
+                "transition duration-300",
+                isBuying ? "" : "rotate-180",
+              )}
+            />
+          </Button>
+          <OutCard {...outProps} />
+        </CardContent>
+        <CardFooter>
+          <LoginButton className="w-full">
+            <Button className="w-full" onClick={onClick}>
+              Swap
+            </Button>
+          </LoginButton>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  return <></>
 }
 
 type TokenDisplayType = Pick<TokenBase, "name" | "ticker">
@@ -77,25 +109,94 @@ const seiTokenDisplay: TokenDisplayType = {
   ticker: "SEI",
 }
 
-function TokenCard({
-  isInput,
+function InCard({
+  token,
+  inAmount,
+  setInAmount,
+  setOutAmount,
+  convert,
+}: {
+  token: TokenDisplayType,
+  inAmount: number | "",
+  setInAmount: Dispatch<SetStateAction<number | "">>,
+  setOutAmount: Dispatch<SetStateAction<number | "">>,
+  convert: (x: number) => number,
+}) {
+  return (
+    <BaseCard
+      token={token}
+      title="From"
+    >
+      <Input
+        type="number"
+        onChange={e => {
+          const value = e.target.value.length ? e.target.valueAsNumber : ""
+          setInAmount(value)
+          setOutAmount(value ? convert(value) : "")
+        }}
+        placeholder="0.0"
+        value={inAmount}
+        min={0}
+        step="any"
+        onKeyDown={e => {
+          if (new Set(["+", "-", "Enter"]).has(e.key)) {
+            e.preventDefault()
+          }
+        }}
+        className={cn(
+          "[&::-webkit-outer-spin-button]:appearance-none",
+          "[&::-webkit-inner-spin-button]:appearance-none",
+          "!ring-0",
+          amountStyle,
+        )}
+      />
+    </BaseCard>
+  )
+}
+
+function OutCard({
   token,
   amount,
 }: {
-  isInput: boolean,
   token: TokenDisplayType,
-  amount: number,
+  amount: number | "",
+}) {
+  return (
+    <BaseCard
+      token={token}
+      title="To"
+    >
+      <Input
+        disabled
+        className={cn(
+          "truncate pointer-events-none",
+          amountStyle,
+        )}
+        value={amount || 0}
+      />
+    </BaseCard>
+  )
+}
+
+function BaseCard({
+  token,
+  title,
+  children,
+}: {
+  token: TokenDisplayType,
+  title: string,
+  children: ReactNode,
 }) {
   return (
     <Card className="w-full justify-between self-stretch">
       <CardHeader>
         <CardTitle className="flex justify-between gap-2 flex-wrap">
-          <p>{isInput ? "From" : "To"}:</p>
+          <p>{title}:</p>
           <p>{token.name}</p>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col">
-        <h2>{amount}</h2>
+        {children}
         <h3 className="text-neutral-700 dark:text-neutral-300">{token.ticker}</h3>
       </CardContent>
     </Card>
