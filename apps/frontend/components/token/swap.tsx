@@ -20,6 +20,10 @@ import TokenBalance from "./balance";
 import { cn } from "@/lib/utils";
 import { LoginButton } from "../dynamic/login-button";
 import { Input } from "../ui/input";
+import { buyWithSei, sellForSei } from "@/lib/contracts/bonding";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { TransactionReceipt } from "viem";
+import { toast } from "@/hooks/use-toast";
 
 const amountStyle = [
   "!text-d3 pl-0 py-2 font-serif h-fit place-content-center border-none",
@@ -28,15 +32,51 @@ const amountStyle = [
 
 export default function SwapCard({
   token,
+  // setBalance
 }: {
   token?: TokenBase | null,
+  // setBalance?: any,
 }) {
   const [ isBuying, setIsBuying ] = useState(true)
   const [ tokenAmount, setTokenAmount ] = useState<number | "">("")
   const [ seiAmount, setSeiAmount ] = useState<number | "">("")
+  const { primaryWallet } = useDynamicContext()
 
   const onClick = async () => {
+    if (!token || !seiAmount || !tokenAmount)
+      return
 
+    const tokenAddress = token.evmContractAddress
+    const receipt: TransactionReceipt = await (
+      isBuying ?
+      buyWithSei({
+        tokenAddress,
+        seiAmount,
+        primaryWallet,
+      }) :
+      sellForSei({
+        tokenAddress,
+        tokenAmount,
+        primaryWallet,
+      })
+    )
+
+    if (receipt.status === "success") {
+      toast({ title: "Swap Successful", })
+    } else {
+      const errorMessage = [
+        receipt.from,
+        receipt.to,
+        receipt.status,
+        receipt.transactionHash,
+        receipt.type,
+      ].join()
+      console.error(`Unable to complete swap:\n${errorMessage}`)
+      toast({
+        title: "Unable to Complete Swap!",
+        description: errorMessage,
+      })
+    }
   }
 
   if (token) {
@@ -90,7 +130,7 @@ export default function SwapCard({
         </CardContent>
         <CardFooter>
           <LoginButton className="w-full">
-            <Button className="w-full" onClick={onClick}>
+            <Button disabled={!seiAmount || !tokenAmount} className="w-full" onClick={onClick}>
               Swap
             </Button>
           </LoginButton>
