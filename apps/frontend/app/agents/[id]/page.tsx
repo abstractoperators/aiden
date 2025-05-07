@@ -73,7 +73,7 @@ export default async function AgentHome({
         <DescriptionCard {...character} />
       </div>
       <div className="col-span-5 flex flex-col justify-start items-stretch gap-2">
-        <SwapCard />
+        <SwapCard token={token}/>
         <Chat init={agent} />
       </div>
     </main>

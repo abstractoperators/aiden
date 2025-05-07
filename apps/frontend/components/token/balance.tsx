@@ -57,8 +57,8 @@ export default function TokenBalance({
   }
 
   return (
-    <div className="flex items-center space-x-1">
-      <div className="flex items-center justify-between space-x-2">
+    <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <p>Balance:</p>
         <p className="text-anakiwa-light">{formattedBalance}</p>
       </div>

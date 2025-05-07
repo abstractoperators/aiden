@@ -3,7 +3,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useEffect, useState } from "react"
@@ -23,6 +22,9 @@ import { Skeleton } from "./ui/skeleton"
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 import { getDisplayName } from "@/lib/dynamic/user"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
+import { LoaderCircle, SendHorizontal } from "lucide-react"
+import TextareaAutosize from "react-textarea-autosize"
+import { cn } from "@/lib/utils"
 
 const formSchema = z.object({
   message: z.string(),
@@ -147,7 +149,13 @@ export default function Chat({
     }
   })
 
+  const { control, handleSubmit, formState } = form
+
+  const isLoading = formState.isSubmitting
+
   async function onSubmit(formData: z.infer<typeof formSchema>) {
+    if (formData.message.length === 0)
+      return
     try {
       // TODO: global chat???
       setChat(msgs => msgs.concat({
@@ -155,6 +163,12 @@ export default function Chat({
         text: formData.message,
         sender: senderName, // TODO: get user name here if applicable
       }))
+
+      form.setValue(
+        "message",
+        "",
+        { shouldDirty: false, shouldTouch: false },
+      )
 
       // TODO: better wait indicator/feedback
       // TODO: move to server side
@@ -216,20 +230,43 @@ export default function Chat({
         </ol>
       </ScrollArea>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="w-4/5 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="w-4/5 space-y-4 flex gap-2">
           <FormField
-            control={form.control}
+            control={control}
             name="message"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex-1">
                 <FormControl>
-                  <Textarea placeholder="Type your message here." {...field} />
+                  <TextareaAutosize
+                    minRows={2}
+                    className={cn(
+                      "flex w-full rounded-xl",
+                      "border border-input bg-transparent px-3 py-2",
+                      "text-base shadow-sm placeholder:text-muted-foreground",
+                      "focus-visible:outline-none focus-visible:ring-1",
+                      "focus-visible:ring-ring disabled:cursor-not-allowed",
+                      "disabled:opacity-50 md:text-sm resize-none",
+                    )}
+                    placeholder="Type your message here. Press enter to submit and shift + enter for a new line."
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        e.currentTarget.form?.requestSubmit()
+                      }
+                    }}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit">Send message</Button>
+          <Button type="submit" disabled={isLoading} size="icon">
+          { isLoading ?
+            <LoaderCircle className="animate-spin" /> :
+            <SendHorizontal />
+          }
+          </Button>
         </form>
       </Form>
     </Card> : <Card className="justify-start items-center">
