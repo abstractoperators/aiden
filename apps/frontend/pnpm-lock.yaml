@@ -8,12 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@babel/helpers':
-        specifier: '>=7.26.10'
-        version: 7.27.1
-      '@babel/runtime':
-        specifier: '>=7.26.10'
-        version: 7.27.1
       '@dynamic-labs/cosmos':
         specifier: ^4.8.3
         version: 4.17.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
