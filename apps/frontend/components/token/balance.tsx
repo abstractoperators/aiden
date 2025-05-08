@@ -11,6 +11,7 @@ import { Button } from "../ui/button";
 import { RefreshCcw } from "lucide-react";
 import { getTokenBalance } from "@/lib/contracts/token";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 function TokenBalance({
   address,
@@ -43,11 +44,15 @@ function TokenBalance({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <p>Balance:</p>
-        <p className="text-anakiwa-light">{formattedBalance}</p>
-      </div>
+    <div className="w-full flex items-center justify-between gap-2">
+      <hgroup
+        className={cn(
+          "flex items-center justify-between gap-2 text-d6 font-serif",
+        )}
+      >
+        <h4>Balance:</h4>
+        <h4 className="text-anakiwa-light">{formattedBalance}</h4>
+      </hgroup>
       <Button
         variant="ghost"
         size="icon"
@@ -80,7 +85,8 @@ async function updateBalanceState({
 }) {
   setIsDisabled(true)
   try {
-    setBalance(await getTokenBalance({address, primaryWallet}));
+    if (primaryWallet)
+      setBalance(await getTokenBalance({address, primaryWallet}));
   } catch (error) {
     console.error(error)
     toast({

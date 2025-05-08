@@ -113,7 +113,7 @@ export default function SwapCard({
 
     return (
       <Card className="items-center gap-2">
-        <CardHeader className="self-start">
+        <CardHeader className="w-full">
           <TokenBalance
             address={token.evmContractAddress}
             balanceState={balanceState}
