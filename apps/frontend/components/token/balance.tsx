@@ -1,38 +1,42 @@
 "use client"
 
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-import { useCallback, useEffect, useState } from "react";
+import { useDynamicContext, Wallet } from "@dynamic-labs/sdk-react-core";
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+} from "react";
 import { Button } from "../ui/button";
 import { RefreshCcw } from "lucide-react";
 import { getTokenBalance } from "@/lib/contracts/token";
 import { toast } from "@/hooks/use-toast";
 
-export default function TokenBalance({
+function TokenBalance({
   address,
+  balanceState,
+  isDisabledState,
 }: {
   address: `0x${string}`,
+  balanceState: [string, Dispatch<SetStateAction<string>>],
+  isDisabledState: [boolean, Dispatch<SetStateAction<boolean>>],
 }) {
   const { primaryWallet } = useDynamicContext();
-  const [formattedBalance, setBalance] = useState<string>("");
-  const [isDisabled, setIsDisabled] = useState(false)
+  const [formattedBalance, setBalance] = balanceState
+  const [isDisabled, setIsDisabled] = isDisabledState
 
-  const getBalance = useCallback(async () => {
-    setIsDisabled(true)
-    try {
-      setBalance(await getTokenBalance({address, primaryWallet}));
-    } catch (error) {
-      console.error(error)
-      toast({
-        title: "Unable to get balance!",
-        description: `${error}`,
+  // It's bad practice to call onClick in useEffect, even if it means
+  // code duplication.
+  useEffect(() => {
+    (async () => {
+      updateBalanceState({
+        address,
+        primaryWallet,
+        setBalance,
+        setIsDisabled,
       })
-    } finally {
-      setIsDisabled(false)
-    }
-  }, [address, primaryWallet])
-  
-  useEffect(() => { getBalance() }, [getBalance])
+    })()
+  }, [address, primaryWallet, setBalance, setIsDisabled])
 
   if (!primaryWallet || !isEthereumWallet(primaryWallet)) {
     return <></>
@@ -47,7 +51,14 @@ export default function TokenBalance({
       <Button
         variant="ghost"
         size="icon"
-        onClick={getBalance}
+        onClick={() =>
+          updateBalanceState({
+            address,
+            primaryWallet,
+            setBalance,
+            setIsDisabled,
+          })
+        }
         disabled={isDisabled}
       >
         <RefreshCcw className={isDisabled ? "animate-spin" : ""} />
@@ -55,3 +66,34 @@ export default function TokenBalance({
     </div>
   );
 };
+
+async function updateBalanceState({
+  address,
+  primaryWallet,
+  setBalance,
+  setIsDisabled,
+}: {
+  address: `0x${string}`,
+  primaryWallet: Wallet | null,
+  setBalance: Dispatch<SetStateAction<string>>,
+  setIsDisabled: Dispatch<SetStateAction<boolean>>,
+}) {
+  setIsDisabled(true)
+  try {
+    setBalance(await getTokenBalance({address, primaryWallet}));
+  } catch (error) {
+    console.error(error)
+    toast({
+      title: "Unable to get balance!",
+      description: `${error}`,
+    })
+  } finally {
+    setIsDisabled(false)
+  }
+}
+
+export {
+  updateBalanceState
+}
+
+export default TokenBalance

@@ -16,7 +16,7 @@ import {
 } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "../ui/button";
-import TokenBalance from "./balance";
+import TokenBalance, { updateBalanceState } from "./balance";
 import { cn } from "@/lib/utils";
 import { LoginButton } from "../dynamic/login-button";
 import { Input } from "../ui/input";
@@ -40,6 +40,8 @@ export default function SwapCard({
   const [ isBuying, setIsBuying ] = useState(true)
   const [ tokenAmount, setTokenAmount ] = useState<number | "">("")
   const [ seiAmount, setSeiAmount ] = useState<number | "">("")
+  const balanceState = useState("")
+  const isBalanceDisabledState = useState(false)
   const { primaryWallet } = useDynamicContext()
 
   const onClick = async () => {
@@ -63,6 +65,12 @@ export default function SwapCard({
 
     if (receipt.status === "success") {
       toast({ title: "Swap Successful", })
+      updateBalanceState({
+        address: tokenAddress,
+        primaryWallet,
+        setBalance: balanceState[1],
+        setIsDisabled: isBalanceDisabledState[1],
+      })
     } else {
       const errorMessage = [
         receipt.from,
@@ -106,7 +114,11 @@ export default function SwapCard({
     return (
       <Card className="items-center gap-2">
         <CardHeader className="self-start">
-          <TokenBalance address={token.evmContractAddress} />
+          <TokenBalance
+            address={token.evmContractAddress}
+            balanceState={balanceState}
+            isDisabledState={isBalanceDisabledState}
+          />
         </CardHeader>
         <CardContent
           className={cn(

@@ -11,7 +11,7 @@ import {
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
 import { z } from "zod";
 import { saveToken, Token } from "../api/token";
-import { isErrorResult, Result } from "../api/result";
+import { Result } from "../api/result";
 
 const BONDING_CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS as `0x${string}` ?? "0x"
 const BONDING_ABI = BONDING_JSON.abi
