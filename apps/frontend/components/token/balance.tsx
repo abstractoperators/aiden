@@ -7,11 +7,10 @@ import {
   SetStateAction,
   useEffect,
 } from "react";
-import { Button } from "../ui/button";
-import { RefreshCcw } from "lucide-react";
 import { getTokenBalance } from "@/lib/contracts/token";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import RefreshButton from "../ui/refresh-button";
 
 function TokenBalance({
   address,
@@ -53,9 +52,7 @@ function TokenBalance({
         <h4>Balance:</h4>
         <h4 className="text-anakiwa-light">{formattedBalance}</h4>
       </hgroup>
-      <Button
-        variant="ghost"
-        size="icon"
+      <RefreshButton
         onClick={() =>
           updateBalanceState({
             address,
@@ -65,9 +62,7 @@ function TokenBalance({
           })
         }
         disabled={isDisabled}
-      >
-        <RefreshCcw className={isDisabled ? "animate-spin" : ""} />
-      </Button>
+      />
     </div>
   );
 };
