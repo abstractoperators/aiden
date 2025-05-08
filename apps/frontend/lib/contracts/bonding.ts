@@ -4,10 +4,14 @@ import ERC20_JSON from "./abis/ferc20.json"
 import {
   getContract,
   parseEther,
+  parseEventLogs,
   PublicClient,
   WalletClient,
 } from "viem";
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
+import { z } from "zod";
+import { saveToken, Token } from "../api/token";
+import { isErrorResult, Result } from "../api/result";
 
 const BONDING_CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS as `0x${string}` ?? "0x"
 const BONDING_ABI = BONDING_JSON.abi
@@ -96,8 +100,77 @@ async function sellForSei({
   });
 }
 
+const launchSchema = z.object({
+  tokenName: z.string().min(1, "Name cannot be empty"),
+  ticker: z.string().min(1, "Ticker cannot be empty"),
+})
+type LaunchSchemaType = z.infer<typeof launchSchema>
+
+function launchTokenFactory(wallet: Wallet | null) {
+  async function launchToken({
+    tokenName: name,
+    ticker,
+  }: LaunchSchemaType): Promise<Result<Token>> {
+    const client = await getClientFromWallet(wallet)
+    const contract = getBondingContract(client)
+
+    const fee = await contract.read.assetLaunchFee() as bigint;
+    console.debug("Launch Fee:", fee);
+
+    const simulation = await contract.simulate.launchWithSei(
+      [name, ticker],
+      { value: fee },
+    );
+    console.debug("Launch Simulation:", simulation)
+
+    const hash = await contract.write.launchWithSei(
+      [name, ticker],
+      { value: fee },
+    );
+    console.debug("Launch Hash:", hash)
+
+    const receipt = await client.public.waitForTransactionReceipt({
+        hash,
+        confirmations: 1,
+    });
+
+    const events = parseEventLogs({
+        abi: BONDING_ABI,
+        logs: receipt.logs,
+        eventName: "Launched",
+    });
+    if (events.length === 0) {
+        throw new Error("No Launched event found in transaction receipt");
+    }
+    if (events.length > 1) {
+        console.warn("Multiple Launched events found in transaction receipt");
+    }
+
+    // @ts-expect-error it's because I didn't want to make my own type and find the Log type from which LaunchedEvent inherits, and .args doesn't exist on the Log type by default but istg it does on the Launched Event.
+    const tokenAddress = events[0].args[0] as `0x${string}`;
+    console.debug("Token launched at:", tokenAddress);
+
+    const tokenPayload = {
+        name,
+        ticker,
+        evmContractAddress: tokenAddress,
+        abi: ERC20_ABI, // maybe we stop saving an abi for each token - dunno.
+    };
+
+    return saveToken(tokenPayload)
+  }
+
+  return launchToken
+}
+
 export {
   getBondingContract,
   buyWithSei,
+  launchSchema,
+  launchTokenFactory,
   sellForSei,
+}
+
+export type {
+  LaunchSchemaType,
 }
