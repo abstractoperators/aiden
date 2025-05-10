@@ -42,9 +42,13 @@ import { useRouter } from "next/navigation"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
 import { useEffect, useState } from "react"
 import { getTokens, Token } from "@/lib/api/token"
-import { launchSchema, launchTokenFactory, TokenLaunchType } from "./token/launch"
 import { FormCombobox } from "./ui/combobox"
 import Link from "next/link"
+import {
+  launchTokenFactory,
+  launchSchema as tokenLaunchSchema,
+  LaunchSchemaType as TokenLaunchType,
+} from "@/lib/contracts/bonding"
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
@@ -74,7 +78,7 @@ const integrationsSchema = z.object({
   twitter: z.boolean(),
 })
 
-const newTokenSchema = launchSchema.extend({
+const newTokenSchema = tokenLaunchSchema.extend({
   isNewToken: z.literal(true),
 })
 const existingTokenSchema = z.object({
@@ -460,7 +464,7 @@ function TokenAccordion() {
     <AccordionItem value="Token">
       <AccordionTrigger>Token</AccordionTrigger>
       <AccordionContent>
-      {launchSchema.keyof().options.map(name => (
+      {tokenLaunchSchema.keyof().options.map(name => (
         <FormField
           key={name}
           name={name}
@@ -589,7 +593,24 @@ async function onSubmitCreate({
     return
   }
 
-  const tokenId = (typeof token === "string") ? token : await launchTokenFactory(wallet)(token)
+  const tokenId = (
+    (typeof token === "string") ?
+    token :
+    await (async () => {
+      const tokenResult = await launchTokenFactory(wallet)(token)
+      if (isErrorResult(tokenResult)) {
+        toast({
+          title: `Unable to save token ${token.tokenName} ($${token.ticker})`,
+          description: tokenResult.message,
+        })
+      } else {
+        toast({
+          title: `Token ${token.tokenName} ($${token.ticker}) created!`,
+        })
+        return tokenResult.data.id
+      }
+    })()
+  )
 
   const agentPayload = {
     ownerId: userResult.data.id,
