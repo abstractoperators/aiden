@@ -14,6 +14,7 @@ export default function RefreshButton({
       size="icon"
       onClick={onClick}
       disabled={disabled}
+      className="shrink-0"
     >
       <RefreshCcw className={disabled ? "animate-spin" : ""} />
     </Button>

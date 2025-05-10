@@ -24,6 +24,7 @@ import { buyWithSei, getTokenInfo, sellForSei } from "@/lib/contracts/bonding";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { TransactionReceipt } from "viem";
 import { toast } from "@/hooks/use-toast";
+import TokenPrice, { updateTokenPriceState } from "./price";
 
 const amountStyle = [
   "!text-d3 pl-0 py-2 font-serif h-fit place-content-center border-none",
@@ -32,16 +33,16 @@ const amountStyle = [
 
 export default function SwapCard({
   token,
-  // setBalance
 }: {
   token?: TokenBase | null,
-  // setBalance?: any,
 }) {
   const [ isBuying, setIsBuying ] = useState(true)
   const [ tokenAmount, setTokenAmount ] = useState<number | "">("")
   const [ seiAmount, setSeiAmount ] = useState<number | "">("")
   const balanceState = useState("")
   const isBalanceDisabledState = useState(false)
+  const priceState = useState(BigInt(0))
+  const isPriceDisabledState = useState(false)
   const { primaryWallet } = useDynamicContext()
 
   const onClick = async () => {
@@ -70,6 +71,11 @@ export default function SwapCard({
         primaryWallet,
         setBalance: balanceState[1],
         setIsDisabled: isBalanceDisabledState[1],
+      })
+      updateTokenPriceState({
+        address: tokenAddress,
+        setPrice: priceState[1],
+        setIsDisabled: isPriceDisabledState[1],
       })
     } else {
       const errorMessage = [
@@ -119,11 +125,16 @@ export default function SwapCard({
 
     return (
       <Card className="items-center gap-2">
-        <CardHeader className="w-full">
+        <CardHeader className="flex flex-col items-start w-full">
           <TokenBalance
             address={token.evmContractAddress}
             balanceState={balanceState}
             isDisabledState={isBalanceDisabledState}
+          />
+          <TokenPrice
+            address={token.evmContractAddress}
+            priceState={priceState}
+            isDisabledState={isPriceDisabledState}
           />
         </CardHeader>
         <CardContent
