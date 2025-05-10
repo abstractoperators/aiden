@@ -4,6 +4,7 @@ import { Aldrich, Inter } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import DynamicProvider from "@/components/dynamic/provider"
+import ScrollToTopButton from "@/components/ui/scroll-to-top-button"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -58,6 +59,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <ScrollToTopButton />
             <Toaster />
           </ThemeProvider>
         </DynamicProvider>
