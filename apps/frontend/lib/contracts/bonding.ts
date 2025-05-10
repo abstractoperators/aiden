@@ -2,7 +2,9 @@ import { Wallet } from "@dynamic-labs/sdk-react-core";
 import BONDING_JSON from "./abis/bonding.json"
 import ERC20_JSON from "./abis/ferc20.json"
 import {
+  createPublicClient,
   getContract,
+  http,
   parseEther,
   parseEventLogs,
   PublicClient,
@@ -12,6 +14,7 @@ import { isEthereumWallet } from "@dynamic-labs/ethereum";
 import { z } from "zod";
 import { saveToken, Token } from "../api/token";
 import { Result } from "../api/result";
+import { getSeiNet } from "../utils";
 
 const BONDING_CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS as `0x${string}` ?? "0x"
 const BONDING_ABI = BONDING_JSON.abi
@@ -36,6 +39,54 @@ async function getClientFromWallet(wallet: Wallet | null) {
   return {
     wallet: await wallet.getWalletClient(),
     public: await wallet.getPublicClient(),
+  }
+}
+
+interface TokenInfoData {
+    token: `0x${string}`
+    name: string
+    _name: string
+    ticker: string
+    supply: bigint
+    price: bigint
+    marketCap: bigint
+    liquidity: bigint
+    volume: bigint
+    volume24H: bigint
+    prevPrice: bigint
+    lastUpdated: bigint
+}
+interface TokenInfo {
+  creator: `0x${string}`
+  token: `0x${string}`
+  pair: `0x${string}`
+  data: TokenInfoData
+  trading: boolean
+  tradingOnDragonSwap: boolean
+}
+
+async function getTokenInfo({
+  address,
+}: {
+  address: `0x${string}`,
+}): Promise<TokenInfo> {
+  const contract = getContract({
+    address: BONDING_CONTRACT_ADDRESS,
+    abi: BONDING_ABI,
+    client: createPublicClient({
+      chain: getSeiNet(),
+      transport: http(),
+    })
+  })
+
+  const tokenInfo = (await contract.read.tokenInfo([address])) as Array<`0x${string}` | boolean | TokenInfoData>
+  return {
+    creator: tokenInfo[0] as `0x${string}`,
+    token: tokenInfo[1] as `0x${string}`,
+    pair: tokenInfo[2] as `0x${string}`,
+    data: tokenInfo[3] as TokenInfoData,
+    trading: tokenInfo[4] as boolean,
+    tradingOnDragonSwap: tokenInfo[5] as boolean,
   }
 }
 
@@ -165,6 +216,7 @@ function launchTokenFactory(wallet: Wallet | null) {
 
 export {
   getBondingContract,
+  getTokenInfo,
   buyWithSei,
   launchSchema,
   launchTokenFactory,
@@ -173,4 +225,5 @@ export {
 
 export type {
   LaunchSchemaType,
+  TokenInfo,
 }

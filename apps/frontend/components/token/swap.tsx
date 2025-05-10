@@ -20,7 +20,7 @@ import TokenBalance, { updateBalanceState } from "./balance";
 import { cn } from "@/lib/utils";
 import { LoginButton } from "../dynamic/login-button";
 import { Input } from "../ui/input";
-import { buyWithSei, sellForSei } from "@/lib/contracts/bonding";
+import { buyWithSei, getTokenInfo, sellForSei } from "@/lib/contracts/bonding";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { TransactionReceipt } from "viem";
 import { toast } from "@/hooks/use-toast";
@@ -93,15 +93,21 @@ export default function SwapCard({
       inAmount: seiAmount,
       setInAmount: setSeiAmount,
       setOutAmount: setTokenAmount,
-      // TODO: replace
-      convert: (x: number) => x * 2,
+      convert: async (x: number) => {
+        const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
+        // TODO: improved accuracy
+        return x * Number(price)
+      },
     } : {
       token,
       inAmount: tokenAmount,
       setInAmount: setTokenAmount,
       setOutAmount: setSeiAmount,
-      // TODO: replace
-      convert: (x: number) => x / 2,
+      convert: async (x: number) => {
+        const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
+        // TODO: improved accuracy
+        return x / Number(price)
+      },
     }
     const outProps = isBuying ? {
       token,
@@ -172,7 +178,7 @@ function InCard({
   inAmount: number | "",
   setInAmount: Dispatch<SetStateAction<number | "">>,
   setOutAmount: Dispatch<SetStateAction<number | "">>,
-  convert: (x: number) => number,
+  convert: (x: number) => Promise<number>,
 }) {
   return (
     <BaseCard
@@ -181,10 +187,10 @@ function InCard({
     >
       <Input
         type="number"
-        onChange={e => {
+        onChange={async e => {
           const value = e.target.value.length ? e.target.valueAsNumber : ""
           setInAmount(value)
-          setOutAmount(value ? convert(value) : "")
+          setOutAmount(value ? await convert(value) : "")
         }}
         placeholder="0.0"
         value={inAmount}

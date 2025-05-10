@@ -1,7 +1,6 @@
 import { getToken } from "@/lib/api/token"
 import { isErrorResult } from "@/lib/api/result";
 import Link from "next/link";
-import TokenStats from "@/components/token/stats";
 import SwapCard from "@/components/token/swap";
 
 export default async function TokenPage({
@@ -33,7 +32,6 @@ export default async function TokenPage({
           {name}: ({ticker})
         </Link>
       </h1>
-      <TokenStats address={address} />
       <SwapCard token={token.data} />
     </main >
   )
