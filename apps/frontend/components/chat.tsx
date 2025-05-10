@@ -53,8 +53,11 @@ export default function Chat({
   const [agent, setAgent] = useState<Agent>(init)
   const [agentStartTask, setAgentStartTask] = useState<AgentStartTask>()
   const [chat, setChat] = useState<Message[]>([])
-  const chatBottomRef = useRef<HTMLLIElement | null>(null)
+
   const { user, primaryWallet } = useDynamicContext()
+  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
+
+  const chatBottomRef = useRef<HTMLLIElement | null>(null)
 
   useEffect(() => {
     const failureToast = (description?: string) => toast({
@@ -142,10 +145,15 @@ export default function Chat({
   }, [agent, agentStartTask])
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [chat])
+    if (chat.length === 0)
+      return
 
-  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
+    const lastMessage = chat[chat.length - 1]
+    const isNotFromUser = lastMessage.sender !== senderName
+
+    if (isNotFromUser)
+      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chat])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
