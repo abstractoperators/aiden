@@ -1,6 +1,13 @@
-# aiden
+# AIDEN
+
+High Performance Onchain AI Agents
+
+## ABOUT US
+
+Developed by Abstract Operators and powered by Sei, AIDEN ([A]gent [I]ntegration & [D]eployment [EN]gine) is an AI Agent Platform for users to create, integrate, interact with, and deploy a diverse ecosystem of High Performance AI Agents with no-code/low-code UI/UX on the Sei blockchain - a world scale EVM Layer-1 blockchain.
 
 Install `pnpm` and `node`
+
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
@@ -12,7 +19,7 @@ node -v
 nvm current
 
 # Verify node package manager version (npm)
-npm -v 
+npm -v
 
 npm install -g pnpm@latest-10
 
@@ -21,7 +28,7 @@ npm install -g pnpm@latest-10
 ## eliza
 
 ```bash
-git submodule update --init --recursive --depth 1 
+git submodule update --init --recursive --depth 1
 
 # To update commit on eliza
 cd eliza
