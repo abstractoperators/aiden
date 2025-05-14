@@ -156,7 +156,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-Your Name - [@kent](https://x.com/abstractoperant)
+Kent Gang - [@abstractoperant](https://x.com/abstractoperant)
 
 Project Link: [https://github.com/abstractoperators/aiden](https://github.com/abstractoperators/aiden)
 
