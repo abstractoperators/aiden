@@ -71,7 +71,7 @@ Developed by Abstract Operators and powered by Sei, AIDEN ([A]gent [I]ntegration
 
 ### Built With
 
-- [elizaos] (https://www.elizaos.ai/)
+- [elizaOS](https://www.elizaos.ai/)
 - [prometheus](https://prometheus.io/docs/instrumenting/clientlibs/)
 - [celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html)
 - [redis](https://redis.io/cloud/)
