@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { z } from "zod"
 import { toast } from "@/hooks/use-toast";
 import {
@@ -53,7 +53,11 @@ export default function Chat({
   const [agent, setAgent] = useState<Agent>(init)
   const [agentStartTask, setAgentStartTask] = useState<AgentStartTask>()
   const [chat, setChat] = useState<Message[]>([])
+
   const { user, primaryWallet } = useDynamicContext()
+  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
+
+  const chatBottomRef = useRef<HTMLLIElement | null>(null)
 
   useEffect(() => {
     const failureToast = (description?: string) => toast({
@@ -140,7 +144,16 @@ export default function Chat({
     }
   }, [agent, agentStartTask])
 
-  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
+  useEffect(() => {
+    if (chat.length === 0)
+      return
+
+    const lastMessage = chat[chat.length - 1]
+    const isNotFromUser = lastMessage.sender !== senderName
+
+    if (isNotFromUser)
+      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chat])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -218,7 +231,7 @@ export default function Chat({
               key={message.id}
               className={(message.sender === senderName) ? right : left}
             >
-              <Card className="max-w-3/4 break-words">
+              <Card className="w-4/5 break-words">
                 <CardHeader>
                   <CardTitle>{message.sender}</CardTitle>
                   <Separator />
@@ -227,10 +240,11 @@ export default function Chat({
               </Card>
             </li>
           ))}
+          <li ref={chatBottomRef} />
         </ol>
       </ScrollArea>
       <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)} className="w-4/5 space-y-4 flex gap-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="w-full flex gap-2">
           <FormField
             control={control}
             name="message"

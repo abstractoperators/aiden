@@ -12,8 +12,6 @@ import { cn } from "@/lib/utils"
 import { Pencil } from "lucide-react"
 import Link from "next/link"
 
-// TODO: start agent button
-
 export default async function AgentHome({
   params,
 }: {
@@ -48,9 +46,10 @@ export default async function AgentHome({
   return (
     <main
       className={cn(
-        "flex-1 self-stretch m-8 grid grid-cols-12 gap-2 px-6 pt-14 pb-6",
+        "flex-1 self-stretch m-8 grid grid-cols-12 gap-2 px-6 py-6",
         "bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur",
         "rounded-xl relative",
+        userOwnsAgent ? "pt-14": "",
       )}
     >
       {userOwnsAgent &&

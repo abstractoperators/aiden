@@ -16,10 +16,15 @@ import {
 } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "../ui/button";
-import TokenBalance from "./balance";
+import TokenBalance, { updateBalanceState } from "./balance";
 import { cn } from "@/lib/utils";
 import { LoginButton } from "../dynamic/login-button";
 import { Input } from "../ui/input";
+import { buyWithSei, getTokenInfo, sellForSei } from "@/lib/contracts/bonding";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { TransactionReceipt } from "viem";
+import { toast } from "@/hooks/use-toast";
+import TokenPrice, { updateTokenPriceState } from "./price";
 
 const amountStyle = [
   "!text-d3 pl-0 py-2 font-serif h-fit place-content-center border-none",
@@ -34,9 +39,58 @@ export default function SwapCard({
   const [ isBuying, setIsBuying ] = useState(true)
   const [ tokenAmount, setTokenAmount ] = useState<number | "">("")
   const [ seiAmount, setSeiAmount ] = useState<number | "">("")
+  const balanceState = useState("")
+  const isBalanceDisabledState = useState(false)
+  const priceState = useState(BigInt(0))
+  const isPriceDisabledState = useState(false)
+  const { primaryWallet } = useDynamicContext()
 
   const onClick = async () => {
+    if (!token || !seiAmount || !tokenAmount)
+      return
 
+    const tokenAddress = token.evmContractAddress
+    const receipt: TransactionReceipt = await (
+      isBuying ?
+      buyWithSei({
+        tokenAddress,
+        seiAmount,
+        primaryWallet,
+      }) :
+      sellForSei({
+        tokenAddress,
+        tokenAmount,
+        primaryWallet,
+      })
+    )
+
+    if (receipt.status === "success") {
+      toast({ title: "Swap Successful", })
+      updateBalanceState({
+        address: tokenAddress,
+        primaryWallet,
+        setBalance: balanceState[1],
+        setIsDisabled: isBalanceDisabledState[1],
+      })
+      updateTokenPriceState({
+        address: tokenAddress,
+        setPrice: priceState[1],
+        setIsDisabled: isPriceDisabledState[1],
+      })
+    } else {
+      const errorMessage = [
+        receipt.from,
+        receipt.to,
+        receipt.status,
+        receipt.transactionHash,
+        receipt.type,
+      ].join()
+      console.error(`Unable to complete swap:\n${errorMessage}`)
+      toast({
+        title: "Unable to Complete Swap!",
+        description: errorMessage,
+      })
+    }
   }
 
   if (token) {
@@ -45,15 +99,21 @@ export default function SwapCard({
       inAmount: seiAmount,
       setInAmount: setSeiAmount,
       setOutAmount: setTokenAmount,
-      // TODO: replace
-      convert: (x: number) => x * 2,
+      convert: async (x: number) => {
+        const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
+        // TODO: improved accuracy
+        return x * Number(price)
+      },
     } : {
       token,
       inAmount: tokenAmount,
       setInAmount: setTokenAmount,
       setOutAmount: setSeiAmount,
-      // TODO: replace
-      convert: (x: number) => x / 2,
+      convert: async (x: number) => {
+        const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
+        // TODO: improved accuracy
+        return x / Number(price)
+      },
     }
     const outProps = isBuying ? {
       token,
@@ -65,8 +125,17 @@ export default function SwapCard({
 
     return (
       <Card className="items-center gap-2">
-        <CardHeader className="self-start">
-          <TokenBalance address={token.evmContractAddress} />
+        <CardHeader className="flex flex-col items-start w-full">
+          <TokenBalance
+            address={token.evmContractAddress}
+            balanceState={balanceState}
+            isDisabledState={isBalanceDisabledState}
+          />
+          <TokenPrice
+            address={token.evmContractAddress}
+            priceState={priceState}
+            isDisabledState={isPriceDisabledState}
+          />
         </CardHeader>
         <CardContent
           className={cn(
@@ -90,7 +159,7 @@ export default function SwapCard({
         </CardContent>
         <CardFooter>
           <LoginButton className="w-full">
-            <Button className="w-full" onClick={onClick}>
+            <Button disabled={!seiAmount || !tokenAmount} className="w-full" onClick={onClick}>
               Swap
             </Button>
           </LoginButton>
@@ -120,7 +189,7 @@ function InCard({
   inAmount: number | "",
   setInAmount: Dispatch<SetStateAction<number | "">>,
   setOutAmount: Dispatch<SetStateAction<number | "">>,
-  convert: (x: number) => number,
+  convert: (x: number) => Promise<number>,
 }) {
   return (
     <BaseCard
@@ -129,10 +198,10 @@ function InCard({
     >
       <Input
         type="number"
-        onChange={e => {
+        onChange={async e => {
           const value = e.target.value.length ? e.target.valueAsNumber : ""
           setInAmount(value)
-          setOutAmount(value ? convert(value) : "")
+          setOutAmount(value ? await convert(value) : "")
         }}
         placeholder="0.0"
         value={inAmount}

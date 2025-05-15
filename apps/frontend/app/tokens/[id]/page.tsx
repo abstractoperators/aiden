@@ -1,10 +1,7 @@
 import { getToken } from "@/lib/api/token"
-import { BuyWithSei } from "@/components/token/launch";
-import { SellForSei } from "@/components/token/launch";
 import { isErrorResult } from "@/lib/api/result";
 import Link from "next/link";
-import TokenBalance from "@/components/token/balance";
-import TokenStats from "@/components/token/stats";
+import SwapCard from "@/components/token/swap";
 
 export default async function TokenPage({
   params,
@@ -35,14 +32,7 @@ export default async function TokenPage({
           {name}: ({ticker})
         </Link>
       </h1>
-      <TokenStats address={address} />
-      <BuyWithSei
-        tokenAddress={address}>
-      </BuyWithSei>
-      <SellForSei
-        tokenAddress={address}>
-      </SellForSei>
-      <TokenBalance address={address} />
+      <SwapCard token={token.data} />
     </main >
   )
 }
