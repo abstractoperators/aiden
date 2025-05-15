@@ -71,10 +71,12 @@ Developed by Abstract Operators and powered by Sei, AIDEN ([A]gent [I]ntegration
 
 ### Built With
 
-- [elizaOS](https://www.elizaos.ai/)
-- [prometheus](https://prometheus.io/docs/instrumenting/clientlibs/)
-- [celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html)
-- [redis](https://redis.io/cloud/)
+- [NextJS](https://nextjs.org/)
+- [Shadcn](https://ui.shadcn.com/)
+- [ElizaOS](https://www.elizaos.ai/)
+- [Prometheus](https://prometheus.io/docs/instrumenting/clientlibs/)
+- [Celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html)
+- [Redis](https://redis.io/cloud/)
 
 <!-- Core Features -->
 
@@ -95,6 +97,8 @@ Sensitive variables are stored in AWS Secrets Manager. Add sensitive variables, 
 
 ### Installation
 
+#### Node + pnpm
+
 Install `pnpm` and `node`
 
 ```bash
@@ -114,7 +118,7 @@ npm install -g pnpm@latest-10
 
 ```
 
-eliza
+#### ElizaOS
 
 ```bash
 git submodule update --init --recursive --depth 1
@@ -138,7 +142,7 @@ See the [open issues](https://github.com/abstractoperators/aiden/issues) for a l
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open source community such an amazing place to learn, be inspired, and create. Any contributions you make are **greatly appreciated**.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
@@ -176,4 +180,4 @@ Project Link: [https://github.com/abstractoperators/aiden](https://github.com/ab
 [license-shield]: https://img.shields.io/github/license/abstractoperators/aiden.svg?style=for-the-badge
 [license-url]: https://github.com/abstractoperators/aiden/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://www.linkedin.com/in/kentgang/
+[linkedin-url]: https://www.linkedin.com/company/abstractoperators/
