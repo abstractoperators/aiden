@@ -1,6 +1,7 @@
 aws-ecr-login:
 	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 008971649127.dkr.ecr.us-east-1.amazonaws.com
 
+
 ########### FRONTEND #########
 down-frontend:
 	docker compose -f docker-compose.yml down frontend
@@ -63,6 +64,7 @@ aws-ecr-push-celery: aws-ecr-login
 	docker tag celery:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/celery:latest
 
+
 ######### RUNTIME #########
 down-runtime:
 	docker compose -f docker-compose.yml down agent-runtime
@@ -78,6 +80,23 @@ aws-ecr-push-runtime: aws-ecr-login
 	docker tag agent-runtime:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/agent-runtime:latest
 
+
+######### MARKET DATA #########
+down-market-data:
+	docker compose -f docker-compose.yml down market-data
+build-market-data:
+	docker compose -f docker-compose.yml build market-data
+run-market-data: down-market-data build-market-data
+	docker compose -f docker-compose.yml up -d market-data
+run-market-data-nodocker:
+	cd apps/market-data && \
+	uv run uvicorn src.server:app --reload --host localhost --port 8004
+
+aws-ecr-push-market-data: aws-ecr-login
+	docker tag market-data:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/market-data:latest
+	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/market-data:latest
+
+
 ##### Prometheus ##### 
 down-prometheus:
 	docker compose -f docker-compose.yml down prometheus
@@ -88,7 +107,6 @@ run-prometheus: down-prometheus build-prometheus
 aws-ecr-push-prometheus: aws-ecr-login
 	docker tag prometheus:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
-
 
 
 pytest:

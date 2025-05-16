@@ -1,0 +1,16 @@
+FROM python:3.12-alpine
+
+COPY --from=ghcr.io/astral-sh/uv:0.4.29 /uv /uvx /bin/
+
+WORKDIR /market-data
+
+COPY . .
+
+# Locally, docker-compose loads .env
+# On AWS, task definition loads from secrets manager.
+
+RUN uv sync
+
+EXPOSE 80
+
+CMD ["uv", "run", "uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "80"]

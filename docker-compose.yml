@@ -43,6 +43,19 @@ services:
       - path: "./apps/runtime/.env"
         required: false
 
+  market-data:
+    build:
+      context: ./apps/market-data
+      dockerfile: ./Dockerfile.market-data
+    container_name: market-data
+    platform: linux/amd64
+    image: market-data:latest
+    ports:
+      - "8004:80"
+    env_file: 
+      - path: "./apps/market-data/.env"
+        required: false
+
   prometheus:
     build:
       context: ./apps/prometheus

@@ -1,0 +1,9 @@
+[project]
+name = "market-data"
+version = "0.1.0"
+description = "Market Data API for pre-bonded AIDN tokens"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]==0.115.12",
+]
