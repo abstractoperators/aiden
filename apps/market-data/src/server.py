@@ -1,7 +1,9 @@
 from fastapi import FastAPI
+from src.routers.udf import router as udf_router
 
 
-app = FastAPI()
+app = FastAPI(title='AIDN Market Data API')
+app.include_router(udf_router, prefix='')
 
 
 @app.get("/ping")
