@@ -1,10 +1,9 @@
 from io import StringIO
 from enum import Enum
-from typing import Any
 from uuid import UUID
 
 from dotenv import dotenv_values
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, TypeAdapter
+from pydantic import BaseModel, Field, SecretStr, TypeAdapter
 
 from .db.models import (
     Agent,
@@ -54,23 +53,6 @@ class ElizaMessage(BaseModel):
     content: ElizaContent = Field(
         description="Content of the message, including text and potentially other fields"
     )
-
-
-class ElizaCharacterJson(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    name: str
-    clients: list[str]
-    modelProvider: str  # TODO enum
-    settings: dict[str, Any]
-    plugins: list[str]
-    bio: list[str]
-    lore: list[str]
-    knowledge: list[str]
-    # messageExamples: list[list[dict[ # TODO
-    postExamples: list[str]
-    topics: list[str]
-    style: dict[str, Any]
-    adjectives: list[str]
 
 
 # Mirror of Agent model in db.models, but with base model for runtime and token instead of their table types.
