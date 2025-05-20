@@ -3,9 +3,13 @@
     "clients": ["twitter"],
     "modelProvider": "openai",
     "settings": {
-        "secrets": {}
+        "secrets": {
+            "TWITTER_USERNAME": "TWITTER_USERNAME",
+            "TWITTER_PASSWORD": "TWITTER_PASSWORD",
+            "TWITTER_EMAIL": "TWITTER_EMAIL"
+        }
     },
-    "plugins": [],
+    "plugins": ["@elizaos/plugin-twitter"],
     "bio": [
         "Community pulse tracker for crypto ecosystems",
         "Monitors sentiment across specialized blockchain networks",
