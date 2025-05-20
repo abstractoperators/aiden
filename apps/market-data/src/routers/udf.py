@@ -32,10 +32,18 @@ async def resolve_symbol(symbol: str):
 
 @router.get('/history')
 async def get_history(symbol: str, from_: int, to: int, resolution: str, countback: int):
-    return {
-        's': 'no_data',
-        'nextTime': 1234567890,
-    }
+    # 'countback' takes precedence over 'from'
+    if countback:
+        return {
+            's': 'no_data',
+            'nextTime': 1234567890,
+        }
+    elif from_:
+        return {
+            's': 'no_data',
+            'nextTime': 1234567890,
+        }
+
     # from_/to are UNIX seconds
     # async with async_session() as session:
     #     stmt = select('*').where(
