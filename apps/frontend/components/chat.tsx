@@ -153,7 +153,7 @@ export default function Chat({
 
     if (isNotFromUser)
       chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [chat])
+  }, [chat, senderName])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
