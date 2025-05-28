@@ -6,8 +6,9 @@ from sqlalchemy import pool
 from sqlmodel import SQLModel
 
 from alembic import context
+import alembic_postgresql_enum
 
-from src.db.models import * # noqa
+from src.db.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -34,28 +35,28 @@ target_metadata = SQLModel.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-db_password = os.getenv("POSTGRES_DB_PASSWORD")
-db_host = os.getenv("POSTGRES_DB_HOST")
+username = os.getenv("POSTGRES_USER")
+password = os.getenv("POSTGRES_PASSWORD")
+host = os.getenv("POSTGRES_HOST")
+port = os.getenv("POSTGRES_PORT")
+database = os.getenv("POSTGRES_DATABASE") or username
 is_test = os.getenv("ENV") == "test"
 
-if not is_test and (db_password and db_host):
+if not is_test and password and host:
     SQLALCHEMY_DATABASE_URL = URL.create(
-        drivername="postgresql+psycopg2",
-        username="postgres",
-        password=db_password,
-        host=db_host,
-        database="postgres",
+        drivername="postgresql+psycopg",
+        username=username or "postgres",
+        password=password,
+        host=host,
+        port=int(port) if port else 5432,
+        database=database or "postgres",
     )
-    connect_args = {}
 
     config.set_main_option(
-        "sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL).replace("***", db_password)
+        "sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL).replace("***", password)
     )
-else:
-    SQLALCHEMY_DATABASE_URL = URL.create(drivername="sqlite", database="./test.db")
-
-    connect_args = {"check_same_thread": False}
-    config.set_main_option("sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL))
+elif not is_test:
+    raise ValueError("Unknown environment for db. See db/setup.py")
 
 
 def run_migrations_offline() -> None:

@@ -96,6 +96,10 @@ aws-ecr-push-market-data: aws-ecr-login
 	docker tag market-data:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/market-data:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/market-data:latest
 
+down-market-data-db:
+	docker compose -f docker-compose.yml down market-data-db
+run-market-data-db: down-market-data-db
+	docker compose -f docker-compose.yml up -d market-data-db
 
 ##### Prometheus ##### 
 down-prometheus:

@@ -3,35 +3,31 @@ import logging
 import os
 
 from sqlalchemy import URL
-from sqlmodel import create_engine, Session as SQLModelSession, SQLModel
+from sqlmodel import create_engine, Session as SQLModelSession, text
 
 from src import logger
 
 
-db_password = os.getenv("POSTGRES_DB_PASSWORD")
-db_host = os.getenv("POSTGRES_DB_HOST")
-env = os.getenv("ENV")
-if (db_password and db_host) and (env == "staging" or env == "prod"):
+username = os.getenv("POSTGRES_USER")
+password = os.getenv("POSTGRES_PASSWORD")
+host = os.getenv("POSTGRES_HOST")
+port = os.getenv("POSTGRES_PORT")
+database = os.getenv("POSTGRES_DATABASE") or username
+if password and host:
     SQLALCHEMY_DATABASE_URL = URL.create(
-        drivername="postgresql+psycopg2",
-        username="postgres",
-        password=db_password,
-        host=db_host,
-        database="postgres",
+        drivername="postgresql+psycopg",
+        username=username or "postgres",
+        password=password,
+        host=host,
+        port=int(port) if port else 5432,
+        database=database or "postgres",
     )
-    connect_args = {}
-elif env == "dev":
-    SQLALCHEMY_DATABASE_URL = URL.create(drivername="sqlite", database="./dev.db")
-    connect_args = {"check_same_thread": False}
-elif env == "test":
-    SQLALCHEMY_DATABASE_URL = URL.create(drivername="sqlite", database="./test.db")
-    connect_args = {"check_same_thread": False}
+    logger.info(f"SQLALCHEMY_DATABASE_URL {SQLALCHEMY_DATABASE_URL}")
 else:
     raise ValueError("Unknown environment for db. See db/setup.py")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args=connect_args,
     pool_pre_ping=True,
 )
 
@@ -47,25 +43,25 @@ def Session():
 
 def init_db():
     """
-    Initializes database tables
-    If sqlite, then it drops and creates tables
-    If postgres, then it runs alembic migrations
+    Initializes database tables and runs alembic migrations
     """
-    logger.info("Initializing database")
-    if SQLALCHEMY_DATABASE_URL.drivername == "sqlite":
-        logger.info("Using sqlite, dropping and creating tables")
-        with Session() as session:
-            logger.info(f"Dropping and creating tables for sqlite. {SQLModel.metadata}")
-            SQLModel.metadata.drop_all(session.get_bind())
-            SQLModel.metadata.create_all(session.get_bind())
-    else:
-        logger.info("Using postgres, running alembic migrations")
-        from alembic import command
-        from alembic.config import Config
+    logger.info("Initializing database, running alembic migrations")
+    from alembic import command
+    from alembic.config import Config
 
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        alembic_cfg = Config(os.path.join(dir_path, "../../alembic.ini"))
-        command.upgrade(alembic_cfg, "head")
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    alembic_cfg = Config(os.path.join(dir_path, "../../alembic.ini"))
+    command.upgrade(alembic_cfg, "head")
 
-        logging.getLogger().setLevel(logging.INFO)
-        logging.getLogger("alembic").propagate = True
+    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger("alembic").propagate = True
+
+
+def test_db_connection() -> bool:
+    with Session() as session:
+        try:
+            session.exec(text("SELECT 1"))
+            return True
+        except Exception as e:
+            logger.error(e)
+            return False

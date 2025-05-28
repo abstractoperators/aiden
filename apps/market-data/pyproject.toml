@@ -5,7 +5,9 @@ description = "Market Data API for pre-bonded AIDN tokens"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "alembic==1.15.2",
-    "fastapi[standard]==0.115.12",
+    "alembic>=1.15.2,<1.16.0",
+    "alembic-postgresql-enum>=1.7.0,<1.8.0",
+    "fastapi[standard]>=0.115.12,<0.116.0",
+    "psycopg[binary]>=3.2.9,<3.3.0",
     "sqlmodel==0.0.24",
 ]
