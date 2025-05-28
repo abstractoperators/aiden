@@ -1,4 +1,5 @@
 from decimal import Decimal
+from time import time
 from typing import Sequence
 
 from fastapi import APIRouter, HTTPException
@@ -26,6 +27,11 @@ async def get_config() -> dict[str, bool | list[str]]:
         'supports_search': True,
         'supports_group_request': False,
     }
+
+
+@router.get('/time')
+async def get_time() -> int:
+    return int(time())
 
 
 @router.get('/symbols')
