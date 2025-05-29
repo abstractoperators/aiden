@@ -89,6 +89,14 @@ aws-ecr-push-prometheus: aws-ecr-login
 	docker tag prometheus:latest 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 	docker push 008971649127.dkr.ecr.us-east-1.amazonaws.com/aiden/prometheus:latest
 
+#### Local PG ####
+down-pg:
+	docker compose -f docker-compose.yml down postgres
+build-pg:
+	docker compose -f docker-compose.yml build postgres
+run-pg: down-pg build-pg
+	docker compose -f docker-compose.yml up -d postgres
+
 
 
 pytest:
