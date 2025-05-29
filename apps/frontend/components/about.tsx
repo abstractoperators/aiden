@@ -13,7 +13,7 @@ export default function About() {
           Abstract Operators
         </Link> and powered by <Link className={linkClassName} href="https://www.sei.io/" target="_blank">
           Sei
-        </Link>, AIDEN ([A]gent [I]ntegration & [D]eployment [EN]gine) is an AI Agent Platform
+        </Link>, AIDN ([A]gent [I]ntegration & [D]eployment E[N]gine) is an AI Agent Platform
         for users to create, integrate, interact with, and deploy a diverse ecosystem
         of High Performance AI Agents with no-code/low-code UI/UX on the Sei blockchain - 
         a world scale EVM Layer-1 blockchain.

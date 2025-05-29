@@ -29,7 +29,7 @@ export default function ThemeImage({
 
   // Render children without ThemeProvider during SSR
   if (!mounted) {
-    return "AIDEN"
+    return "AIDN"
   }
 
   const src = currentTheme === "light" ? lightSrc : darkSrc;

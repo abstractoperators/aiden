@@ -17,7 +17,7 @@ enum headerStyles {
 
 interface variantOutputs {
   headerStyle: headerStyles,
-  aidenImage?: ReactElement,
+  aidnImage?: ReactElement,
 }
 interface variantProp {
   variant?: "landing" | "main",
@@ -32,18 +32,18 @@ function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
     default:
       return {
         headerStyle: headerStyles.main,
-        aidenImage: <ThemeImage
+        aidnImage: <ThemeImage
           className="w-6 transition duration-300 hover:invert-[.7]"
           lightSrc={LightGhost}
           darkSrc={DarkGhost}
-          alt="AIDEN"
+          alt="AIDN"
         />,
       }
   }
 }
 
 export default function Header({ variant }: variantProp) {
-  const { headerStyle, aidenImage, } = getVariantOutputs(variant)
+  const { headerStyle, aidnImage, } = getVariantOutputs(variant)
   const isLoggedIn = useIsLoggedIn();
 
   return (
@@ -55,7 +55,7 @@ export default function Header({ variant }: variantProp) {
           href="/"
           className="mr-6 flex items-center space-x-2"
         >
-          {aidenImage}
+          {aidnImage}
         </Link>
         <nav className="flex items-center justify-between space-x-4 font-medium">
           <Link
