@@ -124,7 +124,7 @@ if env == "dev" or env == "test":
 elif env == "staging":
     allowed_origins = ["https://staigen.space"]
 elif env == "prod":
-    allowed_origins = ["https://aiden.space"]
+    allowed_origins = ["https://aidn.fun"]
 
 app.add_middleware(
     CORSMiddleware,

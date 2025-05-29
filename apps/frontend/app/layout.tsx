@@ -19,8 +19,8 @@ const aldrich = Aldrich({
 });
 
 export const metadata: Metadata = {
-  title: "AIDEN - Web3 Agents",
-  description: "AIDEN is a Web3 AI Agent platform powered by SEI that connects you to a community of powerful agents and creators.",
+  title: "AIDN - Web3 Agents",
+  description: "AIDN is a Web3 AI Agent platform powered by SEI that connects you to a community of powerful agents and creators.",
 }
 
 export default function RootLayout({
