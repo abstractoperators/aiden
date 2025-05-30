@@ -41,6 +41,7 @@ jobs:
                   make aws-ecr-push-frontend-prod
 
     force-redeployment:
+        needs: build-and-push-frontend
         runs-on: ubuntu-latest
         steps:
             - name: Configure aws credentials
