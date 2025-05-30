@@ -50,7 +50,7 @@ export default function NewsletterSignup(props: ButtonProps) {
             utm_source: "aiden",
             utm_medium: "landingPage",
             utm_campaign: "feb_2025_pre_beta_campaign",
-            referring_site: "aiden.space",
+            referring_site: "aidn.fun",
             tier: "free",
           }),
         },

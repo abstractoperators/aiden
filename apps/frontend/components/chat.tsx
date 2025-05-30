@@ -73,7 +73,7 @@ export default function Chat({
           switch (startResult.code) {
             case 400:
               failureToast(
-                "AIDEN overloaded! Please contact the AIDEN support team."
+                "AIDN overloaded! Please contact the support team."
               )
               return
             case 401:

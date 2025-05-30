@@ -14,7 +14,7 @@ scrape_configs:
   - job_name: "api"
     scrape_interval: 5s
     static_configs:
-      - targets: ["api.aiden.space"]
+      - targets: ["api.aidn.fun"]
     basic_auth:
       username: "prometheus"
       password: "$PROMETHEUS_BASIC_AUTH"
