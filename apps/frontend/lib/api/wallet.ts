@@ -71,8 +71,9 @@ async function updateOrCreateWallet(
   }
 
   const apiWallet = await getWallet(id)
-  if (isErrorResult(apiWallet))
-    return apiWallet
+  if (isErrorResult(apiWallet)) {
+    return isNotFound(apiWallet) ? createWallet(wallet) : apiWallet
+  }
   
   return updateWallet(
     apiWallet.data.id,

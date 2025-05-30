@@ -89,6 +89,12 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                     ownerId: validUser.id,
                   }
                 )
+              } else {
+                console.debug(`User ${validUser.id} has no primary wallet!`)
+                toast({
+                  title: "You don't have a wallet!",
+                  description: "Some functionality might not be available for you; please add a wallet to your account to enjoy the full AIDN experience.",
+                })
               }
             } else { toast({
               title: "Login error!",
@@ -157,10 +163,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             // const user = session.user
 
             if (isErrorResult(user)) {
-              toast({
-                title: "Unable to add wallet to AIDN user",
-                description: user.message,
-              })
+              console.error(`Unable to add wallet to AIDN user: ${user.message}. If user is logging in, can probably disregard this.`)
               return
             }
 
