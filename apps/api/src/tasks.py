@@ -464,6 +464,7 @@ def delete_runtime(
                 TargetGroupArn=runtime.target_group_arn,
             )
     except Exception:
+        print(Exception)
         pass
 
     # Delete the runtime in db
