@@ -33,6 +33,7 @@
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-popover": "^1.1.7",
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-separator": "^1.1.2",
@@ -43,14 +44,17 @@
     "@tanstack/react-table": "^8.21.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "ethers": "^6.13.5",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.474.0",
-    "next": "15.2.3",
+    "next": "15.3.1",
     "next-auth": "5.0.0-beta.25",
     "next-themes": "^0.4.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "react-hook-form": "^7.54.2",
+    "react-textarea-autosize": "^8.5.9",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.23.1",
@@ -68,5 +72,5 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af"
+  "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39"
 }

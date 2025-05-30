@@ -12,10 +12,10 @@ from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
 from src.auth import (  # decode_bearer_token,
-    access_list,
+    check_scopes,
     get_user_from_token,
     get_wallets_from_token,
-    valid_jwt,
+    parse_jwt,
 )
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -46,13 +46,11 @@ from src.models import (
     AgentPublic,
     AWSConfig,
     TaskStatus,
-    TokenCreationRequest,
     UserPublic,
     agent_to_agent_public,
     user_to_user_public,
 )
 from src.setup import test_db_connection
-from src.token_deployment import deploy_token
 from src.utils import obj_or_404
 
 # TODO: Change a ton of endpoints to not require information that is already in the JWT token.
@@ -126,7 +124,7 @@ if env == "dev" or env == "test":
 elif env == "staging":
     allowed_origins = ["https://staigen.space"]
 elif env == "prod":
-    allowed_origins = ["https://aiden.space"]
+    allowed_origins = ["https://aidn.fun"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -183,9 +181,9 @@ async def get_agents(
     with Session() as session:
         if user_dynamic_id:
             user: User = obj_or_404(
-                session,
                 crud.get_user_by_dynamic_id(
-                    user_dynamic_id=user_dynamic_id,
+                    session,
+                    dynamic_id=user_dynamic_id,
                 ),
                 User,
             )
@@ -244,33 +242,14 @@ async def update_agent(
         return agent_to_agent_public(agent)
 
 
-@app.post("/tokens")
-async def deploy_token_api(
-    token_request: TokenCreationRequest,
-    user: User = Security(get_user_from_token),  # noqa
-    # TODO: Access lsit from jwt
-) -> Token:
+@app.post("/tokens/save")
+async def save_token(token_base: TokenBase) -> Token:
     """
-    Deploys a token smart contract to the block chain.
-    Returns the token object.
+    Saves an already deployed token to db.
+    Returns the token object
     """
-    # Validate inputs
-    name = token_request.name
-    ticker = token_request.ticker
-
-    # Deploy the token
-    contract_address, contract_abi = await deploy_token(name, ticker)
-
     with Session() as session:
-        token = crud.create_token(
-            session,
-            TokenBase(
-                name=name,
-                ticker=ticker,
-                evm_contract_address=contract_address,
-                abi=contract_abi,
-            ),
-        )
+        token = crud.create_token(session, token_base)
 
     return token
 
@@ -303,7 +282,7 @@ async def get_token(token_id: UUID) -> Token:
 # TODO: Admin page for creating this.
 @app.post(
     "/runtimes",
-    dependencies=[Security(access_list("admin"))],
+    dependencies=[Security(check_scopes("admin"))],
 )
 def create_runtime() -> RuntimeCreateTask:
     """
@@ -531,13 +510,17 @@ def stop_agent(
 
         runtime_id = agent.runtime_id
         if not runtime_id:
-            raise HTTPException(status_code=404, detail="Agent is not running")
+            raise HTTPException(status_code=404, detail="Agent has no runtime")
 
         runtime: Runtime | None = crud.get_runtime(session, runtime_id)
         if not runtime:
             raise HTTPException(status_code=404, detail="Runtime not found")
 
-        stop_endpoint = f"{runtime.url}/stop_agent/{agent_id}"
+        eliza_agent_id = agent.eliza_agent_id
+        if not eliza_agent_id:
+            raise HTTPException(status_code=404, detail="Agent does not have an Eliza ID")
+
+        stop_endpoint = f"{runtime.url}/controller/character/stop"
         resp = requests.post(stop_endpoint, timeout=3)
         resp.raise_for_status()
         stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
@@ -672,7 +655,7 @@ async def delete_wallet(
 @app.post("/users")
 async def create_user(
     user: UserBase,
-    decoded_token: dict = Security(valid_jwt),
+    decoded_token: dict = Security(parse_jwt),
 ) -> User:
     """
     Creates a new user in the database, and returns the full user.
@@ -776,7 +759,7 @@ async def delete_user(
 
 @app.patch(
     "/runtimes/{runtime_id}",
-    dependencies=[Depends(access_list("admin"))],
+    dependencies=[Depends(check_scopes("admin"))],
 )
 def update_runtime(
     runtime_id: UUID,
@@ -827,7 +810,7 @@ def update_runtime(
 
 @app.delete(
     "/runtimes/{runtime_id}",
-    dependencies=[Depends(access_list("admin"))],
+    dependencies=[Depends(check_scopes("admin"))],
 )
 def delete_runtime(
     runtime_id: UUID,

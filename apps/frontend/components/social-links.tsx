@@ -6,7 +6,7 @@ import Image from "next/image";
 
 const socials = [
   {
-    href: "https://x.com/aiden_agents",
+    href: "https://x.com/aidn_fun",
     src: XIcon,
     alt: "X",
   },

@@ -4,6 +4,7 @@ import { Aldrich, Inter } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import DynamicProvider from "@/components/dynamic/provider"
+import ScrollToTopButton from "@/components/ui/scroll-to-top-button"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,8 +19,8 @@ const aldrich = Aldrich({
 });
 
 export const metadata: Metadata = {
-  title: "AIDEN - Web3 Agents",
-  description: "AIDEN is a Web3 AI Agent platform powered by SEI that connects you to a community of powerful agents and creators.",
+  title: "AIDN - Web3 Agents",
+  description: "AIDN is a Web3 AI Agent platform powered by SEI that connects you to a community of powerful agents and creators.",
 }
 
 export default function RootLayout({
@@ -58,6 +59,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <ScrollToTopButton />
             <Toaster />
           </ThemeProvider>
         </DynamicProvider>

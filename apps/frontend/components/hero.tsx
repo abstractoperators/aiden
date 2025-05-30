@@ -16,10 +16,10 @@ export default function Hero() {
           className="w-64"
           lightSrc={LightLogo}
           darkSrc={DarkLogo}
-          alt="AIDEN"
+          alt="AIDN"
         />
         <h1 className="tracking-widest font-bold sm:text-d3 md:text-d2 lg:text-d1">
-          AIDEN
+          AIDN
         </h1>
       </div>
       <div className="flex flex-col items-center justify-center space-y-8">

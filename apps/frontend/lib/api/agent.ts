@@ -8,7 +8,7 @@ import {
   updateResource,
 } from "./common"
 import { getRuntime, Runtime } from "./runtime"
-import { Token } from "./token"
+import { TokenBase } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
 import { setTimeout } from "node:timers/promises"
@@ -53,7 +53,7 @@ type AgentUpdate = Partial<AgentBase>
 interface Agent {
   id: string
   runtime?: Runtime | null
-  token?: Token | null
+  token?: TokenBase | null
   envFile: { key: string, value: string | null }[]
   elizaAgentId?: string | null
   ownerId: string
@@ -204,5 +204,4 @@ export {
 export type {
   ClientAgent,
   Agent,
-  Token,
 }
