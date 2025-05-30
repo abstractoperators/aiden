@@ -62,7 +62,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             })
             .then((res) => {
               if (res.ok) {
-                console.log('LOGGED IN', res);
+                console.debug('LOGGED IN', res);
                 // Handle success - maybe redirect to the home page or user dashboard
               } else {
                 // Handle any errors - maybe show an error message to the user
