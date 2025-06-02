@@ -48,7 +48,6 @@ COPY --from=builder /app/package.json ./eliza
 COPY --from=builder /app/pnpm-workspace.yaml ./eliza
 COPY --from=builder /app/.npmrc ./eliza
 COPY --from=builder /app/turbo.json ./eliza
-COPY --from=builder /app/tsconfig.json ./eliza
 COPY --from=builder /app/node_modules ./eliza/node_modules
 COPY --from=builder /app/agent ./eliza/agent
 COPY --from=builder /app/client ./eliza/client
