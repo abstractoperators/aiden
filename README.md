@@ -69,6 +69,18 @@ Developed by Abstract Operators and powered by Sei, AIDEN ([A]gent [I]ntegration
 
 <!--[![Product Name Screen Shot][product-screenshot]](https://example.com)-->
 
+### Project Overview 
+
+ - **apps/api**- This part of the directory is basically a FastAPI component for the AIDEN protocol deployed through a dockerfile serving API.
+
+  - **apps/frontend**- This part of the directory is the frontend UI component for AIDEN.
+
+  - **apps/market-data**- This part of the diretory basically contains all components regarding marketdata API that is built on SQLALCHEMY, FASTAPI.(THIS NEEDS POSTGRES UNLESS ANY OTHER DB SUPPORTS DATE_TRUNC funtion.)
+
+  - **apps/prometheus**- This part of the directory allows Aiden to be exposed such that it can be monitored and analysed via Prometheus.
+
+  - **apps/runtime**- This part of the directory is basically a general agentic runtime Running on ECS. It retreives agent, starts it and allows multiple tasks to be performed. 
+
 ### Built With
 
 - [NextJS](https://nextjs.org/)
