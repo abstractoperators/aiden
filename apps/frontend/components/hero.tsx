@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils"
 
 export default function Hero() {
   return (
-    <section id="hero" className="container flex flex-col items-center justify-center space-y-8 text-center py-32">
-      <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+    <section id="hero" className="container flex flex-col items-center justify-center gap-8 text-center py-32">
+      <div className="flex-1 flex flex-col items-center justify-center gap-8">
         <ThemeImage
           priority={true}
           className="w-64"
@@ -22,7 +22,7 @@ export default function Hero() {
           AIDN
         </h1>
       </div>
-      <div className="flex flex-col items-center justify-center space-y-8">
+      <div className="flex flex-col items-center justify-center gap-8">
         <h2 className="tracking-wide sm:text-d4 md:text-d3 lg:text-d2">
           High Performance Onchain AI Agents
         </h2>
