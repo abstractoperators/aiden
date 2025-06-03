@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 const scopedRoutes: {
   path: string,
@@ -15,6 +15,10 @@ const get403Message = () => {
     { error: "Forbidden: You don't have access to this page!" },
     { status: 403 },
   )
+}
+
+const temporaryCheckBackSoon = (req: NextRequest) => {
+  return NextResponse.redirect(new URL('/signup', req.url))
 }
 
 export default auth((req) => {
@@ -56,7 +60,8 @@ export default auth((req) => {
           pathname,
           "without any scopes!",
         )
-        return get403Message()
+        return temporaryCheckBackSoon(req)
+        // return get403Message()
       } else {
         // Check if the user has at least one required scope
         const scopes = auth.user.scopes
@@ -66,7 +71,8 @@ export default auth((req) => {
 
         if (!hasScope) {
           console.debug("User does not have any scope to access route", pathname)
-          return get403Message()
+          return temporaryCheckBackSoon(req)
+          // return get403Message()
         }
       }
     }
