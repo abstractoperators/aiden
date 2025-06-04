@@ -96,10 +96,13 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                   description: "Some functionality might not be available for you; please add a wallet to your account to enjoy the full AIDN experience.",
                 })
               }
-            } else { toast({
-              title: "Login error!",
-              description: userResult.message,
-            })}
+            } else {
+              console.error(`Login error ${userResult.message}`)
+              toast({
+                title: "Login error!",
+                description: userResult.message,
+              })
+            }
 
             router.refresh()
           },
@@ -123,10 +126,14 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
                 chain,
                 ownerId: apiUser.data.id,
               })
-            } else { toast({
-              title: "User not found",
-              description: `Unable to find AIDN user matching user ID ${user.userId} and attach wallet ${address} on chain ${chain}.`,
-            })}
+            } else {
+              const description = `Unable to find AIDN user matching user ID ${user.userId} and attach wallet ${address} on chain ${chain}.`
+              console.error(`User not found ${description}`)
+              toast({
+                title: "User not found",
+                description,
+              })
+            }
           },
           onLogout: () => {
             handleLogout();
@@ -137,11 +144,10 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             const apiUser = await getUser({ dynamicId: user.userId })
             if (isSuccessResult<User>(apiUser)) {
               updateUser(apiUser.data.id, await dynamicToApiUser(user))
-            } else { toast({
-              title: "User not found",
-              description: "Unable to update AIDN user profile.",
-            })}
-            
+            } else {
+              const description = "Unable to update AIDN user profile."
+              console.error(`User not found ${description}`)
+            }
           },
           onWalletAdded: async ({ wallet, userWallets }) => {
             const user: Result<User> = await Promise.any(userWallets.map(dynamicWallet => (
@@ -186,10 +192,13 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
 
             if (isSuccessResult<Wallet>(walletResult)) {
               deleteWallet(walletResult.data.id)
-            } else { toast({ // do nothing if it doesn't exist.
-              title: "Unable to Remove Wallet",
-              description: walletResult.message,
-            })}
+            } else {
+              console.error(`Unable to Remove Wallet ${walletResult.message}`)
+              toast({ // do nothing if it doesn't exist.
+                title: "Unable to Remove Wallet",
+                description: walletResult.message,
+              })
+            }
           },
           // NOTE: by these implementations of onWalletAdded and onWalletRemoved,
           // wallet transfers in Dynamic will manifest as destruction and recreation of the same wallet in the API.
