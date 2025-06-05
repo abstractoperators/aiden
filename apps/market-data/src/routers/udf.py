@@ -13,10 +13,9 @@ router = APIRouter()
 supported_resolutions = {
     '1': 'minute',
     '60': 'hour',
-    'D': 'day',
     '1D': 'day',
-    'W': 'week',
-    'M': 'month',
+    '1W': 'week',
+    '1M': 'month',
     '3M': 'quarter',
     '12M': 'year',
 }
