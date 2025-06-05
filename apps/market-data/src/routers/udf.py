@@ -14,6 +14,7 @@ supported_resolutions = {
     '1': 'minute',
     '60': 'hour',
     'D': 'day',
+    '1D': 'day',
     'W': 'week',
     'M': 'month',
     '3M': 'quarter',
