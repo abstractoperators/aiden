@@ -30,7 +30,7 @@ export default function TokenChart({
 }) {
   const [isScriptReady, setIsScriptReady] = useState(false);
   const widgetProps: Partial<ChartingLibraryWidgetOptions> = {
-    symbol: "DNCE", // token?.ticker,
+    symbol: token?.ticker,
     ...defaultWidgetProps,
   }
 
