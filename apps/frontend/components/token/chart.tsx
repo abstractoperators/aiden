@@ -30,7 +30,7 @@ export default function TokenChart({
 }) {
   const [isScriptReady, setIsScriptReady] = useState(false);
   const widgetProps: Partial<ChartingLibraryWidgetOptions> = {
-    symbol: "AAPL", // token?.ticker,
+    symbol: "DNCE", // token?.ticker,
     ...defaultWidgetProps,
   }
 
@@ -57,7 +57,7 @@ function TVChartContainer(props: Partial<ChartingLibraryWidgetOptions>) {
 			symbol: props.symbol,
 			// BEWARE: no trailing slash is expected in feed URL
 			datafeed: new (window as any).Datafeeds.UDFCompatibleDatafeed(
-				"https://demo_feed.tradingview.com",
+				process.env.NEXT_PUBLIC_MARKET_DATA_URL,
 				undefined,
 				{
 					maxResponseLength: 1000,
