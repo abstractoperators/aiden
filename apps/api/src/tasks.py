@@ -433,35 +433,39 @@ def delete_runtime(
 ) -> None:
     ecs_client = get_role_session().client("ecs")
     elbv2_client = get_role_session().client("elbv2")
-    with Session() as session:
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-        if runtime is None:
-            raise ValueError(f"Runtime {runtime_id} does not exist")
-        aws_config = get_aws_config(runtime.service_no)
+    try:
+        with Session() as session:
+            runtime: Runtime | None = crud.get_runtime(session, runtime_id)
+            if runtime is None:
+                raise ValueError(f"Runtime {runtime_id} does not exist")
+            aws_config = get_aws_config(runtime.service_no)
 
-    if runtime.service_arn:
-        ecs_client.delete_service(
-            cluster=aws_config.cluster,
-            service=aws_config.service_name,
-            force=True,
-        )
-        waiter = ecs_client.get_waiter("services_inactive")
-        waiter.wait(
-            cluster=aws_config.cluster,
-            services=[aws_config.service_name],
-        )
+        if runtime.service_arn:
+            ecs_client.delete_service(
+                cluster=aws_config.cluster,
+                service=aws_config.service_name,
+                force=True,
+            )
+            waiter = ecs_client.get_waiter("services_inactive")
+            waiter.wait(
+                cluster=aws_config.cluster,
+                services=[aws_config.service_name],
+            )
 
-    # Delete the listener rules
-    if runtime.http_listener_rule_arn:
-        elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
-    if runtime.https_listener_rule_arn:
-        elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
+        # Delete the listener rules
+        if runtime.http_listener_rule_arn:
+            elbv2_client.delete_rule(RuleArn=runtime.http_listener_rule_arn)
+        if runtime.https_listener_rule_arn:
+            elbv2_client.delete_rule(RuleArn=runtime.https_listener_rule_arn)
 
-    # Delete the target group
-    if runtime.target_group_arn:
-        elbv2_client.delete_target_group(
-            TargetGroupArn=runtime.target_group_arn,
-        )
+        # Delete the target group
+        if runtime.target_group_arn:
+            elbv2_client.delete_target_group(
+                TargetGroupArn=runtime.target_group_arn,
+            )
+    except Exception:
+        print(Exception)
+        pass
 
     # Delete the runtime in db
     with Session() as session:

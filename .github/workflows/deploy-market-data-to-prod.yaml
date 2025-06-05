@@ -1,0 +1,25 @@
+run-name: Deploy Market Data to Prod
+name: Deploy Market Data to Prod
+
+on:
+    workflow_dispatch:
+
+jobs:
+    force-redeployment:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Configure aws credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+              role-to-assume: arn:aws:iam::008971649127:role/AIDEN_GHA_ECS 
+              aws-region: us-east-1
+
+        - name: Force redeployment
+          run: |
+            aws ecs update-service --cluster AidenStaging --service aiden-market-data --force-new-deployment
+
+# Required for GitHub's OIDC provider 
+# https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#oidc
+permissions:
+    id-token: write
+    contents: read

@@ -47,7 +47,7 @@ function LoginButton({
       )}
       onClick={() => setShowAuthFlow(true)}
     >
-      Login
+      Register Now
     </Button>
   )
 }

@@ -73,7 +73,7 @@ export default function Chat({
           switch (startResult.code) {
             case 400:
               failureToast(
-                "AIDEN overloaded! Please contact the AIDEN support team."
+                "AIDN overloaded! Please contact the support team."
               )
               return
             case 401:
@@ -153,7 +153,7 @@ export default function Chat({
 
     if (isNotFromUser)
       chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [chat])
+  }, [chat, senderName])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
