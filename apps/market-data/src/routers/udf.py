@@ -5,7 +5,13 @@ from typing import Sequence
 from fastapi import APIRouter, HTTPException
 
 from src.db import crud, Session
-from src.db.models import TokenTimeseriesBase, TokenTimeseries, TokenSymbol, TokenSymbolBase
+from src.db.models import (
+    TokenSymbolType,
+    TokenTimeseriesBase,
+    TokenTimeseries,
+    TokenSymbol,
+    TokenSymbolBase,
+)
 from src.routers.utils import obj_or_404
 
 router = APIRouter()
@@ -48,6 +54,30 @@ async def resolve_symbol(symbol: str) -> TokenSymbol:
 async def insert_token(token_info: TokenSymbolBase) -> TokenSymbol:
     with Session() as session:
         return crud.create_token_symbol(session, token_info)
+
+
+@router.get('/search')
+async def search_symbol(
+    query: str,
+    limit: int,
+    exchange: str,
+    type_: str=TokenSymbolType.CRYPTO,
+) -> Sequence[dict[str, str]]:
+    def helper(symbol: TokenSymbol):
+        ret = symbol.model_dump(include={'description', 'exchange', 'name', 'ticker', 'type'})
+        ret['symbol'] = ret['name']
+        del[ret['name']]
+        return ret
+
+    with Session() as session:
+        symbols = crud.search_token_symbols(
+            session,
+            query,
+            type_ or TokenSymbolType.CRYPTO,
+            exchange or 'AIDN',
+            limit,
+        )
+        return [helper(symbol) for symbol in symbols]
 
 
 @router.get('/history')
