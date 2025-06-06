@@ -49,7 +49,7 @@ export default function DynamicProvider({ children }: React.PropsWithChildren) {
             if (csrfToken === undefined || authToken === undefined)
               throw Error("Csrf Token or Auth Token undefined")
 
-            fetch("/api/auth/callback/credentials", {
+            await fetch("/api/auth/callback/credentials", {
               method: "POST",
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
