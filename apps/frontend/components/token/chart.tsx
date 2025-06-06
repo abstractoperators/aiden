@@ -58,9 +58,9 @@ function TVChartContainer(props: Partial<ChartingLibraryWidgetOptions>) {
 			// BEWARE: no trailing slash is expected in feed URL
 			datafeed: new (window as any).Datafeeds.UDFCompatibleDatafeed(
 				process.env.NEXT_PUBLIC_MARKET_DATA_URL,
-				undefined,
+				process.env.NEXT_PUBLIC_MARKET_DATA_UPDATE_FREQUENCY,
 				{
-					maxResponseLength: 1000,
+					maxResponseLength: process.env.NEXT_PUBLIC_MARKET_DATA_MAX_RESPONSE_LENGTH,
 					expectedOrder: "latestFirst",
 				}
 			),
