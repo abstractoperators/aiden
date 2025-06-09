@@ -4,7 +4,8 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import UUID
-
+from fastapi import Security
+from fastapi.security import HTTPAuthorizationCredentials
 import requests
 from fastapi import Depends, FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +19,7 @@ from src.auth import (  # decode_bearer_token,
     get_user_from_token,
     get_wallets_from_token,
     parse_jwt,
+    auth_scheme,
 )
 from src.aws_utils import get_aws_config
 from src.db import Session, crud, init_db
@@ -227,6 +229,7 @@ async def update_agent(
     agent_id: UUID,
     agent_update: AgentUpdate,
     user: User = Security(get_user_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> AgentPublic:
     """
     Updates an agent by id.
@@ -234,16 +237,35 @@ async def update_agent(
     """
     # Prevent updating agent that doesn't belong to the user
     # You can, however, transfer ownership.
-    if agent_update.owner_id and agent_update.owner_id != user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to update an agent that doesn't belong to you",
-        )
+    
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
 
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+    try:
+        check_scopes("admin")(token)
+    except HTTPException:
+        if agent.owner_id != user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to update an agent that doesn't belong to you",
+            )
+
+    # Only admins can transfer ownership
+    if agent_update.owner_id and agent_update.owner_id != agent.owner_id:
+        try:
+            check_scopes("admin")(token)
+        except HTTPException:
+            raise HTTPException(
+                status_code=403,
+                detail="Only admins can transfer agent ownership.",
+            )
+    # if agent_update.owner_id and agent_update.owner_id != user.id:
+    #     raise HTTPException(
+    #         status_code=403,
+    #         detail="You do not have permission to update an agent that doesn't belong to you",
+    #     )
 
     with Session() as session:
         agent = crud.update_agent(session, agent, agent_update)
@@ -435,6 +457,7 @@ def start_agent(
     agent_id: UUID,
     runtime_id: UUID,
     current_user: User = Security(get_user_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> AgentStartTask:
     """
     Kicks off a task to start an agent on a runtime.
@@ -446,10 +469,13 @@ def start_agent(
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
-        if agent.owner_id != current_user.id:
-            raise HTTPException(
-                status_code=403,
-                detail="You do not have permission to start an agent that doesn't belong to you",
+        try:
+            check_scopes("admin")(token)  # allows override if admin
+        except HTTPException:
+            if agent.owner_id != current_user.id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You do not have permission to start an agent that doesn't belong to you",
             )
 
     # Make sure that no task for starting an agent is already running.
@@ -501,7 +527,8 @@ def start_agent(
 @app.post("/agents/{agent_id}/stop")
 def stop_agent(
     agent_id: UUID,
-    user: User = Security(get_user_from_token),  # noqa
+    user: User = Security(get_user_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),  
 ) -> Agent:
     """
     Stops agent running on a runtime.
@@ -511,11 +538,19 @@ def stop_agent(
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
-        if not agent.owner_id == user.id:
-            raise HTTPException(
-                status_code=403,
-                detail="You do not have permission to stop an agent that doesn't belong to you",
-            )
+        try:
+            check_scopes("admin")(token)
+        except HTTPException:
+            if agent.owner_id != user.id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You do not have permission to stop an agent that doesn't belong to you",
+                )
+            # if not agent.owner_id == user.id:
+        #     raise HTTPException(
+        #         status_code=403,
+        #         detail="You do not have permission to stop an agent that doesn't belong to you",
+        #     )
 
         runtime_id = agent.runtime_id
         if not runtime_id:
@@ -541,6 +576,7 @@ def stop_agent(
 def delete_agent(
     agent_id: UUID,
     current_user: User = Security(get_user_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> None:
     """
     Deletes an agent by id.
@@ -551,10 +587,14 @@ def delete_agent(
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
-        if agent.owner_id != current_user.id:
-            raise HTTPException(
-                status_code=403,
-                detail="You may not delete an agent that doesn't belong to you",
+        
+        try:
+            check_scopes("admin")(token)
+        except HTTPException:
+                if agent.owner_id != current_user.id:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="You may not delete an agent that doesn't belong to you",
             )
 
         if agent.runtime_id:
@@ -624,11 +664,15 @@ async def update_wallet(
     wallet_id: UUID,
     wallet_update: WalletUpdate,
     current_wallets: list[Wallet] = Security(get_wallets_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme), 
 ) -> Wallet:
-    if wallet_id not in [wallet.id for wallet in current_wallets]:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to update a wallet that doesn't belong to you",
+    try:
+        check_scopes("admin")(token) 
+    except HTTPException:
+        if wallet_id not in [wallet.id for wallet in current_wallets]:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to update a wallet that doesn't belong to you",
         )
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
@@ -643,15 +687,19 @@ async def update_wallet(
 async def delete_wallet(
     wallet_id: UUID,
     current_wallets: list[Wallet] = Security(get_wallets_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> None:
     """
     Deletes a wallet.
     Returns a 404 if the wallet is not found.
     """
-    if wallet_id not in [wallet.id for wallet in current_wallets]:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to delete a wallet that doesn't belong to you",
+    try:
+        check_scopes("admin")(token) 
+    except HTTPException:
+        if wallet_id not in [wallet.id for wallet in current_wallets]:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to delete a wallet that doesn't belong to you",
         )
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
@@ -665,18 +713,21 @@ async def delete_wallet(
 async def create_user(
     user: UserBase,
     decoded_token: dict = Security(parse_jwt),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> User:
     """
     Creates a new user in the database, and returns the full user.
     """
     # Make sure the currently signed in user is the same as the user being created.
     subject = decoded_token.get("sub")
-
-    if not UUID(subject) == user.dynamic_id:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to create a user that doesn't belong to you",
-        )
+    try:
+        check_scopes("admin")(token) 
+    except HTTPException:
+        if not UUID(subject) == user.dynamic_id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to create a user that doesn't belong to you",
+            )
     with Session() as session:
         user = crud.create_user(session, user)
 
@@ -722,6 +773,7 @@ async def update_user(
     user_id: UUID,
     user_update: UserUpdate,
     current_user: User = Security(get_user_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> User:
     """
     Updates an existing in the database, and returns the full user.
@@ -730,11 +782,14 @@ async def update_user(
     user_update: UserUpdate object with fields to update
     current_user: User object of the currently signed in user making the request. Comes from Auth headers.
     """
-    if not user_id == current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to update a user another than your own",
-        )
+    try:
+        check_scopes("admin")(token) 
+    except HTTPException:
+        if not user_id == current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to update a user another than your own",
+            )
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
@@ -748,16 +803,20 @@ async def update_user(
 async def delete_user(
     user_id: UUID,
     current_user: User = Security(get_user_from_token),
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> None:
     """
     Deletes a user from the database.
     Returns a 404 if the user is not found.
     """
-    if not user_id == current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to delete a user other than your own",
-        )
+    try:
+        check_scopes("admin")(token) 
+    except HTTPException:
+        if not user_id == current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to delete a user other than your own",
+            )
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
