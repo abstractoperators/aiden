@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import UUID
-from fastapi import Security
 from fastapi.security import HTTPAuthorizationCredentials
 import requests
 from fastapi import Depends, FastAPI, HTTPException, Request, Security
