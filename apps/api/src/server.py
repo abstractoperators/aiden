@@ -260,11 +260,6 @@ async def update_agent(
                 status_code=403,
                 detail="Only admins can transfer agent ownership.",
             )
-    # if agent_update.owner_id and agent_update.owner_id != user.id:
-    #     raise HTTPException(
-    #         status_code=403,
-    #         detail="You do not have permission to update an agent that doesn't belong to you",
-    #     )
 
     with Session() as session:
         agent = crud.update_agent(session, agent, agent_update)
@@ -469,7 +464,7 @@ def start_agent(
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
         try:
-            check_scopes("admin")(token)  # allows override if admin
+            check_scopes("admin")(token)
         except HTTPException:
             if agent.owner_id != current_user.id:
                 raise HTTPException(
@@ -545,12 +540,6 @@ def stop_agent(
                     status_code=403,
                     detail="You do not have permission to stop an agent that doesn't belong to you",
                 )
-            # if not agent.owner_id == user.id:
-        #     raise HTTPException(
-        #         status_code=403,
-        #         detail="You do not have permission to stop an agent that doesn't belong to you",
-        #     )
-
         runtime_id = agent.runtime_id
         if not runtime_id:
             raise HTTPException(status_code=404, detail="Agent has no runtime")
@@ -717,7 +706,6 @@ async def create_user(
     """
     Creates a new user in the database, and returns the full user.
     """
-    # Make sure the currently signed in user is the same as the user being created.
     subject = decoded_token.get("sub")
     try:
         check_scopes("admin")(token) 
