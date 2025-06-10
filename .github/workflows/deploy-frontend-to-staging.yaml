@@ -31,6 +31,8 @@ jobs:
                 echo AUTH_URL=https://staigen.space >> apps/frontend/.env.local
                 echo NEXT_SEI_NET=test >> apps/frontend/.env.local
                 echo NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS=0xDdFF841E7bb9c2180D160eE5E11663ca127Fd21e >> apps/frontend/.env.local
+                echo NEXT_PUBLIC_MARKET_DATA_UPDATE_FREQUENCY=600000
+                echo NEXT_PUBLIC_MARKET_DATA_MAX_RESPONSE_LENGTH=1000
 
             - name: Build and tag frontend
               run: |
