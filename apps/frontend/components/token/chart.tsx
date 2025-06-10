@@ -8,7 +8,7 @@ import {
   ResolutionString,
   widget,
 } from "@/public/static/charting_library";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 
 const defaultWidgetProps: Partial<ChartingLibraryWidgetOptions> = {
@@ -28,6 +28,7 @@ export default function TokenChart({
 }: {
   token?: TokenBase | null,
 }) {
+	const [isScriptReady, setIsScriptReady] = useState(true)
   const widgetProps: Partial<ChartingLibraryWidgetOptions> = {
     symbol: token?.ticker,
     ...defaultWidgetProps,
@@ -38,8 +39,9 @@ export default function TokenChart({
       <Script
         src="/static/datafeeds/udf/dist/bundle.js"
         strategy="lazyOnload"
+				onReady={() => {setIsScriptReady(true)}}
       />
-			<TVChartContainer {...widgetProps} />
+			{isScriptReady && <TVChartContainer {...widgetProps} />}
     </>
   );
 }
