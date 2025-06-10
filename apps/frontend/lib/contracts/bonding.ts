@@ -78,10 +78,6 @@ async function getTokenInfo({
   }
 }
 
-async function checkIsGraduated() {
-
-}
-
 async function buyWithSei({
   tokenAddress: address,
   seiAmount,

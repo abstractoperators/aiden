@@ -56,7 +56,8 @@ function TVChartContainer(props: Partial<ChartingLibraryWidgetOptions>) {
 		const widgetOptions: ChartingLibraryWidgetOptions = {
 			symbol: props.symbol,
 			// BEWARE: no trailing slash is expected in feed URL
-			datafeed: new (window as any).Datafeeds.UDFCompatibleDatafeed(
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			datafeed: new (window as any).Datafeeds.UDFCompatibleDatafeed( 
 				process.env.NEXT_PUBLIC_MARKET_DATA_URL,
 				process.env.NEXT_PUBLIC_MARKET_DATA_UPDATE_FREQUENCY,
 				{
