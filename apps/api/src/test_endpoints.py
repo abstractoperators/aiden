@@ -447,6 +447,7 @@ async def test_agents(
     # Make a random agent with a different owner.
     random_user: UserPublic = user_factory()
     agent_factory(owner_id=random_user.id)
+    # this second one should fail due to agent creation limits
     agent_factory(owner_id=random_user.id)
 
     response = client.get(f"/agents/{agent.id}")

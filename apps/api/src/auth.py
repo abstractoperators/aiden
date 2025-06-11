@@ -181,3 +181,11 @@ def check_scopes(
             )
         return None
     return helper
+
+
+def get_scopes(
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
+) -> set[str]:
+    payload = parse_jwt(token)
+    scopes_list = (payload.get("lists", []))
+    return set(scopes_list)
