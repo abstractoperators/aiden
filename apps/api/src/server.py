@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import UUID
-
 import requests
 from fastapi import Depends, FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
@@ -221,34 +220,34 @@ async def get_agent(
 
         return agent_to_agent_public(agent)
 
-
 @app.patch("/agents/{agent_id}")
 async def update_agent(
     agent_id: UUID,
     agent_update: AgentUpdate,
-    user: User = Security(get_user_from_token),
+    user: Annotated[User, Security(get_user_from_token)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> AgentPublic:
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
+    Only admins or the agent owner can update(including ownership transfer).
     """
-    # Prevent updating agent that doesn't belong to the user
-    # You can, however, transfer ownership.
-    if agent_update.owner_id and agent_update.owner_id != user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to update an agent that doesn't belong to you",
-        )
-    with Session() as session:
-        agent: Agent | None = crud.get_agent(session, agent_id)
-
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+    is_admin = "admin" in scopes
 
     with Session() as session:
-        agent = crud.update_agent(session, agent, agent_update)
+        agent = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        if not is_admin and agent.owner_id != user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to update an agent that doesn't belong to you",
+            )
 
-        return agent_to_agent_public(agent)
+        updated = crud.update_agent(session, agent, agent_update)
+        return agent_to_agent_public(updated)
+
 
 
 @app.post("/tokens/save")
@@ -429,40 +428,37 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 
         return TaskStatus(task["status"])
 
-
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
     agent_id: UUID,
     runtime_id: UUID,
-    current_user: User = Security(get_user_from_token),
+    current_user: Annotated[User, Security(get_user_from_token)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> AgentStartTask:
     """
     Kicks off a task to start an agent on a runtime.
     Returns a task record that you can retrieve from.
     Returns a 404 if the agent or runtime is not found.
     """
+    is_admin = "admin" in scopes
 
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
-        if agent.owner_id != current_user.id:
+
+        if not is_admin and agent.owner_id != current_user.id:
             raise HTTPException(
                 status_code=403,
                 detail="You do not have permission to start an agent that doesn't belong to you",
             )
 
-    # Make sure that no task for starting an agent is already running.
+     # Make sure that no task for starting an agent is already running.
     # Must block on both agent_id or runtime_id.
     # That is, there must not be a running task for either agent_id or runtime_id.
     try:
-        task_status_agent: TaskStatus | None = get_agent_start_task_status(
-            agent_id=agent_id
-        )
-        if task_status_agent and (
-            task_status_agent == TaskStatus.PENDING
-            or task_status_agent == TaskStatus.STARTED
-        ):
+        task_status_agent: TaskStatus | None = get_agent_start_task_status(agent_id=agent_id)
+        if task_status_agent in (TaskStatus.PENDING, TaskStatus.STARTED):
             raise HTTPException(
                 status_code=400,
                 detail=f"There is already a {task_status_agent} task for agent {agent_id}",
@@ -472,13 +468,8 @@ def start_agent(
             raise e
 
     try:
-        task_status_runtime: TaskStatus | None = get_agent_start_task_status(
-            runtime_id=runtime_id
-        )
-        if task_status_runtime and (
-            task_status_runtime == TaskStatus.PENDING
-            or task_status_runtime == TaskStatus.STARTED
-        ):
+        task_status_runtime: TaskStatus | None = get_agent_start_task_status(runtime_id=runtime_id)
+        if task_status_runtime in (TaskStatus.PENDING, TaskStatus.STARTED):
             raise HTTPException(
                 status_code=400,
                 detail=f"There is already a {task_status_runtime} task for runtime {runtime_id}",
@@ -488,7 +479,6 @@ def start_agent(
             raise e
 
     with Session() as session:
-        # Let the task manage everything
         res = tasks.start_agent.delay(agent_id, runtime_id)
         task_record = AgentStartTaskBase(
             agent_id=agent_id,
@@ -498,20 +488,24 @@ def start_agent(
         return crud.create_agent_start_task(session, task_record)
 
 
+
 @app.post("/agents/{agent_id}/stop")
 def stop_agent(
     agent_id: UUID,
-    user: User = Security(get_user_from_token),  # noqa
+    current_user: Annotated[User, Security(get_user_from_token)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> Agent:
     """
-    Stops agent running on a runtime.
+    Stops an agent running on a runtime.
     """
+    is_admin = "admin" in scopes
+
     with Session() as session:
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
-        if not agent.owner_id == user.id:
+        if not is_admin and agent.owner_id != current_user.id:
             raise HTTPException(
                 status_code=403,
                 detail="You do not have permission to stop an agent that doesn't belong to you",
@@ -532,15 +526,16 @@ def stop_agent(
         stop_endpoint = f"{runtime.url}/controller/character/stop"
         resp = requests.post(stop_endpoint, timeout=3)
         resp.raise_for_status()
-        stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
 
+        stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
         return stopped_agent
 
 
 @app.delete("/agents/{agent_id}")
 def delete_agent(
     agent_id: UUID,
-    current_user: User = Security(get_user_from_token),
+    current_user: Annotated[User, Security(get_user_from_token)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> None:
     """
     Deletes an agent by id.
@@ -551,7 +546,10 @@ def delete_agent(
         agent: Agent | None = crud.get_agent(session, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
-        if agent.owner_id != current_user.id:
+        
+        is_admin = "admin" in scopes
+
+        if not is_admin and agent.owner_id != current_user.id:
             raise HTTPException(
                 status_code=403,
                 detail="You may not delete an agent that doesn't belong to you",
@@ -618,70 +616,78 @@ async def get_wallets(
 
     raise HTTPException(status_code=500, detail="Should not reach here")
 
-
 @app.patch("/wallets/{wallet_id}")
 async def update_wallet(
     wallet_id: UUID,
     wallet_update: WalletUpdate,
+    scopes: Annotated[set[str], Depends(get_scopes)],
     current_wallets: list[Wallet] = Security(get_wallets_from_token),
 ) -> Wallet:
-    if wallet_id not in [wallet.id for wallet in current_wallets]:
+    is_admin = "admin" in scopes
+
+    if not is_admin and wallet_id not in [wallet.id for wallet in current_wallets]:
         raise HTTPException(
             status_code=403,
             detail="You do not have permission to update a wallet that doesn't belong to you",
         )
+
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
         if not wallet:
             raise HTTPException(status_code=404, detail="Wallet not found")
-        wallet = crud.update_wallet(session, wallet, wallet_update)
 
+        wallet = crud.update_wallet(session, wallet, wallet_update)
         return wallet
 
 
 @app.delete("/wallets/{wallet_id}")
 async def delete_wallet(
     wallet_id: UUID,
+    scopes: Annotated[set[str], Depends(get_scopes)],
     current_wallets: list[Wallet] = Security(get_wallets_from_token),
 ) -> None:
     """
     Deletes a wallet.
     Returns a 404 if the wallet is not found.
     """
-    if wallet_id not in [wallet.id for wallet in current_wallets]:
+    is_admin = "admin" in scopes
+
+    if not is_admin and wallet_id not in [wallet.id for wallet in current_wallets]:
         raise HTTPException(
             status_code=403,
             detail="You do not have permission to delete a wallet that doesn't belong to you",
         )
+
     with Session() as session:
         wallet = crud.get_wallet(session, wallet_id)
         if not wallet:
             raise HTTPException(status_code=404, detail="Wallet not found")
+
         crud.delete_wallet(session, wallet)
     return None
-
 
 @app.post("/users")
 async def create_user(
     user: UserBase,
-    decoded_token: dict = Security(parse_jwt),
+    decoded_token: Annotated[dict, Security(parse_jwt)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> User:
     """
     Creates a new user in the database, and returns the full user.
     """
-    # Make sure the currently signed in user is the same as the user being created.
+    is_admin = "admin" in scopes
     subject = decoded_token.get("sub")
 
-    if not UUID(subject) == user.dynamic_id:
+    if not is_admin and UUID(subject) != user.dynamic_id:
         raise HTTPException(
             status_code=403,
             detail="You do not have permission to create a user that doesn't belong to you",
         )
+
     with Session() as session:
         user = crud.create_user(session, user)
 
     return user
-
 
 @app.get("/users")
 async def get_user(
@@ -721,7 +727,8 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_update: UserUpdate,
-    current_user: User = Security(get_user_from_token),
+    current_user: Annotated[User, Security(get_user_from_token)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> User:
     """
     Updates an existing in the database, and returns the full user.
@@ -729,12 +736,15 @@ async def update_user(
     user_id: UUID of user to update
     user_update: UserUpdate object with fields to update
     current_user: User object of the currently signed in user making the request. Comes from Auth headers.
-    """
-    if not user_id == current_user.id:
+     """
+    is_admin = "admin" in scopes
+
+    if not is_admin and user_id != current_user.id:
         raise HTTPException(
             status_code=403,
-            detail="You do not have permission to update a user another than your own",
+            detail="You do not have permission to update a user other than your own",
         )
+
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
@@ -747,23 +757,27 @@ async def update_user(
 @app.delete("/users/{user_id}")
 async def delete_user(
     user_id: UUID,
-    current_user: User = Security(get_user_from_token),
+    current_user: Annotated[User, Security(get_user_from_token)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> None:
     """
     Deletes a user from the database.
-    Returns a 404 if the user is not found.
+    Admins can delete any user. Regular users can only delete themselves.
     """
-    if not user_id == current_user.id:
+    is_admin = "admin" in scopes
+
+    if not is_admin and user_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="You do not have permission to delete a user other than your own",
         )
+
     with Session() as session:
         user = crud.get_user(session, user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
+
         crud.delete_user(session, user)
-    return None
 
 
 @app.patch(
