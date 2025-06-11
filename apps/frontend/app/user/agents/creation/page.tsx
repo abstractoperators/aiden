@@ -8,7 +8,7 @@ export default async function AgentCreation() {
   // TODO consider removing in favor of context/context provider
   const session = await auth()
   if (!session)
-    throw new Error(`Session ${JSON.stringify(session)} does not exist!`)
+    throw new Error('Session does not exist!')
   if (!session.user)
     throw new Error(`Session ${JSON.stringify(session)} does not have a user!`)
   if (!session.user.id)
