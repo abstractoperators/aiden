@@ -220,8 +220,6 @@ async def get_agent(
 
         return agent_to_agent_public(agent)
 
-from typing import Annotated
-
 @app.patch("/agents/{agent_id}")
 async def update_agent(
     agent_id: UUID,
@@ -232,8 +230,7 @@ async def update_agent(
     """
     Updates an agent by id.
     Raises a 404 if the agent is not found.
-    Only admins or the agent owner can update.
-    Only admins or agent owner can transfer ownership.
+    Only admins or the agent owner can update(including ownership transfer).
     """
     is_admin = "admin" in scopes
 
@@ -246,15 +243,6 @@ async def update_agent(
             raise HTTPException(
                 status_code=403,
                 detail="You do not have permission to update an agent that doesn't belong to you",
-            )
-        if (
-            agent_update.owner_id and
-            agent_update.owner_id != agent.owner_id and
-            not (is_admin or agent.owner_id==user.id)
-        ):
-            raise HTTPException(
-                status_code=403,
-                detail="Only admins or the agent owner can transfer ownership.",
             )
 
         updated = crud.update_agent(session, agent, agent_update)
@@ -440,8 +428,6 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 
         return TaskStatus(task["status"])
 
-from typing import Annotated
-
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
     agent_id: UUID,
@@ -502,7 +488,6 @@ def start_agent(
         return crud.create_agent_start_task(session, task_record)
 
 
-from typing import Annotated
 
 @app.post("/agents/{agent_id}/stop")
 def stop_agent(
@@ -655,14 +640,16 @@ async def update_wallet(
         return wallet
 
 
-from typing import Annotated
-
 @app.delete("/wallets/{wallet_id}")
 async def delete_wallet(
     wallet_id: UUID,
     scopes: Annotated[set[str], Depends(get_scopes)],
     current_wallets: list[Wallet] = Security(get_wallets_from_token),
 ) -> None:
+    """
+    Deletes a wallet.
+    Returns a 404 if the wallet is not found.
+    """
     is_admin = "admin" in scopes
 
     if not is_admin and wallet_id not in [wallet.id for wallet in current_wallets]:
@@ -735,7 +722,6 @@ async def get_user(
 
         return user_to_user_public(user)
 
-from typing import Annotated
 
 @app.patch("/users/{user_id}")
 async def update_user(
