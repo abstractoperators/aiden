@@ -2,6 +2,7 @@ import os
 from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
+from typing import Annotated
 from uuid import UUID
 
 import requests
@@ -13,6 +14,7 @@ from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from src import logger, tasks
 from src.auth import (  # decode_bearer_token,
     check_scopes,
+    get_scopes,
     get_user_from_token,
     get_wallets_from_token,
     parse_jwt,
@@ -147,7 +149,8 @@ async def ping():
 def create_agent(
     agent: AgentBase,
     # Require that the user be signed in, but don't do any other verification
-    user: User = Security(get_user_from_token),  # noqa
+    user: Annotated[User, Security(get_user_from_token)],  # noqa
+    scopes: Annotated[set[str], Depends(get_scopes)],
 ) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
@@ -155,6 +158,12 @@ def create_agent(
     Requires that the user be signed in.
     """
     with Session() as session:
+        agents = crud.get_agents_by_user_id(session, user.id)
+        if 'admin' not in scopes and len(agents) > 0:
+            raise HTTPException(
+                status_code=403,
+                detail="Users are restricted to one agent at any time!",
+            )
         agent = crud.create_agent(session, agent)
 
         return agent_to_agent_public(agent)
