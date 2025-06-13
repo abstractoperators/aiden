@@ -32,7 +32,6 @@ from .models import (
 )
 
 M = TypeVar("M", bound=Base)
-N = TypeVar("N", bound=Base)
 
 
 # region Generics
@@ -43,7 +42,7 @@ def create_generic(session: Session, model: M) -> M:
     return model
 
 
-def update_generic(session: Session, model: M, model_update: N) -> M:
+def update_generic(session: Session, model: M, model_update: Base) -> M:
     fields_payload = model_update.model_dump(exclude_unset=True)
     model.sqlmodel_update(fields_payload)
     session.add(model)
@@ -53,7 +52,7 @@ def update_generic(session: Session, model: M, model_update: N) -> M:
     return model
 
 
-def delete_generic(session: Session, model: M) -> None:
+def delete_generic(session: Session, model: Base) -> None:
     session.delete(model)
     session.commit()
     return None

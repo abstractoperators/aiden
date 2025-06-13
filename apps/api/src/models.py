@@ -19,7 +19,7 @@ from .db.models import (
 
 # TODO: Look at Eliza's character loading to figure out the actual schema for character_json lowk high prio
 class Character(BaseModel):
-    character_json: dict = Field(
+    character_json: dict[str, Any] = Field(
         {},
         description="A dictionary representing the character json for the eliza agent",
     )
