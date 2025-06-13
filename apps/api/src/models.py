@@ -77,7 +77,7 @@ class ElizaCharacterJson(BaseModel):
 # https://sqlmodel.tiangolo.com/tutorial/fastapi/relationships/#update-the-path-operations
 class Env(BaseModel):
     key: str
-    value: SecretStr | None
+    value: SecretStr | str | None
 
 
 class AgentPublic(AgentBase):
@@ -110,14 +110,14 @@ def user_to_user_public(user: User) -> UserPublic:
     return TypeAdapter(UserPublic).validate_python(user)
 
 
-def agent_to_agent_public(agent: Agent) -> AgentPublic:
+def agent_to_agent_public(agent: Agent, show_secrets: bool=False) -> AgentPublic:
     """
     Converts an Agent to an AgentPublic.
     """
     old_env_file: str = agent.env_file
-    env_dict: dict = dotenv_values(stream=StringIO(old_env_file))
+    env_dict: dict[str, str | None] = dotenv_values(stream=StringIO(old_env_file))
     list_of_envs: list[Env] = [
-        Env(key=key, value=value) for key, value in env_dict.items()
+        Env(key=key, value=SecretStr(value) if (value and not show_secrets) else value) for key, value in env_dict.items()
     ]
 
     agent_dump = agent.model_dump()

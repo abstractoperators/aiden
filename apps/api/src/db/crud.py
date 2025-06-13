@@ -107,7 +107,7 @@ def create_agent(session: Session, agent: AgentBase) -> Agent:
     return create_generic(session, Agent(**agent.model_dump()))
 
 
-def update_agent(session, agent: Agent, agent_update: AgentUpdate) -> Agent:
+def update_agent(session: Session, agent: Agent, agent_update: AgentUpdate) -> Agent:
     return update_generic(session, agent, agent_update)
 
 
@@ -243,7 +243,7 @@ def delete_token(session: Session, token: Token) -> None:
 
 
 # region Tasks
-def get_task(session: Session, task_id: UUID) -> dict | None:
+def get_task(session: Session, task_id: UUID) -> dict[str, str] | None:
     query = text("""
         SELECT task_id, status FROM celery_taskmeta WHERE task_id = :task_id
         """).bindparams(task_id=str(task_id))
