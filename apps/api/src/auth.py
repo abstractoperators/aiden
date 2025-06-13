@@ -3,10 +3,10 @@ Handles JWT-based authentication and authorization with FastAPI and Dynamic.
 """
 
 import os
-from typing import Any, Callable
+from typing import Annotated, Any, Callable
 from uuid import UUID
 
-from fastapi import HTTPException, Security
+from fastapi import Depends, HTTPException, Security
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 from jwt import PyJWK, PyJWKClient, PyJWT
@@ -16,7 +16,7 @@ from src.db import Session, crud
 from src.db.models import User, Wallet
 from src.utils import obj_or_404
 
-options = {
+options: dict[str, Any] = {
     "verify_signature": True,
     "verify_exp": True,
     "verify_nbf": False,
@@ -91,7 +91,7 @@ def parse_jwt(
     except PyJWTError:
         raise HTTPException(detail="Failed to decode token", status_code=401)
 
-    payload: dict | None = decoded_token.get("payload")
+    payload: dict[str, Any] | None = decoded_token.get("payload")
     if not payload:
         raise HTTPException(
             detail="Expected payload in token",
@@ -137,7 +137,7 @@ def get_wallets_from_token(
     """
     payload = parse_jwt(token)
 
-    credentials: list[dict] | None = payload.get("verified_credentials")
+    credentials: list[dict[str, Any]] | None = payload.get("verified_credentials")
     if not credentials:
         raise HTTPException(
             detail="No verified credentials in token",
@@ -154,16 +154,15 @@ def get_wallets_from_token(
         for address in addresses:
             # Not going to throw a 404 here cuz it's hacky af any how.
             wallet = crud.get_wallet_by_public_key_hack(session, address)
-            if wallet is None:
-                continue
-            wallets.append(wallet)
+            if wallet:
+                wallets.append(wallet)
 
-    return [wallet for wallet in wallets if wallet is not None]
+    return wallets
 
 
 def check_scopes(
     *required_permissions: str,
-) -> Callable:
+) -> Callable[[HTTPAuthorizationCredentials], None]:
     """
     Check if a user has the necessary permissions.
     raises:
@@ -187,5 +186,22 @@ def get_scopes(
     token: HTTPAuthorizationCredentials = Security(auth_scheme),
 ) -> set[str]:
     payload = parse_jwt(token)
-    scopes_list = (payload.get("lists", []))
+    scopes_list = payload.get("lists", [])
     return set(scopes_list)
+
+
+def get_is_admin(
+    token: HTTPAuthorizationCredentials = Security(auth_scheme),
+) -> bool:
+    payload = parse_jwt(token)
+    scopes = set(payload.get("lists", []))
+    return "admin" in scopes
+
+
+def get_is_admin_or_owner(
+    is_admin: Annotated[bool, Depends(get_is_admin)],
+    user: Annotated[User, Security(get_user_from_token)]
+) -> Callable[[UUID], bool]:
+    def helper(maybe_id: UUID) -> bool:
+        return is_admin or maybe_id == user.id
+    return helper
