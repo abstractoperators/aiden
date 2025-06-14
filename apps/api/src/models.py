@@ -77,7 +77,7 @@ class ElizaCharacterJson(BaseModel):
 # https://sqlmodel.tiangolo.com/tutorial/fastapi/relationships/#update-the-path-operations
 class Env(BaseModel):
     key: str
-    value: SecretStr | str | None
+    value: str | SecretStr | None
 
 
 class AgentPublic(AgentBase):
