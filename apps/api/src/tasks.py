@@ -467,8 +467,8 @@ def delete_runtime(
         # Delete the runtime in db
         with Session() as session:
             crud.delete_runtime(session, runtime)
-    except Exception:
-        logger.error(Exception)
+    except Exception as e:
+        logger.error(e)
         pass
 
     return None
