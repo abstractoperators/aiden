@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from uuid import UUID
 
 import requests
-from fastapi import Depends, FastAPI, HTTPException, Request, Security
+from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
@@ -788,7 +788,7 @@ async def delete_user(
 
 @app.patch(
     "/runtimes/{runtime_id}",
-    dependencies=[Depends(check_scopes("admin"))],
+    dependencies=[Security(check_scopes("admin"))],
 )
 def update_runtime(
     runtime_id: UUID,
@@ -839,7 +839,7 @@ def update_runtime(
 
 @app.delete(
     "/runtimes/{runtime_id}",
-    dependencies=[Depends(check_scopes("admin"))],
+    dependencies=[Security(check_scopes("admin"))],
 )
 def delete_runtime(
     runtime_id: UUID,

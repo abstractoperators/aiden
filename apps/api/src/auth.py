@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from uuid import UUID
 import os
 
-from fastapi import Depends, HTTPException, Security
+from fastapi import HTTPException, Security
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 from jwt import PyJWK, PyJWKClient, PyJWT
@@ -101,7 +101,7 @@ def parse_jwt(required: bool = True):
 
 
 def get_user_from_token(required: bool = True):
-    def get_user_helper(payload: Annotated[dict[str, Any] | None, parse_jwt(required)]) -> User | None:
+    def get_user_helper(payload: Annotated[dict[str, Any] | None, Security(parse_jwt(required))]) -> User | None:
         """
         Retrieve a user using their JWT
         params:
@@ -130,7 +130,7 @@ def get_user_from_token(required: bool = True):
 
 def get_wallets_from_token(required: bool = True):
     def get_wallets_helper(
-        payload: Annotated[dict[str, Any] | None, parse_jwt(required)],
+        payload: Annotated[dict[str, Any] | None, Security(parse_jwt(required))],
     ) -> list[Wallet] | None:
         """
         Retrieve a wallet based on its JWT
@@ -173,7 +173,7 @@ def check_scopes(
     required: bool = True,
 ):
     def helper(
-        payload: Annotated[dict[str, Any] | None, parse_jwt(required)],
+        payload: Annotated[dict[str, Any] | None, Security(parse_jwt(required))],
     ) -> None:
         """
         Check if a user has the necessary permissions.
@@ -197,7 +197,7 @@ def check_scopes(
 
 
 def get_scopes(
-    payload: Annotated[dict[str, Any] | None, parse_jwt(False)],
+    payload: Annotated[dict[str, Any] | None, Security(parse_jwt(False))],
 ) -> set[str]:
     """
     Optional security, does not throw if no token
@@ -209,7 +209,7 @@ def get_scopes(
 
 
 def get_is_admin(
-    payload: Annotated[dict[str, Any] | None, parse_jwt(False)],
+    payload: Annotated[dict[str, Any] | None, Security(parse_jwt(False))],
 ) -> bool:
     """
     Optional security, does not throw if no token
@@ -219,18 +219,18 @@ def get_is_admin(
     scopes = set(payload.get("lists", []))
     return "admin" in scopes
 
-IsAdminDepends = Annotated[bool, Depends(get_is_admin)]
+IsAdminDepends = Annotated[bool, Security(get_is_admin)]
 
 
 def get_is_admin_or_owner(
     is_admin: IsAdminDepends,
-    user: Annotated[User, Security(get_user_from_token(False))]
+    user: Annotated[User | None, Security(get_user_from_token(False))]
 ) -> Callable[[UUID], bool]:
     """
     Optional security, does not throw if no token
     """
     def helper(maybe_id: UUID) -> bool:
-        return is_admin or maybe_id == user.id
+        return is_admin or (user is not None and maybe_id == user.id)
     return helper
 
-IsAdminOrOwnerDepends = Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)]
+IsAdminOrOwnerDepends = Annotated[Callable[[UUID], bool], Security(get_is_admin_or_owner)]
