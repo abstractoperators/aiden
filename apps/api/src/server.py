@@ -606,7 +606,7 @@ async def get_wallets(
             detail="Exactly one of wallet_id, owner_id, or wallet_public_key must be passed.",
         )
 
-    wallet = None
+    wallet: Wallet | Sequence[Wallet] | None = None
     with Session() as session:
         if wallet_id:
             wallet = crud.get_wallet(session, wallet_id)
@@ -615,9 +615,9 @@ async def get_wallets(
                 session,
                 public_key,
                 chain,
-            )  # no-redef
+            )
         elif owner_id:
-            wallet = crud.get_wallets_by_owner(session, owner_id)  # no-redef
+            wallet = crud.get_wallets_by_owner(session, owner_id)
 
         if wallet is None:
             raise HTTPException(status_code=404, detail="Wallet not found")
