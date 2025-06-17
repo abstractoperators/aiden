@@ -452,6 +452,42 @@ def get_task_status(task_id: UUID) -> TaskStatus:
         return TaskStatus(task["status"])
     
 
+@app.post("/agents/{agent_id}/start")
+def start_agent_without_runtime(agent_id: UUID) -> AgentStartTask:
+    with Session() as session:
+        runtimes = crud.get_runtimes(session)
+        started_runtimes = [r for r in runtimes if r.started]
+
+        runtime_id = None
+
+        for rt in started_runtimes:
+            try:
+                resp = requests.get(f"{rt.url}/controller/character/status", timeout=2)
+                if resp.status_code == 200 and not resp.json().get("running", True):
+                    runtime_id = rt.id
+                    break
+            except Exception:
+                continue
+
+        if not runtime_id:
+            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
+            for _ in range(to_provision):
+                tasks.create_runtime.delay()
+            raise HTTPException(
+                status_code=503,
+                detail="Warming up runtime(s). Please retry shortly.",
+            )
+
+        task = start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+
+        return crud.create_agent_start_task(
+            session,
+            AgentStartTaskBase(
+                agent_id=agent_id,
+                runtime_id=runtime_id,
+                celery_task_id=task.id,
+            )
+        )
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
