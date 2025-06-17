@@ -30,7 +30,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import {
   createAgent,
   stopAgent,
@@ -39,7 +38,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { getUser } from "@/lib/api/user"
 import { useRouter } from "next/navigation"
-import { isErrorResult, isSuccessResult } from "@/lib/api/result"
+import { isErrorResult, isNotFound, isSuccessResult } from "@/lib/api/result"
 import { useEffect, useState } from "react"
 import { getTokens, Token } from "@/lib/api/token"
 import { FormCombobox } from "./ui/combobox"
@@ -70,9 +69,16 @@ const styleTitles = {
   "chat": "Chat",
   "post": "Post",
 }
+const envTitles = {
+  "key": "Key",
+  "value": "Value",
+}
 
 const envSchema = z.object({
-  env: z.string(),
+  env: z.object({
+    key: z.string().trim(),
+    value: z.string().trim(),
+  }).array(),
 })
 const integrationsSchema = z.object({
   twitter: z.boolean(),
@@ -112,7 +118,7 @@ function AgentForm({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues ?? {
       twitter: false,
-      env: "",
+      env: [{ key: "", value: "", }],
       name: "",
       bio: [],
       lore: [],
@@ -144,7 +150,7 @@ function AgentForm({
 
   async function onSubmit(formData: FormType) {
     console.debug("AgentForm", formData)
-    const { env: envFile, isNewToken, twitter, ...data } = formData
+    const { env, isNewToken, twitter, ...data } = formData
     const character = {
       modelProvider: "openai",
       clients: twitter ? ["twitter"] : [],
@@ -159,7 +165,12 @@ function AgentForm({
     return onSubmitBase({
       dynamicId: user.userId,
       character,
-      envFile,
+      envFile: (
+        env
+        .filter(({key, value}) => key.length && value.length)
+        .map(({key, value}) => `${key}=${value}`)
+        .join('\n')
+      ),
       token: isNewToken ? formData : formData.tokenId,
       push,
       wallet,
@@ -229,7 +240,7 @@ function AgentForm({
           </AccordionItem>
 
           <Style control={control} />
-          <EnvironmentVariables />
+          <EnvironmentVariables control={control} />
 
           <AccordionItem value="Twitter">
             <AccordionTrigger>Twitter</AccordionTrigger>
@@ -431,29 +442,55 @@ function FieldArray({
   )
 }
 
-function EnvironmentVariables() {
+function EnvironmentVariables({ control }: { control: Control<FormType> }) {
+  const name = "env"
+  const title = "Environment Variables"
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name,
+  })
+
   return (
     <AccordionItem value="Environment Variables">
       <AccordionTrigger>
         Environment Variables
       </AccordionTrigger>
-      <AccordionContent>
-        <FormField
-          name="env"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel></FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Environment Variables"
-                  {...field}
+      <AccordionContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-x-4 gap-y-2">
+        {fields.map((field, index) => (
+          <div key={field.id} className="flex gap-4 items-center">
+            <div className="flex gap-2 items-center">
+            {Object.entries(envTitles).map(([fieldName, title], entryIndex) => (
+              <div key={`envFormField.${entryIndex}`} className="flex gap-2 items-center">
+                <FormField
+                  key={`${name}.${index}.${fieldName}`}
+                  name={`${name}.${index}.${fieldName}`}
+                  render={({ field: formField }) => (
+                    <FormItem>
+                      <FormLabel></FormLabel>
+                      <FormControl>
+                        <Input
+                          className="placeholder:text-neutral-400"
+                          placeholder={title}
+                          {...formField}
+                        />
+                      </FormControl>
+                      <FormDescription />
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-              <FormDescription>Copy-paste your .env file here.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                {entryIndex < Object.entries(envTitles).length - 1 && <div>=</div>}
+              </div>
+            ))}
+            </div>
+            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+              Remove
+            </Button>
+          </div>
+        ))}
+        </div>
+        <Button type="button" onClick={() => append([{ key: "", value: "" }])}>Add {title}</Button>
       </AccordionContent>
     </AccordionItem>
   )
@@ -670,7 +707,7 @@ function onSubmitEdit(agentId: string) {
     }
 
     const stopResult = await stopAgent(agentId)
-    if (isErrorResult(stopResult)) {
+    if (isErrorResult(stopResult) && !isNotFound(stopResult)) {
       console.error(`Failed to stop Agent ${agentId} status code ${stopResult.code}, ${stopResult.message}`)
       toast({
         title: `Unable to stop Agent ${character.name}`,
