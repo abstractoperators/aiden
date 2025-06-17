@@ -3,7 +3,6 @@ from base64 import b64decode
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from collections.abc import Awaitable, Callable
-from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
