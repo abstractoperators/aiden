@@ -13,10 +13,10 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 from src import logger, tasks
-from src.auth import (  # decode_bearer_token,
+from src.auth import (
+    IsAdminDepends,
+    IsAdminOrOwnerDepends,
     check_scopes,
-    get_is_admin,
-    get_is_admin_or_owner,
     get_user_from_token,
     get_wallets_from_token,
     parse_jwt,
@@ -156,8 +156,8 @@ async def ping():
 def create_agent(
     agent: AgentBase,
     # Require that the user be signed in, but don't do any other verification
-    user: Annotated[User, Security(get_user_from_token)],
-    is_admin: Annotated[bool, Depends(get_is_admin)],
+    user: Annotated[User, Security(get_user_from_token())],
+    is_admin: IsAdminDepends,
 ) -> AgentPublic:
     """
     Creates an agent. Does not start the agent.
@@ -178,7 +178,7 @@ def create_agent(
 
 @app.get("/agents")
 async def get_agents(
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
     user_id: UUID | None = None,
     user_dynamic_id: UUID | None = None,
 ) -> Sequence[AgentPublic]:
@@ -222,7 +222,7 @@ async def get_agents(
 @app.get("/agents/{agent_id}")
 async def get_agent(
     agent_id: UUID,
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> AgentPublic:
     """
     Returns an agent by id.
@@ -244,7 +244,7 @@ async def get_agent(
 async def update_agent(
     agent_id: UUID,
     agent_update: AgentUpdate,
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> AgentPublic:
     """
     Updates an agent by id.
@@ -455,7 +455,7 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 def start_agent(
     agent_id: UUID,
     runtime_id: UUID,
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> AgentStartTask:
     """
     Kicks off a task to start an agent on a runtime.
@@ -511,7 +511,7 @@ def start_agent(
 @app.post("/agents/{agent_id}/stop")
 def stop_agent(
     agent_id: UUID,
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> Agent:
     """
     Stops an agent running on a runtime.
@@ -551,7 +551,7 @@ def stop_agent(
 @app.delete("/agents/{agent_id}")
 def delete_agent(
     agent_id: UUID,
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
 ):
     """
     Deletes an agent by id.
@@ -619,7 +619,7 @@ async def get_wallets(
         elif owner_id:
             wallet = crud.get_wallets_by_owner(session, owner_id)  # no-redef
 
-        if not wallet:
+        if wallet is None:
             raise HTTPException(status_code=404, detail="Wallet not found")
         return wallet
 
@@ -628,8 +628,8 @@ async def get_wallets(
 async def update_wallet(
     wallet_id: UUID,
     wallet_update: WalletUpdate,
-    is_admin: Annotated[bool, Depends(get_is_admin)],
-    current_wallets: Annotated[list[Wallet], Security(get_wallets_from_token)],
+    is_admin: IsAdminDepends,
+    current_wallets: Annotated[list[Wallet], Security(get_wallets_from_token())],
 ) -> Wallet:
     if not is_admin and wallet_id not in [wallet.id for wallet in current_wallets]:
         raise HTTPException(
@@ -651,8 +651,8 @@ async def update_wallet(
 @app.delete("/wallets/{wallet_id}")
 async def delete_wallet(
     wallet_id: UUID,
-    is_admin: Annotated[bool, Depends(get_is_admin)],
-    current_wallets: Annotated[list[Wallet], Security(get_wallets_from_token)],
+    is_admin: IsAdminDepends,
+    current_wallets: Annotated[list[Wallet], Security(get_wallets_from_token())],
 ) -> None:
     """
     Deletes a wallet.
@@ -677,7 +677,7 @@ async def delete_wallet(
 async def create_user(
     user: UserBase,
     decoded_token: Annotated[dict[str, Any], Security(parse_jwt)],
-    is_admin: Annotated[bool, Depends(get_is_admin)],
+    is_admin: IsAdminDepends,
 ) -> User:
     """
     Creates a new user in the database, and returns the full user.
@@ -734,7 +734,7 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_update: UserUpdate,
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> User:
     """
     Updates an existing in the database, and returns the full user.
@@ -764,7 +764,7 @@ async def update_user(
 @app.delete("/users/{user_id}")
 async def delete_user(
     user_id: UUID,
-    is_admin_or_owner: Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)],
+    is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> None:
     """
     Deletes a user from the database.

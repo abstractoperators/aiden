@@ -2,9 +2,10 @@
 Handles JWT-based authentication and authorization with FastAPI and Dynamic.
 """
 
-import os
-from typing import Annotated, Any, Callable
+from collections.abc import Callable
+from typing import Annotated, Any
 from uuid import UUID
+import os
 
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import HTTPBearer
@@ -62,146 +63,174 @@ auth_scheme = HTTPBearer(
     auto_error=False,
 )
 
-
-def optional_jwt(
-    token: HTTPAuthorizationCredentials | None = Security(auth_scheme),
-) -> HTTPAuthorizationCredentials | None:
-    """ """
-    return token
+TokenDepends = Annotated[HTTPAuthorizationCredentials | None, Security(auth_scheme)]
 
 
-def parse_jwt(
-    token: HTTPAuthorizationCredentials = Security(auth_scheme),
-) -> dict[str, Any]:
-    """
-    Standard JWTs contains the aud, iss, sub, iat, and exp fields.
-    Dynamic adds the fields email, environment_id, given_name, family_name, lists, verified_credentials, verified_accounts.
-    See https://docs.dynamic.xyz/authentication-methods/auth-tokens
-    params:
-      token (HTTPAuthorizationCredentials): JWT token
-    returns:
-      payload (dict): user credentials details
-    raises:
-      HTTPException with status code 401 unauthorized
-    """
-    if not token:
-        raise HTTPException(detail="No token was provided", status_code=401)
-    try:
-        decoded_token = decode_bearer_token(token.credentials)
-    except PyJWTError:
-        raise HTTPException(detail="Failed to decode token", status_code=401)
+def parse_jwt(required: bool = True):
+    def parse_jwt_helper(token: TokenDepends) -> dict[str, Any] | None:
+        """
+        Standard JWTs contains the aud, iss, sub, iat, and exp fields.
+        Dynamic adds the fields email, environment_id, given_name, family_name, lists, verified_credentials, verified_accounts.
+        See https://docs.dynamic.xyz/authentication-methods/auth-tokens
+        params:
+        token (HTTPAuthorizationCredentials): JWT token
+        returns:
+        payload (dict | None): user credentials details if token is provided
+        raises:
+        HTTPException with status code 401 unauthorized
+        """
+        if not token:
+            if required:
+                raise HTTPException(detail="No token was provided", status_code=401)
+            return None
+        try:
+            decoded_token = decode_bearer_token(token.credentials)
+        except PyJWTError:
+            raise HTTPException(detail="Failed to decode token", status_code=401)
 
-    payload: dict[str, Any] | None = decoded_token.get("payload")
-    if not payload:
-        raise HTTPException(
-            detail="Expected payload in token",
-            status_code=401,
-        )
-    return payload
+        payload: dict[str, Any] | None = decoded_token.get("payload")
+        if not payload:
+            raise HTTPException(
+                detail="Expected payload in token",
+                status_code=401,
+            )
 
+        return payload
 
-def get_user_from_token(
-    token: HTTPAuthorizationCredentials = Security(auth_scheme),
-) -> User:
-    """
-    Retrieve a user using their JWT
-    params:
-      token (HTTPAuthorizationCredentials): JWT token
-    returns:
-      user (User | 404)
-    """
-    payload = parse_jwt(token)
-
-    subject = payload.get("sub")
-    if not subject:
-        raise ValueError()
-    dynamic_user_id: UUID = UUID(subject)
-
-    # For now, assume the user already exists
-    with Session() as session:
-        user: User = obj_or_404(
-            crud.get_user_by_dynamic_id(session, dynamic_id=dynamic_user_id), User
-        )
-    return user
+    return parse_jwt_helper
 
 
-def get_wallets_from_token(
-    token: HTTPAuthorizationCredentials = Security(auth_scheme),
-) -> list[Wallet]:
-    """
-    Retrieve a wallet based on its JWT
-    params:
-      token (HTTPAuthorizationCredentials): JWT token
-    raises:
-      HTTPException with status code 401 unauthorized
-    """
-    payload = parse_jwt(token)
+def get_user_from_token(required: bool = True):
+    def get_user_helper(payload: Annotated[dict[str, Any] | None, parse_jwt(required)]) -> User | None:
+        """
+        Retrieve a user using their JWT
+        params:
+        token (HTTPAuthorizationCredentials): JWT token
+        returns:
+        user (User | None | 404)
+        """
+        if not payload:
+            if required:
+                raise HTTPException(detail="No token was provided", status_code=401)
+            return None
+        subject = payload.get("sub")
+        if not subject:
+            raise ValueError()
+        dynamic_user_id: UUID = UUID(subject)
 
-    credentials: list[dict[str, Any]] | None = payload.get("verified_credentials")
-    if not credentials:
-        raise HTTPException(
-            detail="No verified credentials in token",
-            status_code=401,
-        )
-    addresses: list[str] = []
-    for credential in credentials:
-        if address := credential.get("address"):
-            addresses.append(address)
-    # For now, assume the wallet already exists
+        with Session() as session:
+            user = crud.get_user_by_dynamic_id(session, dynamic_id=dynamic_user_id)
+            if required:
+                user = obj_or_404(user, User)
 
-    wallets: list[Wallet] = []
-    with Session() as session:
-        for address in addresses:
-            # Not going to throw a 404 here cuz it's hacky af any how.
-            wallet = crud.get_wallet_by_public_key_hack(session, address)
-            if wallet:
-                wallets.append(wallet)
+        return user
 
-    return wallets
+    return get_user_helper
+
+
+def get_wallets_from_token(required: bool = True):
+    def get_wallets_helper(
+        payload: Annotated[dict[str, Any] | None, parse_jwt(required)],
+    ) -> list[Wallet] | None:
+        """
+        Retrieve a wallet based on its JWT
+        params:
+        token (HTTPAuthorizationCredentials): JWT token
+        raises:
+        HTTPException with status code 401 unauthorized
+        """
+        if not payload:
+            if required:
+                raise HTTPException(detail="No token was provided", status_code=401)
+            return None
+        credentials: list[dict[str, Any]] | None = payload.get("verified_credentials")
+        if not credentials:
+            raise HTTPException(
+                detail="No verified credentials in token",
+                status_code=401,
+            )
+        addresses: list[str] = []
+        for credential in credentials:
+            if address := credential.get("address"):
+                addresses.append(address)
+        # For now, assume the wallet already exists
+
+        wallets: list[Wallet] = []
+        with Session() as session:
+            for address in addresses:
+                # Not going to throw a 404 here cuz it's hacky af any how.
+                wallet = crud.get_wallet_by_public_key_hack(session, address)
+                if wallet:
+                    wallets.append(wallet)
+
+        return wallets
+
+    return get_wallets_helper
 
 
 def check_scopes(
     *required_permissions: str,
-) -> Callable[[HTTPAuthorizationCredentials], None]:
-    """
-    Check if a user has the necessary permissions.
-    raises:
-      HTTPException with status code 403 forbidden
-    """
+    required: bool = True,
+):
     def helper(
-        token: HTTPAuthorizationCredentials = Security(auth_scheme),
+        payload: Annotated[dict[str, Any] | None, parse_jwt(required)],
     ) -> None:
-        payload = parse_jwt(token)
+        """
+        Check if a user has the necessary permissions.
+        raises:
+        HTTPException with status code 403 forbidden
+        """
+        if not payload:
+            if required:
+                raise HTTPException(detail="No token was provided", status_code=401)
+            return None
         payload_access_list: list[str] = payload.get("lists", [])
         if missing_permissions := (set(required_permissions) - set(payload_access_list)):
             raise HTTPException(
                 detail=f"Missing permissions: {missing_permissions}",
                 status_code=403,
             )
+
         return None
+
     return helper
 
 
 def get_scopes(
-    token: HTTPAuthorizationCredentials = Security(auth_scheme),
+    payload: Annotated[dict[str, Any] | None, parse_jwt(False)],
 ) -> set[str]:
-    payload = parse_jwt(token)
+    """
+    Optional security, does not throw if no token
+    """
+    if not payload:
+        return set()
     scopes_list = payload.get("lists", [])
     return set(scopes_list)
 
 
 def get_is_admin(
-    token: HTTPAuthorizationCredentials = Security(auth_scheme),
+    payload: Annotated[dict[str, Any] | None, parse_jwt(False)],
 ) -> bool:
-    payload = parse_jwt(token)
+    """
+    Optional security, does not throw if no token
+    """
+    if not payload:
+        return False
     scopes = set(payload.get("lists", []))
     return "admin" in scopes
 
+IsAdminDepends = Annotated[bool, Depends(get_is_admin)]
+
 
 def get_is_admin_or_owner(
-    is_admin: Annotated[bool, Depends(get_is_admin)],
-    user: Annotated[User, Security(get_user_from_token)]
+    is_admin: IsAdminDepends,
+    user: Annotated[User, Security(get_user_from_token(False))]
 ) -> Callable[[UUID], bool]:
+    """
+    Optional security, does not throw if no token
+    """
     def helper(maybe_id: UUID) -> bool:
         return is_admin or maybe_id == user.id
     return helper
+
+IsAdminOrOwnerDepends = Annotated[Callable[[UUID], bool], Depends(get_is_admin_or_owner)]
