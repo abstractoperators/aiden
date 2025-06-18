@@ -129,8 +129,7 @@ env = os.getenv("ENV")
 if env == "dev" or env == "test":
     allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
 elif env == "staging":
-    allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
-    # allowed_origins = ["https://staigen.space"]
+    allowed_origins = ["https://staigen.space"]
 elif env == "prod":
     allowed_origins = ["https://aidn.fun"]
 else:
