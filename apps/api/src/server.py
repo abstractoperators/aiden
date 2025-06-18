@@ -676,7 +676,7 @@ async def delete_wallet(
 @app.post("/users")
 async def create_user(
     user: UserBase,
-    decoded_token: Annotated[dict[str, Any], Security(parse_jwt)],
+    decoded_token: Annotated[dict[str, Any], Security(parse_jwt())],
     is_admin: IsAdminDepends,
 ) -> User:
     """
