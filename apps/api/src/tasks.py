@@ -463,12 +463,12 @@ def delete_runtime(
             elbv2_client.delete_target_group(
                 TargetGroupArn=runtime.target_group_arn,
             )
-    except Exception:
-        print(Exception)
-        pass
 
-    # Delete the runtime in db
-    with Session() as session:
-        crud.delete_runtime(session, runtime)
+        # Delete the runtime in db
+        with Session() as session:
+            crud.delete_runtime(session, runtime)
+    except Exception as e:
+        logger.exception(e)
+        pass
 
     return None

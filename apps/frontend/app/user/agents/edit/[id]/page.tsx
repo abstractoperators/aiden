@@ -35,7 +35,7 @@ export default async function AgentEdit({
       </h1>
       <AgentForm
         defaultValues={{
-          env: envFile.map(({ key, value }) => `${key}=${value || ""}`).join("\n"),
+          env: envFile.map(({ key, value }) => ({key, value: value ?? ""})),
           twitter: characterJson.clients.includes("twitter"),
           isNewToken: false,
           tokenId: tokenId || "",
