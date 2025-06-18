@@ -129,7 +129,8 @@ env = os.getenv("ENV")
 if env == "dev" or env == "test":
     allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
 elif env == "staging":
-    allowed_origins = ["https://staigen.space"]
+    allowed_origins = ["http://localhost:3000", "http://localhost:8001"]
+    # allowed_origins = ["https://staigen.space"]
 elif env == "prod":
     allowed_origins = ["https://aidn.fun"]
 else:
@@ -676,7 +677,7 @@ async def delete_wallet(
 @app.post("/users")
 async def create_user(
     user: UserBase,
-    decoded_token: Annotated[dict[str, Any], Security(parse_jwt)],
+    decoded_token: Annotated[dict[str, Any], Security(parse_jwt())],
     is_admin: IsAdminDepends,
 ) -> User:
     """
