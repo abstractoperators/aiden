@@ -240,7 +240,7 @@ function AgentForm({
           </AccordionItem>
 
           <Style control={control} />
-          <EnvironmentVariables control={control} />
+          <EnvironmentVariables />
 
           <AccordionItem value="Twitter">
             <AccordionTrigger>Twitter</AccordionTrigger>
@@ -442,11 +442,10 @@ function FieldArray({
   )
 }
 
-function EnvironmentVariables({ control }: { control: Control<FormType> }) {
+function EnvironmentVariables() {
   const name = "env"
   const title = "Environment Variables"
   const { fields, append, remove } = useFieldArray({
-    control,
     name,
   })
 
