@@ -197,9 +197,15 @@ def get_runtime(session: Session, runtime_id: UUID) -> Runtime | None:
 
 
 def get_runtimes(
-    session: Session, skip: int = 0, limit: int = 100
+    session: Session, skip: int = 0, limit: int = 100, started: bool | None = None,
 ) -> Sequence[Runtime]:
     stmt = select(Runtime).offset(skip).limit(limit)
+
+    if started is True:
+        stmt = stmt.where(Runtime.started == True)
+    elif started is False:
+        stmt = stmt.where(Runtime.started == False)
+        
     return session.scalars(stmt).all()
 
 

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 from base64 import b64decode
 from collections.abc import Sequence
@@ -450,15 +451,33 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 
         return TaskStatus(task["status"])
     
-
 @app.post("/agents/{agent_id}/start")
-def start_agent_without_runtime(agent_id: UUID) -> AgentStartTask:
+def start_agent_without_runtime(
+    agent_id: UUID,
+    current_user: Annotated[User, Security(get_user_from_token)],
+    scopes: Annotated[set[str], Depends(get_scopes)],
+) -> AgentStartTask:
+    """
+    Starts an agent. If an idle runtime is available, it is used.
+    If none are available, new runtimes are provisioned and the user is asked to retry.
+    """
+    is_admin = "admin" in scopes
+
     with Session() as session:
-        runtimes = crud.get_runtimes(session)
-        started_runtimes = [r for r in runtimes if r.started]
+        agent = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        if not is_admin and agent.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to start an agent that doesn't belong to you",
+            )
+
+        
+        started_runtimes = crud.get_runtimes(session, started=True)
 
         runtime_id = None
-
         for rt in started_runtimes:
             try:
                 resp = requests.get(f"{rt.url}/controller/character/status", timeout=2)
@@ -469,15 +488,27 @@ def start_agent_without_runtime(agent_id: UUID) -> AgentStartTask:
                 continue
 
         if not runtime_id:
-            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
-            for _ in range(to_provision):
-                tasks.create_runtime.delay()
+
+            recent_threshold = datetime.utcnow() - timedelta(seconds=30)
+            recent_unstarted = (
+                session.query(Runtime)
+                .filter(Runtime.started == False)
+                .filter(Runtime.created_at >= recent_threshold)
+                .limit(1)
+                .all()
+            )
+
+            if not recent_unstarted:
+                to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
+                for _ in range(to_provision):
+                    tasks.create_runtime.delay()
+
             raise HTTPException(
                 status_code=503,
                 detail="Warming up runtime(s). Please retry shortly.",
             )
 
-        task = start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+        task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
 
         return crud.create_agent_start_task(
             session,
