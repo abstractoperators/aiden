@@ -64,7 +64,7 @@ function UploadForm() {
   const form = useForm<UploadType>({
     resolver: zodResolver(uploadSchema),
     defaultValues: {
-      env: "",
+      env: [{ key: "", value: "", }],
       isNewToken: true,
       tokenName: "",
       ticker: "",
@@ -79,7 +79,7 @@ function UploadForm() {
 
   async function onUploadSubmit(formData: UploadType) {
     console.debug("UploadForm", formData)
-    const { env: envFile, characterFile, isNewToken } = formData
+    const { env, characterFile, isNewToken } = formData
 
     const fileText = await characterFile.text().catch(error => {
       toast({
@@ -99,7 +99,12 @@ function UploadForm() {
     return onSubmitCreate({
       dynamicId: userId,
       character,
-      envFile,
+      envFile: (
+        env
+        .filter(({value}) => value.length)
+        .map(({key, value}) => `${key}=${value}`)
+        .join('\n')
+      ),
       token: isNewToken ? formData : formData.tokenId,
       push,
       wallet,
