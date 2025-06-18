@@ -167,7 +167,7 @@ function AgentForm({
       character,
       envFile: (
         env
-        .filter(({key, value}) => key.length && value.length)
+        .filter(({value}) => value.length)
         .map(({key, value}) => `${key}=${value}`)
         .join('\n')
       ),
@@ -467,7 +467,6 @@ function EnvironmentVariables({ control }: { control: Control<FormType> }) {
                   name={`${name}.${index}.${fieldName}`}
                   render={({ field: formField }) => (
                     <FormItem>
-                      <FormLabel></FormLabel>
                       <FormControl>
                         <Input
                           className="placeholder:text-neutral-400"
