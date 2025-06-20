@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import TypeVar
 from uuid import UUID
-
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql import text
 from sqlmodel import Session, col, select
 
@@ -32,6 +32,7 @@ from .models import (
 )
 
 M = TypeVar("M", bound=Base)
+N = TypeVar("N", bound=Base)
 
 
 # region Generics
@@ -42,7 +43,7 @@ def create_generic(session: Session, model: M) -> M:
     return model
 
 
-def update_generic(session: Session, model: M, model_update: Base) -> M:
+def update_generic(session: Session, model: M, model_update: N) -> M:
     fields_payload = model_update.model_dump(exclude_unset=True)
     model.sqlmodel_update(fields_payload)
     session.add(model)
@@ -52,7 +53,7 @@ def update_generic(session: Session, model: M, model_update: Base) -> M:
     return model
 
 
-def delete_generic(session: Session, model: Base) -> None:
+def delete_generic(session: Session, model: M) -> None:
     session.delete(model)
     session.commit()
     return None
@@ -106,7 +107,7 @@ def create_agent(session: Session, agent: AgentBase) -> Agent:
     return create_generic(session, Agent(**agent.model_dump()))
 
 
-def update_agent(session: Session, agent: Agent, agent_update: AgentUpdate) -> Agent:
+def update_agent(session, agent: Agent, agent_update: AgentUpdate) -> Agent:
     return update_generic(session, agent, agent_update)
 
 
@@ -196,17 +197,24 @@ def get_runtime(session: Session, runtime_id: UUID) -> Runtime | None:
     return session.exec(stmt).first()
 
 
-def get_runtimes(
-    session: Session, skip: int = 0, limit: int = 100, started: bool | None = None,
-) -> Sequence[Runtime]:
-    stmt = select(Runtime).offset(skip).limit(limit)
+def get_runtimes(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Runtime]:
+    AgentAlias = aliased(Agent)
 
-    if started is True:
-        stmt = stmt.where(Runtime.started == True)
-    elif started is False:
-        stmt = stmt.where(Runtime.started == False)
-        
-    return session.scalars(stmt).all()
+    stmt = (
+        select(Runtime)
+        .outerjoin(AgentAlias, AgentAlias.runtime_id == Runtime.id)
+        .where(AgentAlias.runtime_id == None)
+        .offset(skip)
+        .limit(limit)
+    )
+
+    return session.execute(stmt).scalars().all()
+
+# def get_runtimes(
+#     session: Session, skip: int = 0, limit: int = 100
+# ) -> Sequence[Runtime]:
+#     stmt = select(Runtime).offset(skip).limit(limit)
+#     return session.scalars(stmt).all()
 
 
 def update_runtime(
@@ -248,7 +256,7 @@ def delete_token(session: Session, token: Token) -> None:
 
 
 # region Tasks
-def get_task(session: Session, task_id: UUID) -> dict[str, str] | None:
+def get_task(session: Session, task_id: UUID) -> dict | None:
     query = text("""
         SELECT task_id, status FROM celery_taskmeta WHERE task_id = :task_id
         """).bindparams(task_id=str(task_id))
