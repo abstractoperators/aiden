@@ -455,128 +455,6 @@ def get_task_status(task_id: UUID) -> TaskStatus:
             raise HTTPException(status_code=404, detail="Task not found")
 
         return TaskStatus(task["status"])
-    
-# @app.post("/agents/{agent_id}/start")
-# def start_agent_without_runtime(
-#     agent_id: UUID,
-#     is_admin_or_owner: IsAdminOrOwnerDepends,
-# ) -> AgentStartTask:
-#     """
-#     Starts an agent. If an idle runtime is available, it is used.
-#     If none are available, new runtimes are provisioned and the user is asked to retry.
-#     """
-
-#     with Session() as session:
-#         agent = crud.get_agent(session, agent_id)
-#         if not agent:
-#             raise HTTPException(status_code=404, detail="Agent not found")
-
-#         if not is_admin_or_owner(agent.owner_id):
-#             raise HTTPException(
-#                 status_code=403,
-#                 detail="You do not have permission to start an agent that doesn't belong to you",
-#             )
-
-        
-#         started_runtimes = crud.get_runtimes(session)
-
-#         runtime_id = None
-#         for rt in started_runtimes:
-#             try:
-#                 resp = requests.get(f"{rt.url}/controller/character/status", timeout=2)
-#                 if resp.status_code == 200 and not resp.json().get("running", True):
-#                     runtime_id = rt.id
-#                     break
-#             except Exception:
-#                 continue
-
-#         if not runtime_id:
-
-#             recent_threshold = datetime.utcnow() - timedelta(seconds=30)
-#             recent_unstarted = (
-#                 session.query(Runtime)
-#                 .filter(Runtime.started == False)
-#                 .filter(Runtime.created_at >= recent_threshold)
-#                 .limit(1)
-#                 .all()
-#             )
-
-#             if not recent_unstarted:
-#                 to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
-#                 for _ in range(to_provision):
-#                     tasks.create_runtime.delay()
-
-#             raise HTTPException(
-#                 status_code=503,
-#                 detail="Warming up runtime(s). Please retry shortly.",
-#             )
-
-#         task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
-
-#         return crud.create_agent_start_task(
-#             session,
-#             AgentStartTaskBase(
-#                 agent_id=agent_id,
-#                 runtime_id=runtime_id,
-#                 celery_task_id=task.id,
-#             )
-#         )
-
-# @app.post("/agents/{agent_id}/start")
-# def start_agent_without_runtime(
-#     agent_id: UUID,
-#     is_admin_or_owner: IsAdminOrOwnerDepends,
-# ) -> AgentStartTask:
-#     """
-#     Starts an agent. If an idle runtime is available, it is used.
-#     If none are available, new runtimes are provisioned and the user is asked to retry.
-#     """
-#     with Session() as session:
-#         agent = crud.get_agent(session, agent_id)
-#         if not agent:
-#             raise HTTPException(status_code=404, detail="Agent not found")
-
-#         if not is_admin_or_owner(agent.owner_id):
-#             raise HTTPException(
-#                 status_code=403,
-#                 detail="You do not have permission to start this agent",
-#             )
-
-#         # Step 1: Look for idle started runtimes
-#         started_runtimes = crud.get_runtimes(session)
-#         runtime_id = None
-
-#         for rt in started_runtimes:
-#             try:
-#                 resp = requests.get(f"{rt.url}/controller/character/status", timeout=2)
-#                 if resp.status_code == 200 and not resp.json().get("running", True):
-#                     runtime_id = rt.id
-#                     break
-#             except Exception:
-#                 continue
-
-#         # Step 2: If no idle runtime found, just provision new ones immediately
-#         if not runtime_id:
-#             to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
-#             for _ in range(to_provision):
-#                 tasks.create_runtime.delay()
-
-#             raise HTTPException(
-#                 status_code=503,
-#                 detail="Warming up new runtime(s). Please retry shortly.",
-#             )
-
-#         # Step 3: Start the agent on the selected runtime
-#         task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
-
-#         return crud.create_agent_start_task(
-#             session,
-#             AgentStartTaskBase(
-#                 agent_id=agent_id,
-#                 runtime_id=runtime_id,
-#                 celery_task_id=task.id,
-#             )
-#         )
 
 @app.post("/agents/{agent_id}/start")
 def start_agent_without_runtime(
@@ -598,11 +476,11 @@ def start_agent_without_runtime(
                 detail="You do not have permission to start this agent",
             )
 
-        # Step 1: Get idle runtimes (i.e. those without an assigned agent)
+        # Get idle runtimes 
         idle_runtimes = crud.get_runtimes(session)
 
         if not idle_runtimes:
-            # Step 2: Provision new runtimes if none are idle
+            # Provision new runtimes 
             to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
             for _ in range(to_provision):
                 tasks.create_runtime.delay()
@@ -612,7 +490,7 @@ def start_agent_without_runtime(
                 detail="Provisioning new runtime(s). Please retry shortly.",
             )
 
-        # Step 3: Use the first available idle runtime
+        #  Use the first available idle runtime
         runtime_id = idle_runtimes[0].id
         task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
 
