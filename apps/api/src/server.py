@@ -785,7 +785,7 @@ async def delete_user(
 
         crud.delete_user(session, user)
 
-
+'''
 @app.patch(
     "/runtimes/{runtime_id}",
     dependencies=[Security(check_scopes("admin"))],
@@ -835,7 +835,7 @@ def update_runtime(
         )
 
         return runtime_update_task
-
+'''
 
 @app.delete(
     "/runtimes/{runtime_id}",
