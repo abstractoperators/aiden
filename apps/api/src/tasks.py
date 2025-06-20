@@ -152,7 +152,7 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
             delete_runtime.delay(runtime_id)
             return "Runtime failed healthcheck too many times. Deleting it."
         elif runtime.failed_healthchecks > FAILED_HEALTHCHECKS_BEFORE_UPDATE:
-            update_runtime.delay(runtime_id)
+            # update_runtime.delay(runtime_id)
             return "Runtime is unhealthy. Attempting to update and restart it."
 
     # 3. Check if the character running on the runtime is healthy
