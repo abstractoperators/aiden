@@ -785,58 +785,6 @@ async def delete_user(
 
         crud.delete_user(session, user)
 
-'''
-@app.patch(
-    "/runtimes/{runtime_id}",
-    dependencies=[Security(check_scopes("admin"))],
-)
-def update_runtime(
-    runtime_id: UUID,
-) -> RuntimeUpdateTask:
-    """
-    Updates runtime to latest task definition.
-    Restarts the agent running on it (if any).
-    This needs to be run everytime:
-       1. Runtime image is updated (in ECR)
-       2. Task definition is updated.
-    """
-    with Session() as session:
-        # Make sure that there isn't already a task running to update this runtime.
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-        if not runtime:
-            raise HTTPException(status_code=404, detail="Runtime not found")
-        existing_runtime_update_task: RuntimeUpdateTask | None = (
-            crud.get_runtime_update_task(session, runtime_id)
-        )
-        if existing_runtime_update_task:
-            task_status = get_task_status(existing_runtime_update_task.celery_task_id)
-            if task_status == TaskStatus.PENDING or task_status == TaskStatus.STARTED:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"There is already an active {task_status} runtime update task for runtime {runtime_id}",
-                )
-
-        service_arn = runtime.service_arn
-        aws_config = get_aws_config(runtime.service_no)
-
-        logger.info(
-            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name}",
-        )
-
-        res = tasks.update_runtime.delay(
-            runtime_id=runtime_id,
-        )
-        runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(  #
-            session,
-            RuntimeUpdateTaskBase(
-                runtime_id=runtime_id,
-                celery_task_id=res.id,
-            ),
-        )
-
-        return runtime_update_task
-'''
-
 @app.delete(
     "/runtimes/{runtime_id}",
     dependencies=[Security(check_scopes("admin"))],
