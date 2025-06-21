@@ -152,8 +152,7 @@ def healthcheck_runtime(runtime_id: UUID) -> str:
             delete_runtime.delay(runtime_id)
             return "Runtime failed healthcheck too many times. Deleting it."
         elif runtime.failed_healthchecks > FAILED_HEALTHCHECKS_BEFORE_UPDATE:
-            update_runtime.delay(runtime_id)
-            return "Runtime is unhealthy. Attempting to update and restart it."
+            return "Runtime is unhealthy. No update attempted."
 
     # 3. Check if the character running on the runtime is healthy
     if agent:
@@ -345,86 +344,6 @@ def create_runtime(
         logger.error(f"{e}: Rolling back runtime")
         delete_runtime(runtime_id=runtime_id)
         raise e
-
-
-@app.task()
-def update_runtime(
-    runtime_id: UUID,
-) -> str:
-    """
-    Updates a runtime to the latest revision of its task definition + latest container in ECR
-    Deletes the runtime entirely
-    """
-    try:
-        # TODO: If the update fails then delete everything including aws and db entry.
-        with Session() as session:
-            # Update agent running on the runtime to not have a runtime anymore.
-            runtime = crud.get_runtime(session, runtime_id)
-            if runtime is None:
-                raise ValueError(f"Runtime {runtime_id} does not exist")
-            agent = runtime.agent
-            if agent is not None:
-                agent_id = agent.id
-                crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
-            crud.update_runtime(session, runtime, RuntimeUpdate(started=False))
-
-            aws_config: AWSConfig = get_aws_config(runtime.service_no)
-            # Force a redeployment of the runtime.
-            task_definition_arn = aws_config.task_definition_arn
-            ecs_client = get_role_session().client("ecs")
-            latest_revision = get_latest_task_definition_revision(
-                ecs_client, aws_config.task_definition_arn
-            )
-            service = ecs_client.update_service(
-                cluster=aws_config.cluster,
-                service=aws_config.service_name,
-                taskDefinition=f"{task_definition_arn}:{latest_revision}",
-                forceNewDeployment=True,
-            )["service"]
-
-        # Poll the service until the deployment is stable (that is, old tasks are stopped, and new ones are running)
-        runtime_url = runtime.url
-        for i in range(1, 41):
-            logger.info(
-                f"{i}/40: Polling service {aws_config.service_name} for stability"
-            )
-            service = ecs_client.describe_services(
-                cluster=aws_config.cluster,
-                services=[aws_config.service_name],
-            )["services"][0]
-            active_deployment_id = None
-            for deployment in service["deployments"]:
-                if deployment["status"] == "ACTIVE":
-                    active_deployment_id = deployment["id"]
-                    break
-            if active_deployment_id is None:
-                logger.info(f"{aws_config.service_name} is stable")
-                break
-            sleep(15)
-
-        # Poll runtime until it's online.
-        for i in range(1, 41):
-            try:
-                resp = requests.get(f"{runtime_url}/ping", timeout=3)
-                resp.raise_for_status()
-                logger.info(f"Runtime {runtime_id} is online")
-                with Session() as session:
-                    crud.update_runtime(session, runtime, RuntimeUpdate(started=True))
-                break
-            except Exception as e:
-                logger.info(f"{i}/{40}: Runtime {runtime_id} is not online yet. {e}")
-                sleep(15)
-
-        # Restart the agent (if any)
-        logger.info("Restarting agent (if any)")
-        if agent is not None:
-            logger.info(f"Restarting agent {agent_id}")
-            start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
-    except Exception as e:
-        logger.info(f"{e}: Deleting runtime - update failed")
-        delete_runtime.delay(runtime_id=runtime_id)
-        return "Update failed. Deleted runtime."
-    return "Update successful."
 
 
 @app.task()
