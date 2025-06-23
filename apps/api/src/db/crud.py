@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from typing import TypeVar
 from uuid import UUID
-
 from sqlalchemy.sql import text
 from sqlmodel import Session, col, select
 
@@ -32,6 +31,7 @@ from .models import (
 )
 
 M = TypeVar("M", bound=Base)
+
 
 
 # region Generics
@@ -195,12 +195,16 @@ def get_runtime(session: Session, runtime_id: UUID) -> Runtime | None:
     stmt = select(Runtime).where(Runtime.id == runtime_id)
     return session.exec(stmt).first()
 
+def get_runtimes(session: Session, skip: int = 0, limit: int = 100) -> Sequence[Runtime]:
+    stmt = (
+        select(Runtime)
+        .outerjoin(Agent, Agent.runtime_id == Runtime.id)
+        .where(Agent.runtime_id == None)  # Get only idle runtimes
+        .offset(skip)
+        .limit(limit)
+    )
 
-def get_runtimes(
-    session: Session, skip: int = 0, limit: int = 100
-) -> Sequence[Runtime]:
-    stmt = select(Runtime).offset(skip).limit(limit)
-    return session.scalars(stmt).all()
+    return session.execute(stmt).scalars().all()
 
 
 def update_runtime(

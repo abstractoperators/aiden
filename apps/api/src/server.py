@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 from base64 import b64decode
 from collections.abc import Sequence
@@ -7,10 +8,11 @@ from typing import Annotated, Any
 from uuid import UUID
 
 import requests
-from fastapi import FastAPI, HTTPException, Request, Security
+from fastapi import FastAPI, HTTPException, Request, Security, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 from src import logger, tasks
 from src.auth import (
@@ -57,9 +59,12 @@ from src.models import (
 from src.setup import test_db_connection
 from src.utils import obj_or_404
 
+agent_live_gauge = Gauge("agent_live_count", "Current live agents")
+agent_killed_counter = Counter("agent_killed_total", "Total agents killed")
+agent_event_counter = Counter("agent_event_total", "Agent lifecycle events", ["type"])
+
 # TODO: Change a ton of endpoints to not require information that is already in the JWT token.
 # For example, PATCH /users should just require the user_id in the JWT token, not in query params.
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
@@ -114,7 +119,7 @@ async def auth_middleware(
 
 
 instrumentator = Instrumentator(
-    excluded_handlers=["/metrics"],
+    excluded_handlers=["/metrics_prometheus"],
 )
 
 # Handler and method included by default
@@ -122,7 +127,7 @@ instrumentator.add(metrics.latency())
 instrumentator.add(metrics.request_size())
 instrumentator.add(metrics.response_size())
 
-instrumentator.instrument(app).expose(app)
+instrumentator.instrument(app).expose(app, endpoint="/metrics_prometheus")
 
 # TODO: Change this based on env
 env = os.getenv("ENV")
@@ -450,6 +455,52 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 
         return TaskStatus(task["status"])
 
+@app.post("/agents/{agent_id}/start")
+def start_agent_without_runtime(
+    agent_id: UUID,
+    is_admin_or_owner: IsAdminOrOwnerDepends,
+) -> AgentStartTask:
+    """
+    Starts an agent. Uses an idle runtime if available.
+    Otherwise, provisions new runtimes and asks the user to retry.
+    """
+    with Session() as session:
+        agent = crud.get_agent(session, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        if not is_admin_or_owner(agent.owner_id):
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to start this agent",
+            )
+
+        # Get idle runtimes 
+        idle_runtimes = crud.get_runtimes(session)
+
+        if not idle_runtimes:
+            # Provision new runtimes 
+            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
+            for _ in range(to_provision):
+                tasks.create_runtime.delay()
+
+            raise HTTPException(
+                status_code=503,
+                detail="Provisioning new runtime(s). Please retry shortly.",
+            )
+
+        #  Use the first available idle runtime
+        runtime_id = idle_runtimes[0].id
+        task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+
+        return crud.create_agent_start_task(
+            session,
+            AgentStartTaskBase(
+                agent_id=agent_id,
+                runtime_id=runtime_id,
+                celery_task_id=task.id,
+            )
+        )
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
@@ -505,6 +556,10 @@ def start_agent(
             runtime_id=runtime_id,
             celery_task_id=res.id,
         )
+
+        #prometheus test metrics
+        agent_live_gauge.inc()
+        agent_event_counter.labels("start").inc()
         return crud.create_agent_start_task(session, task_record)
 
 
@@ -544,6 +599,11 @@ def stop_agent(
         resp.raise_for_status()
 
         stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+
+         #Prometheus metrics
+        agent_live_gauge.dec()
+        agent_killed_counter.inc()
+        agent_event_counter.labels("kill").inc()
 
         return stopped_agent
 
@@ -811,3 +871,10 @@ def delete_runtime(
         )
 
         return runtime_delete_task
+    
+
+
+
+@app.get("/metrics_prometheus")
+async def metrics_prometheus():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
