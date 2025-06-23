@@ -493,6 +493,9 @@ def start_agent_without_runtime(
         runtime_id = idle_runtimes[0].id
         task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
 
+        agent_live_gauge.inc()
+        agent_event_counter.labels("start").inc()
+        
         return crud.create_agent_start_task(
             session,
             AgentStartTaskBase(
