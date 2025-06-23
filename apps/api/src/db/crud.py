@@ -106,7 +106,7 @@ def create_agent(session: Session, agent: AgentBase) -> Agent:
     return create_generic(session, Agent(**agent.model_dump()))
 
 
-def update_agent(session, agent: Agent, agent_update: AgentUpdate) -> Agent:
+def update_agent(session:Session, agent: Agent, agent_update: AgentUpdate) -> Agent:
     return update_generic(session, agent, agent_update)
 
 
