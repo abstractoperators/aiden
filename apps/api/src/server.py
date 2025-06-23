@@ -13,7 +13,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
-from fastapi import Response
 
 from src import logger, tasks
 from src.auth import (
