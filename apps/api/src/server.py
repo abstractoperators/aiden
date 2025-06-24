@@ -458,21 +458,11 @@ def start_agent_without_runtime(
     Otherwise, provisions new runtimes and asks the user to retry.
     """
     with Session() as session:
-        agent = crud.get_agent(session, agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-
-        if not is_admin_or_owner(agent.owner_id):
-            raise HTTPException(
-                status_code=403,
-                detail="You do not have permission to start this agent",
-            )
-
         unused_runtime = crud.get_runtimes(session, unused=True).first()
     
         if unused_runtime is None:
             # Provision new runtimes 
-            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
+            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 2))
             for _ in range(to_provision):
                 create_runtime()
 
@@ -481,21 +471,7 @@ def start_agent_without_runtime(
                 detail="Provisioning new runtime(s). Please retry shortly.",
             )
 
-        #  Use the first available idle runtime
-        task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=unused_runtime.id)
-
-        #prometheus test metrics
-        agent_live_gauge.inc()
-        agent_event_counter.labels("start").inc()
-
-        return crud.create_agent_start_task(
-            session,
-            AgentStartTaskBase(
-                agent_id=agent_id,
-                runtime_id=unused_runtime.id,
-                celery_task_id=task.id,
-            )
-        )
+        return start_agent(agent_id, unused_runtime.id, is_admin_or_owner)
 
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
