@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
-import AgentForm from "@/components/agent-form";
 import { Button } from "@/components/ui/button";
 import { getAgent } from "@/lib/api/agent";
 import { isErrorResult, isSuccessResult } from "@/lib/api/result";
 import { getUser, User } from "@/lib/api/user";
 import Link from "next/link";
+import FormTabs from "./tabs";
 
 export default async function AgentEdit({
   params,
@@ -22,7 +22,7 @@ export default async function AgentEdit({
     </div>
   )}
 
-  const { characterJson, envFile, ownerId, tokenId } = agentResult.data
+  const { characterJson, ownerId } = agentResult.data
 
   const session = await auth()
   const user = session?.user?.id && await getUser({dynamicId: session.user.id})
@@ -33,15 +33,8 @@ export default async function AgentEdit({
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
         Edit Agent {characterJson.name}
       </h1>
-      <AgentForm
-        defaultValues={{
-          env: envFile.map(({ key, value }) => ({key, value: value ?? ""})),
-          twitter: characterJson.clients.includes("twitter"),
-          isNewToken: false,
-          tokenId: tokenId || "",
-          ...characterJson
-        }}
-        agentId={id}
+      <FormTabs
+        {...agentResult.data}
       />
       <Button
         variant="destructive"
