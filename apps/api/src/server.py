@@ -447,6 +447,7 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 
         return TaskStatus(task["status"])
 
+
 @app.post("/agents/{agent_id}/start")
 def start_agent_without_runtime(
     agent_id: UUID,

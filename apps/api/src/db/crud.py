@@ -204,7 +204,11 @@ def get_runtimes(
 ) -> ScalarResult[Runtime]:
     stmt = select(Runtime)
     if unused:
-        stmt = stmt.where(not Runtime.agent)
+        stmt = (
+            stmt
+            .outerjoin(Agent)
+            .where(Agent.runtime_id == None)
+        )
     stmt = (
         stmt
         .offset(skip)
