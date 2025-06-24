@@ -3,7 +3,7 @@ import { auth } from "@/auth"
 import AgentCard from "@/components/agent-card"
 import DescriptionCard from "@/components/agent-description-card"
 import Chat from "@/components/chat"
-import SwapCard from "@/components/token/swap"
+// import SwapCard from "@/components/token/swap"
 import { buttonVariants } from "@/components/ui/button"
 import { getAgent } from "@/lib/api/agent"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
@@ -72,7 +72,7 @@ export default async function AgentHome({
         <DescriptionCard {...character} />
       </div>
       <div className="col-span-5 flex flex-col justify-start items-stretch gap-2">
-        <SwapCard token={token}/>
+        {/* <SwapCard token={token}/> */}
         <Chat init={agent} />
       </div>
     </main>

@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 import os
 from base64 import b64decode
 from collections.abc import Sequence
@@ -37,8 +36,6 @@ from src.db.models import (
     RuntimeCreateTaskBase,
     RuntimeDeleteTask,
     RuntimeDeleteTaskBase,
-    RuntimeUpdateTask,
-    RuntimeUpdateTaskBase,
     Token,
     TokenBase,
     User,
@@ -325,11 +322,11 @@ def create_runtime() -> RuntimeCreateTask:
     """
     # Perhaps, the least performant code ever written
     # This is why *real* companies use leetcode
+    runtime_nums: set[int] = set()
     with Session() as session:
         runtimes = crud.get_runtimes(
             session, limit=1000000
         )  # lul better hope you don't run out of memory
-        runtime_nums: set[int] = set()
         for runtime in runtimes:
             runtime_nums.add(runtime.service_no)
 
@@ -375,12 +372,7 @@ def get_runtimes(
     Returns a list of up to 100 runtimes.
     """
     with Session() as session:
-        runtimes = crud.get_runtimes(session)
-
-        if unused:
-            runtimes = [runtime for runtime in runtimes if not runtime.agent]
-
-        return runtimes
+        return [runtime for runtime in crud.get_runtimes(session, unused=unused)]
 
 
 @app.get("/runtimes/{runtime_id}")
@@ -455,52 +447,32 @@ def get_task_status(task_id: UUID) -> TaskStatus:
 
         return TaskStatus(task["status"])
 
+
 @app.post("/agents/{agent_id}/start")
 def start_agent_without_runtime(
     agent_id: UUID,
     is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> AgentStartTask:
     """
-    Starts an agent. Uses an idle runtime if available.
+    Starts an agent. Uses an unused runtime if available.
     Otherwise, provisions new runtimes and asks the user to retry.
     """
     with Session() as session:
-        agent = crud.get_agent(session, agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-
-        if not is_admin_or_owner(agent.owner_id):
-            raise HTTPException(
-                status_code=403,
-                detail="You do not have permission to start this agent",
-            )
-
-        # Get idle runtimes 
-        idle_runtimes = crud.get_runtimes(session)
-
-        if not idle_runtimes:
+        unused_runtime = crud.get_runtimes(session, unused=True).first()
+    
+        if unused_runtime is None:
             # Provision new runtimes 
-            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 1))
+            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 2))
             for _ in range(to_provision):
-                tasks.create_runtime.delay()
+                create_runtime()
 
             raise HTTPException(
                 status_code=503,
                 detail="Provisioning new runtime(s). Please retry shortly.",
             )
 
-        #  Use the first available idle runtime
-        runtime_id = idle_runtimes[0].id
-        task = tasks.start_agent.delay(agent_id=agent_id, runtime_id=runtime_id)
+        return start_agent(agent_id, unused_runtime.id, is_admin_or_owner)
 
-        return crud.create_agent_start_task(
-            session,
-            AgentStartTaskBase(
-                agent_id=agent_id,
-                runtime_id=runtime_id,
-                celery_task_id=task.id,
-            )
-        )
 
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(

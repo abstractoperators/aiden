@@ -44,7 +44,7 @@ import { getTokens, Token } from "@/lib/api/token"
 import { FormCombobox } from "./ui/combobox"
 import Link from "next/link"
 import {
-  launchTokenFactory,
+  // launchTokenFactory,
   launchSchema as tokenLaunchSchema,
   LaunchSchemaType as TokenLaunchType,
 } from "@/lib/contracts/bonding"
@@ -53,7 +53,6 @@ const borderStyle = "rounded-xl border border-black dark:border-white"
 
 const stringListTitles = {
   "bio": "Biography",
-  "lore": "Lore",
   "knowledge": "Knowledge",
   "postExamples": "Post Examples",
   "adjectives": "Adjectives",
@@ -129,8 +128,8 @@ function AgentForm({
       topics: [],
       style: { all: [], chat: [], post: [], },
       isNewToken: true,
-      tokenName: "",
-      ticker: "",
+      tokenName: "TEMPORARY",
+      ticker: "HOLDER",
     }
   })
   const { control, handleSubmit } = form
@@ -264,7 +263,7 @@ function AgentForm({
             </AccordionContent>
           </AccordionItem>
 
-          { !agentId && <TokenAccordion /> }
+          {/* { !agentId && <TokenAccordion /> } */}
 
         </Accordion>
 
@@ -612,9 +611,9 @@ async function onSubmitCreate({
   dynamicId,
   character,
   envFile,
-  token,
+  // token,
   push,
-  wallet,
+  // wallet,
 }: SubmitProps) {
   console.debug("Character", character)
   const userResult = await getUser({ dynamicId })
@@ -628,30 +627,30 @@ async function onSubmitCreate({
     return
   }
 
-  const tokenId = (
-    (typeof token === "string") ?
-    token :
-    await (async () => {
-      const tokenResult = await launchTokenFactory(wallet)(token)
-      if (isErrorResult(tokenResult)) {
-        toast({
-          title: `Unable to save token ${token.tokenName} ($${token.ticker})`,
-          description: tokenResult.message,
-        })
-      } else {
-        toast({
-          title: `Token ${token.tokenName} ($${token.ticker}) created!`,
-        })
-        return tokenResult.data.id
-      }
-    })()
-  )
+  // const tokenId = (
+  //   (typeof token === "string") ?
+  //   token :
+  //   await (async () => {
+  //     const tokenResult = await launchTokenFactory(wallet)(token)
+  //     if (isErrorResult(tokenResult)) {
+  //       toast({
+  //         title: `Unable to save token ${token.tokenName} ($${token.ticker})`,
+  //         description: tokenResult.message,
+  //       })
+  //     } else {
+  //       toast({
+  //         title: `Token ${token.tokenName} ($${token.ticker}) created!`,
+  //       })
+  //       return tokenResult.data.id
+  //     }
+  //   })()
+  // )
 
   const agentPayload = {
     ownerId: userResult.data.id,
     characterJson: character,
     envFile,
-    tokenId,
+    // tokenId,
   }
   const agentResult = await createAgent(agentPayload)
   if (isErrorResult(agentResult)) {
