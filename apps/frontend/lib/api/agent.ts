@@ -7,7 +7,7 @@ import {
   getResource,
   updateResource,
 } from "./common"
-import { getRuntime, Runtime } from "./runtime"
+import { Runtime } from "./runtime"
 import { TokenBase } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
