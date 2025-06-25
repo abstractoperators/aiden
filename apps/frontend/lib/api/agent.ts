@@ -7,7 +7,7 @@ import {
   getResource,
   updateResource,
 } from "./common"
-import { getRuntime, Runtime } from "./runtime"
+import { Runtime } from "./runtime"
 import { TokenBase } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
@@ -86,17 +86,10 @@ async function startAgent({
   runtimeId?: string,
   maxTries?: number,
 }): Promise<Result<AgentStartTask>> {
-  if (!runtimeId) {
-    const runtime = await getRuntime()
-    if (isErrorResult(runtime)) {
-      return runtime
-    } else {
-      runtimeId = runtime.data.id
-    }
-  }
-
   const result = await createResource<AgentStartTask>(new URL(
-    `${baseUrlPath.href}/${agentId}/start/${runtimeId}`
+    runtimeId ?
+    `${baseUrlPath.href}/${agentId}/start/${runtimeId}` :
+    `${baseUrlPath.href}/${agentId}/start`
   ))
 
   if (isBadRequest(result)) {

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import TypeVar
 from uuid import UUID
-
+from sqlalchemy import ScalarResult
 from sqlalchemy.sql import text
 from sqlmodel import Session, col, select
 
@@ -197,10 +197,25 @@ def get_runtime(session: Session, runtime_id: UUID) -> Runtime | None:
 
 
 def get_runtimes(
-    session: Session, skip: int = 0, limit: int = 100
-) -> Sequence[Runtime]:
-    stmt = select(Runtime).offset(skip).limit(limit)
-    return session.scalars(stmt).all()
+    session: Session,
+    unused: bool = False,
+    skip: int = 0,
+    limit: int = 100,
+) -> ScalarResult[Runtime]:
+    stmt = select(Runtime)
+    if unused:
+        stmt = (
+            stmt
+            .outerjoin(Agent)
+            .where(Agent.runtime_id == None)
+        )
+    stmt = (
+        stmt
+        .offset(skip)
+        .limit(limit)
+    )
+
+    return session.scalars(stmt)
 
 
 def update_runtime(
