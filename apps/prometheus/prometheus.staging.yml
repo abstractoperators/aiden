@@ -23,7 +23,7 @@ scrape_configs:
     scrape_interval: 5s
     metrics_path: /metrics_prometheus
     static_configs:
-      - targets: ["aiden-api:8003"]
+      - targets: ["api.staigen.space"]
     basic_auth:
       username: "prometheus"
       password: "$PROMETHEUS_BASIC_AUTH"
