@@ -25,8 +25,15 @@ export default function Home() {
           <Image src="/brand_assets/blue-ghost.svg" alt="AIDN Logo Large" width={120} height={120} style={{ filter: 'brightness(0) invert(1)' }} />
           <h1 className="text-4xl md:text-5xl font-bold tracking-widest mt-2 font-pixelcraft">AIDN</h1>
           <h2 className="text-lg md:text-xl font-bold tracking-widest text-gray-300 mb-2 font-pixelcraft">HIGH PERFORMANCE ONCHAIN AI AGENTS</h2>
-          <Link href="/signup" className="inline-flex items-center justify-center px-8 py-2 border border-orange-400 text-orange-400 font-bold rounded transition hover:bg-orange-400 hover:text-black font-sans">
-            REGISTER <span className="ml-2">→</span>
+          <Link
+            href="/signup"
+            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-pixelcraft text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+            style={{ letterSpacing: '0.08em' }}
+          >
+            <span className="text-left">REGISTER</span>
+            <span className="ml-3 flex items-center justify-center w-8 h-8 bg-orange-400 rounded-lg transition-colors duration-200 group-hover:bg-white">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
           </Link>
         </div>
       </main>

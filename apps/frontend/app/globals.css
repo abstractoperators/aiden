@@ -6,6 +6,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Alexandria';
+  src: url('/fonts/Alexandria-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -104,10 +112,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'PixelCraft', sans-serif;
-  }
-  /* Apply Pixel Craft font to most elements, but allow overrides */
-  p, span, div, h1, h2, h3, h4, h5, h6, a, button, input, textarea, label, li, td, th {
     font-family: 'PixelCraft', sans-serif;
   }
   /* Specific elements that should use system font */

@@ -48,11 +48,13 @@ import { useState } from "react"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  paginationClassName?: string
 }
 
 function DataTable<TData, TValue>({
   columns,
   data,
+  paginationClassName
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
 
@@ -69,16 +71,15 @@ function DataTable<TData, TValue>({
   })
 
   return (
-    <div>
-      <DataTableViewOptions table={table} />
-      <div className="rounded-md border">
+    <>
+      <div className="rounded-md border font-[Alexandria]">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="font-[Alexandria]">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="font-[Alexandria]">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -97,17 +98,18 @@ function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="font-[Alexandria]"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="font-[Alexandria]">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+              <TableRow className="font-[Alexandria]">
+                <TableCell colSpan={columns.length} className="h-24 text-center font-[Alexandria]">
                   No results.
                 </TableCell>
               </TableRow>
@@ -115,8 +117,8 @@ function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
-    </div>
+      <div className={paginationClassName}><DataTablePagination table={table} /></div>
+    </>
   )
 }
 
