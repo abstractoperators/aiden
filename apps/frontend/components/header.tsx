@@ -57,9 +57,9 @@ export default function Header({ variant }: variantProp) {
         >
           {aidnImage}
         </Link>
-        <nav className="flex items-center justify-between space-x-4 font-medium">
+        <nav className="flex items-center justify-between space-x-4 font-medium font-sans">
           <Link
-            className="transition duration-300 hover:invert-[.5]"
+            className="transition duration-300 hover:invert-[.5] font-sans"
             href='/agents'
           >
             Agents
