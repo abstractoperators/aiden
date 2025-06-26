@@ -28,6 +28,9 @@ echo "Starting Prometheus with web config file: $WEB_CONFIG_FILE"
 # Also can't bake them into config files because we're open sourced.
 sed -in "s/\$PROMETHEUS_BASIC_AUTH/${PROMETHEUS_BASIC_AUTH}/g" $CONFIG_FILE
 
+
+sed -in "s|\$SLACK_WEBHOOK_URL|${SLACK_WEBHOOK_URL}|g" /etc/prometheus/alertmanager.yml
+
 # Start Alertmanager in background
 
 /bin/alertmanager \
