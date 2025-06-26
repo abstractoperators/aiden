@@ -1,11 +1,8 @@
 import AgentsTabs from "./tabs";
 
-export const dynamic = 'force-dynamic'
-
 export default function AgentsDashboard() {
   return (
-    <main className="min-h-screen flex flex-col items-center pt-8">
-      <div className="w-full max-w-5xl flex flex-col items-center">
+      <div className="w-full max-w-5xl flex flex-col items-center mt-8 p-10">
         {/* Search Field */}
         <div className="w-full max-w-5xl mb-8">
           <div className="flex items-center border border-[#233447] bg-[#181C23] rounded-xl w-full px-2 py-1.5">
@@ -26,6 +23,5 @@ export default function AgentsDashboard() {
           <AgentsTabs />
         </div>
       </div>
-    </main>
   )
 }
