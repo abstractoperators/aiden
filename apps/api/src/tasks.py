@@ -17,7 +17,6 @@ from src.aws_utils import (
     create_listener_rules,
     create_runtime_service,
     get_aws_config,
-    get_latest_task_definition_revision,
     get_role_session,
 )
 from src.db import crud
