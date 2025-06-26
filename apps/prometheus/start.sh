@@ -31,7 +31,7 @@ sed -in "s/\$PROMETHEUS_BASIC_AUTH/${PROMETHEUS_BASIC_AUTH}/g" $CONFIG_FILE
 # Start Alertmanager in background
 exec /bin/alertmanager \
   --config.file=/etc/prometheus/alertmanager.yml \
-  --web.listen-address=":9093" \
+  --web.listen-address="0.0.0.0:9093" \
   --storage.path=/alertmanager &
 
 exec /bin/prometheus \
