@@ -29,9 +29,11 @@ echo "Starting Prometheus with web config file: $WEB_CONFIG_FILE"
 sed -in "s/\$PROMETHEUS_BASIC_AUTH/${PROMETHEUS_BASIC_AUTH}/g" $CONFIG_FILE
 
 
-sed -in "s|\$SLACK_WEBHOOK_URL|${SLACK_WEBHOOK_URL}|g" /etc/prometheus/alertmanager.yml
+sed -i "s|\$SLACK_WEBHOOK_URL|${SLACK_WEBHOOK_URL}|g" /etc/prometheus/alertmanager.yml
 
 # Start Alertmanager in background
+echo "Using Slack webhook: $SLACK_WEBHOOK_URL"
+cat /etc/prometheus/alertmanager.yml
 
 /bin/alertmanager \
   --config.file=/etc/prometheus/alertmanager.yml \
