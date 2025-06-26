@@ -38,4 +38,5 @@ COPY alerts.rules.yml /etc/prometheus/
 COPY alertmanager.yml /etc/prometheus/
 
 COPY start.sh .
+EXPOSE 9090 9093
 ENTRYPOINT ["./start.sh"]

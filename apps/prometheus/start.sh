@@ -29,7 +29,8 @@ echo "Starting Prometheus with web config file: $WEB_CONFIG_FILE"
 sed -in "s/\$PROMETHEUS_BASIC_AUTH/${PROMETHEUS_BASIC_AUTH}/g" $CONFIG_FILE
 
 # Start Alertmanager in background
-exec /bin/alertmanager \
+
+/bin/alertmanager \
   --config.file=/etc/prometheus/alertmanager.yml \
   --web.listen-address="0.0.0.0:9093" \
   --storage.path=/alertmanager &
