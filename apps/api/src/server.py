@@ -7,10 +7,11 @@ from typing import Annotated, Any
 from uuid import UUID
 
 import requests
-from fastapi import FastAPI, HTTPException, Request, Security
+from fastapi import FastAPI, HTTPException, Request, Security, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 from src import logger, tasks
 from src.auth import (
@@ -35,8 +36,6 @@ from src.db.models import (
     RuntimeCreateTaskBase,
     RuntimeDeleteTask,
     RuntimeDeleteTaskBase,
-    RuntimeUpdateTask,
-    RuntimeUpdateTaskBase,
     Token,
     TokenBase,
     User,
@@ -57,9 +56,12 @@ from src.models import (
 from src.setup import test_db_connection
 from src.utils import obj_or_404
 
+agent_live_gauge = Gauge("agent_live_count", "Current live agents")
+agent_killed_counter = Counter("agent_killed_total", "Total agents killed")
+agent_event_counter = Counter("agent_event_total", "Agent lifecycle events", ["type"])
+
 # TODO: Change a ton of endpoints to not require information that is already in the JWT token.
 # For example, PATCH /users should just require the user_id in the JWT token, not in query params.
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
@@ -114,7 +116,7 @@ async def auth_middleware(
 
 
 instrumentator = Instrumentator(
-    excluded_handlers=["/metrics"],
+    excluded_handlers=["/metrics_prometheus"],
 )
 
 # Handler and method included by default
@@ -122,7 +124,7 @@ instrumentator.add(metrics.latency())
 instrumentator.add(metrics.request_size())
 instrumentator.add(metrics.response_size())
 
-instrumentator.instrument(app).expose(app)
+instrumentator.instrument(app).expose(app, endpoint="/metrics_prometheus")
 
 # TODO: Change this based on env
 env = os.getenv("ENV")
@@ -320,11 +322,11 @@ def create_runtime() -> RuntimeCreateTask:
     """
     # Perhaps, the least performant code ever written
     # This is why *real* companies use leetcode
+    runtime_nums: set[int] = set()
     with Session() as session:
         runtimes = crud.get_runtimes(
             session, limit=1000000
         )  # lul better hope you don't run out of memory
-        runtime_nums: set[int] = set()
         for runtime in runtimes:
             runtime_nums.add(runtime.service_no)
 
@@ -370,12 +372,7 @@ def get_runtimes(
     Returns a list of up to 100 runtimes.
     """
     with Session() as session:
-        runtimes = crud.get_runtimes(session)
-
-        if unused:
-            runtimes = [runtime for runtime in runtimes if not runtime.agent]
-
-        return runtimes
+        return [runtime for runtime in crud.get_runtimes(session, unused=unused)]
 
 
 @app.get("/runtimes/{runtime_id}")
@@ -451,6 +448,32 @@ def get_task_status(task_id: UUID) -> TaskStatus:
         return TaskStatus(task["status"])
 
 
+@app.post("/agents/{agent_id}/start")
+def start_agent_without_runtime(
+    agent_id: UUID,
+    is_admin_or_owner: IsAdminOrOwnerDepends,
+) -> AgentStartTask:
+    """
+    Starts an agent. Uses an unused runtime if available.
+    Otherwise, provisions new runtimes and asks the user to retry.
+    """
+    with Session() as session:
+        unused_runtime = crud.get_runtimes(session, unused=True).first()
+    
+        if unused_runtime is None:
+            # Provision new runtimes 
+            to_provision = int(os.getenv("RUNTIME_POOL_INCREMENT", 2))
+            for _ in range(to_provision):
+                create_runtime()
+
+            raise HTTPException(
+                status_code=503,
+                detail="Provisioning new runtime(s). Please retry shortly.",
+            )
+
+        return start_agent(agent_id, unused_runtime.id, is_admin_or_owner)
+
+
 @app.post("/agents/{agent_id}/start/{runtime_id}")
 def start_agent(
     agent_id: UUID,
@@ -505,6 +528,10 @@ def start_agent(
             runtime_id=runtime_id,
             celery_task_id=res.id,
         )
+
+        #prometheus test metrics
+        agent_live_gauge.inc()
+        agent_event_counter.labels("start").inc()
         return crud.create_agent_start_task(session, task_record)
 
 
@@ -544,6 +571,11 @@ def stop_agent(
         resp.raise_for_status()
 
         stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+
+         #Prometheus metrics
+        agent_live_gauge.dec()
+        agent_killed_counter.inc()
+        agent_event_counter.labels("kill").inc()
 
         return stopped_agent
 
@@ -676,7 +708,7 @@ async def delete_wallet(
 @app.post("/users")
 async def create_user(
     user: UserBase,
-    decoded_token: Annotated[dict[str, Any], Security(parse_jwt)],
+    decoded_token: Annotated[dict[str, Any], Security(parse_jwt())],
     is_admin: IsAdminDepends,
 ) -> User:
     """
@@ -785,58 +817,6 @@ async def delete_user(
 
         crud.delete_user(session, user)
 
-
-@app.patch(
-    "/runtimes/{runtime_id}",
-    dependencies=[Security(check_scopes("admin"))],
-)
-def update_runtime(
-    runtime_id: UUID,
-) -> RuntimeUpdateTask:
-    """
-    Updates runtime to latest task definition.
-    Restarts the agent running on it (if any).
-    This needs to be run everytime:
-       1. Runtime image is updated (in ECR)
-       2. Task definition is updated.
-    """
-    with Session() as session:
-        # Make sure that there isn't already a task running to update this runtime.
-        runtime: Runtime | None = crud.get_runtime(session, runtime_id)
-        if not runtime:
-            raise HTTPException(status_code=404, detail="Runtime not found")
-        existing_runtime_update_task: RuntimeUpdateTask | None = (
-            crud.get_runtime_update_task(session, runtime_id)
-        )
-        if existing_runtime_update_task:
-            task_status = get_task_status(existing_runtime_update_task.celery_task_id)
-            if task_status == TaskStatus.PENDING or task_status == TaskStatus.STARTED:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"There is already an active {task_status} runtime update task for runtime {runtime_id}",
-                )
-
-        service_arn = runtime.service_arn
-        aws_config = get_aws_config(runtime.service_no)
-
-        logger.info(
-            f"Forcing redeployment of service: {service_arn}\n{aws_config.cluster}.{aws_config.service_name}",
-        )
-
-        res = tasks.update_runtime.delay(
-            runtime_id=runtime_id,
-        )
-        runtime_update_task: RuntimeUpdateTask = crud.create_runtime_update_task(  #
-            session,
-            RuntimeUpdateTaskBase(
-                runtime_id=runtime_id,
-                celery_task_id=res.id,
-            ),
-        )
-
-        return runtime_update_task
-
-
 @app.delete(
     "/runtimes/{runtime_id}",
     dependencies=[Security(check_scopes("admin"))],
@@ -863,3 +843,10 @@ def delete_runtime(
         )
 
         return runtime_delete_task
+    
+
+
+
+@app.get("/metrics_prometheus")
+async def metrics_prometheus():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
