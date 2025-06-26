@@ -72,14 +72,14 @@ function DataTable<TData, TValue>({
 
   return (
     <>
-      <div className="rounded-md border font-[Alexandria]">
+      <div className="rounded-md border font-alexandria">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="font-[Alexandria]">
+              <TableRow key={headerGroup.id} className="font-alexandria">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-[Alexandria]">
+                    <TableHead key={header.id} className="font-alexandria">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -98,18 +98,18 @@ function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="font-[Alexandria]"
+                  className="font-alexandria"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="font-[Alexandria]">
+                    <TableCell key={cell.id} className="font-alexandria">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
-              <TableRow className="font-[Alexandria]">
-                <TableCell colSpan={columns.length} className="h-24 text-center font-[Alexandria]">
+              <TableRow className="font-alexandria">
+                <TableCell colSpan={columns.length} className="h-24 text-center font-alexandria">
                   No results.
                 </TableCell>
               </TableRow>

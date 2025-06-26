@@ -10,11 +10,13 @@ export default async function AgentsTabs() {
 
   return (
     <>
-      <div className="rounded-2xl border-2 border-[#1e90ff] bg-[#181C23] p-6 w-full">
+      <div className="rounded-2xl border-1 border-[#233447] bg-[#181C23] p-6 w-full">
         <div className="font-pixelcraft text-white text-2xl mb-4">AGENTS</div>
         <Tabs defaultValue="enlightened">
           <TabsList className="mb-6">
             <TabsTrigger value="enlightened">Enlightened</TabsTrigger>
+            <div className="w-10 h-10">
+            </div>
             <TabsTrigger value="incubating">Incubating</TabsTrigger>
           </TabsList>
           <TabsContent value="enlightened">
