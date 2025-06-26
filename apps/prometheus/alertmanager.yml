@@ -13,7 +13,7 @@ receivers:
       - send_resolved: true
         username: 'Prometheus'
         channel: '#alerts'
-        api_url: "$SLACK_WEBHOOK_URL
+        api_url: $SLACK_WEBHOOK_URL
         title: '{{ .CommonAnnotations.summary }}'
         text: >-
           {{ range .Alerts }}
