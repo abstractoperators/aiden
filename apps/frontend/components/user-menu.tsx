@@ -49,27 +49,27 @@ export default function UserMenu({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+        <DropdownMenuLabel className="font-alexandria">{displayName}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <Link href="/user">
             <DropdownMenuItem>
               <LayoutDashboard className={iconClassName} />
-              <span>Control Center</span>
+              <span className="font-alexandria">Control Center</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout}>
             <LogOut className={iconClassName} />
-            <span>Logout</span>
+            <span className="font-alexandria">Logout</span>
           </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {/* <AppearanceMenu /> */}
           <DropdownMenuItem onClick={() => setShowDynamicUserProfile(true)}>
             <Settings2 className={iconClassName} />
-            <span>User Settings</span>
+            <span className="font-alexandria">User Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
