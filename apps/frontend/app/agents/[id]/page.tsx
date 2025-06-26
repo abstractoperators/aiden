@@ -1,7 +1,8 @@
 // https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
 import { auth } from "@/auth"
+import BiographyCard from "@/components/agent-bio-card"
 import AgentCard from "@/components/agent-card"
-import DescriptionCard from "@/components/agent-description-card"
+import TagCard from "@/components/agent-tag-card"
 import Chat from "@/components/chat"
 import TokenChart from "@/components/token/chart"
 // import SwapCard from "@/components/token/swap"
@@ -70,7 +71,11 @@ export default async function AgentHome({
       }
       <div className="col-span-7 flex flex-col items-stretch gap-2">
         <AgentCard name={name} token={token} />
-        <DescriptionCard {...character} />
+        <BiographyCard {...character} />
+        <div className="grid grid-cols-2 gap-2">
+          <TagCard tags={character.topics} title="Topics" />
+          <TagCard tags={character.adjectives} title="Adjectives" />
+        </div>
         <TokenChart token={token} />
       </div>
       <div className="col-span-5 flex flex-col justify-start items-stretch gap-2">
