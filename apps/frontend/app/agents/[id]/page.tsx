@@ -76,10 +76,10 @@ export default async function AgentHome({
           <TagCard tags={character.topics} title="Topics" />
           <TagCard tags={character.adjectives} title="Adjectives" />
         </div>
-        <TokenChart token={token} />
+        {token && <TokenChart token={token} />}
       </div>
       <div className="col-span-5 flex flex-col justify-start items-stretch gap-2">
-        {/* <SwapCard token={token}/> */}
+        {/* {token && <SwapCard token={token}/>} */}
         <Chat init={agent} />
       </div>
     </main>

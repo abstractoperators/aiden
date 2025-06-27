@@ -26,11 +26,11 @@ const defaultWidgetProps: Partial<ChartingLibraryWidgetOptions> = {
 export default function TokenChart({
   token,
 }: {
-  token?: TokenBase | null,
+  token: TokenBase,
 }) {
 	const [isScriptReady, setIsScriptReady] = useState(true)
   const widgetProps: Partial<ChartingLibraryWidgetOptions> = {
-    symbol: token?.ticker,
+    symbol: token.ticker,
     ...defaultWidgetProps,
   }
 
