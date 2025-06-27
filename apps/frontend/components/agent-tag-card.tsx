@@ -8,7 +8,7 @@ export default function TagCard({
   tags: string[],
   title: string,
 }) {
-  const strippedTags = tags.filter(str => str.length)
+  const strippedTags = tags.filter(str => str.trim().length)
   return (
     <Card>
       <CardHeader>
