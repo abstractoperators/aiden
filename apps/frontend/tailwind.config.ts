@@ -60,9 +60,9 @@ export default {
   			]
   		},
   		fontFamily: {
-  			sans: [
-  				'var(--font-inter)'
-  			],
+  			'pixelcraft': ['PixelCraft', 'sans-serif'],
+  			'alexandria': ['Alexandria', 'sans-serif'],
+  			'sans': ['PixelCraft', 'sans-serif'],
   			serif: [
   				'var(--font-aldrich)'
   			]

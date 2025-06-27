@@ -1,4 +1,3 @@
-import Footer from "@/components/footer"
 import Header from "@/components/header"
 
 export default function AgentsLayout({
@@ -10,7 +9,6 @@ export default function AgentsLayout({
     <div className="flex flex-col justify-between items-center w-full min-h-screen">
       <Header />
       {children}
-      <Footer />
     </div>
   )
 }
