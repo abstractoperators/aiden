@@ -10,7 +10,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300"
+        className="text-neutral-300 font-alexandria"
         column={column}
         title="Name"
       />
@@ -18,6 +18,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     cell: ({ row }) => (
       <Link
         href={`/agents/${row.original.id}`}
+        className="font-alexandria"
       >
         <hgroup>
           <h2 className="text-base">{row.getValue("name")}</h2>
@@ -27,23 +28,78 @@ export const columns: ColumnDef<ClientAgent>[] = [
     )
   },
   {
+    accessorKey: "ticker",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        className="text-neutral-300 font-alexandria"
+        column={column}
+        title="Ticker"
+      />
+    ),
+    cell: ({ row }) => (
+      <div className="font-alexandria">
+        ${row.original.ticker || 'AGNT'}
+      </div>
+    )
+  },
+  {
+    accessorKey: "price",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        className="text-neutral-300 font-alexandria"
+        column={column}
+        title="Price"
+      />
+    ),
+    cell: ({ row }) => (
+      <div className="font-alexandria">
+        ${(Math.random() * 100).toFixed(2)}
+      </div>
+    )
+  },
+  {
+    accessorKey: "tvl",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        className="text-neutral-300 font-alexandria"
+        column={column}
+        title="TVL"
+      />
+    ),
+    cell: ({ row }) => (
+      <div className="font-alexandria">
+        ${(Math.random() * 1000000).toLocaleString()}
+      </div>
+    )
+  },
+  {
     accessorKey: "marketCapitalization",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300"
+        className="text-neutral-300 font-alexandria"
         column={column}
         title="Market Capitalization"
       />
     ),
+    cell: ({ row }) => (
+      <div className="font-alexandria">
+        {row.getValue("marketCapitalization")}
+      </div>
+    )
   },
   {
     accessorKey: "holderCount",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300"
+        className="text-neutral-300 font-alexandria"
         column={column}
         title="Holders"
       />
+    ),
+    cell: ({ row }) => (
+      <div className="font-alexandria">
+        {Math.floor(Math.random() * 10000).toLocaleString()}
+      </div>
     )
   }
 ]

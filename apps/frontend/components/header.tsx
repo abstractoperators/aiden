@@ -3,14 +3,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { LoginButtonHeader } from '@/components/dynamic/login-button';
+import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
 
 const menus = [
-  { name: 'CREATE AGENT', href: '/user/agents/creation' },
-  { name: 'AGENTS', href: '/agents' },
-  { name: 'PROFILE', href: '/user/profile' },
+  { name: 'CREATE AGENT', href: '/user/agents/creation', isLoggedIn: true },
+  { name: 'AGENTS', href: '/agents', isLoggedIn: false },
 ]
 
 export default function Header() {
+  const isLoggedIn = useIsLoggedIn();
   const pathname = usePathname();
 
   return (
@@ -23,6 +25,11 @@ export default function Header() {
       {/* Right: Menus */}
       <nav className="flex items-center gap-6">
         {menus.map(menu => {
+          // Skip rendering if menu requires login but user is not logged in
+          if (menu.isLoggedIn && !isLoggedIn) {
+            return null;
+          }
+          
           const isActive = pathname === menu.href || (menu.href === '/agents' && pathname.startsWith('/agents'));
           return (
             <Link
@@ -38,6 +45,7 @@ export default function Header() {
             </Link>
           )
         })}
+        <LoginButtonHeader className="px-4 py-2" />
       </nav>
     </header>
   )

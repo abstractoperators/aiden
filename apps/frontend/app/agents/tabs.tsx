@@ -24,8 +24,8 @@ export default async function AgentsTabs() {
               ( isSuccessResult(enlightened) )
               ? <DataTable columns={columns} data={enlightened.data} paginationClassName="mt-8 flex justify-end" />
               : <div>
-                  <h2>Unable to retrieve enlightened agents!</h2>
-                  <h3>{enlightened.message}</h3>
+                  <h2 className="text-white font-alexandria">Unable to retrieve enlightened agents!</h2>
+                  <h3 className="text-white font-alexandria">{enlightened.message}</h3>
                 </div>
             }
           </TabsContent>
@@ -34,8 +34,8 @@ export default async function AgentsTabs() {
               ( isSuccessResult(incubating) )
               ? <DataTable columns={columns} data={incubating.data} paginationClassName="mt-8 flex justify-end" />
               : <div>
-                  <h2>Unable to retrieve enlightened agents!</h2>
-                  <h3>{incubating.message}</h3>
+                  <h2 className="text-white font-alexandria">Unable to retrieve enlightened agents!</h2>
+                  <h3 className="text-white font-alexandria">{incubating.message}</h3>
                 </div>
             }
           </TabsContent>
