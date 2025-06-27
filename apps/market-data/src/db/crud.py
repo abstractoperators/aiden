@@ -1,7 +1,6 @@
 from datetime import datetime
 
-# from sqlalchemy import func as sa_func, ScalarResult, select as sa_select
-from sqlmodel import func, Session, select, TIMESTAMP
+from sqlmodel import func, Session, or_, select, TIMESTAMP
 
 from .models import (
     TokenSymbol,
@@ -38,6 +37,23 @@ def get_token_symbol_by_name_or_ticker(session: Session, name: str) -> TokenSymb
         return by_ticker
     stmt = select(TokenSymbol).where(TokenSymbol.name == name)
     return session.exec(stmt).first()
+
+
+def search_token_symbols(
+    session: Session,
+    name: str,
+    type_: str,
+    exchange: str,
+    limit: int,
+):
+    stmt = (
+        select(TokenSymbol)
+        .where(or_(TokenSymbol.ticker.icontains(name), TokenSymbol.name.icontains(name)))
+        .where(TokenSymbol.type == type_)
+        .where(TokenSymbol.exchange == exchange)
+        .limit(limit)
+    )
+    return session.exec(stmt)
 
 
 # endregion Token Symbols
