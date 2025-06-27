@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { getUser } from "@/lib/api/user";
 import { isErrorResult, isSuccessResult } from "@/lib/api/result";
 
-export default async function AgentCreation() {
+export default async function AgentCreation() {  
   // TODO consider removing in favor of context/context provider
   const session = await auth()
   if (!session)
@@ -19,9 +19,13 @@ export default async function AgentCreation() {
   const userResult = await getUser({dynamicId: session.user.id})
 
   if (isErrorResult(userResult)) { return (
-    <div>
-      <h1>Unable to retrieve AIDN user!</h1>
-      <h2>{userResult.message}</h2>
+    <div className="min-h-screen bg-[#121725] flex flex-col items-center pt-8">
+      <div className="w-full max-w-5xl flex flex-col gap-6 items-center">
+        <div className="text-white font-alexandria">
+          <h1>Unable to retrieve AIDN user!</h1>
+          <h2>{userResult.message}</h2>
+        </div>
+      </div>
     </div>
   )}
 
@@ -29,19 +33,21 @@ export default async function AgentCreation() {
   const userAgents = await getEnlightened({userId: user.id})
 
   return (
-    <div className="my-16 mx-16">
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl my-8">
-        Create an Agent
-      </h1>
-      {
-        isSuccessResult(userAgents) ?
-        (
-          userAgents.data.length > 0 && !session.user.scopes.includes('admin') ?
-          <h2>You may only have one agent at a time!</h2> :
-          <FormTabs />
-        ) :
-        <h2>Unable to prepare agent creation form!</h2>
-      }
+    <div className="min-h-screen bg-[#121725] flex flex-col items-center pt-8">
+      <div className="w-full max-w-5xl flex flex-col gap-6 items-center">
+        <h1 className="text-2xl font-alexandria font-bold text-white tracking-tight sm:text-2xl md:text-3xl lg:text-4xl mb-8">
+          Create an Agent
+        </h1>
+        {
+          isSuccessResult(userAgents) ?
+          (
+            userAgents.data.length > 0 && !session.user.scopes.includes('admin') ?
+            <h2 className="text-white font-alexandria">You may only have one agent at a time!</h2> :
+            <FormTabs />
+          ) :
+          <h2 className="text-white font-alexandria">Unable to prepare agent creation form!</h2>
+        }
+      </div>
     </div>
   )
 }

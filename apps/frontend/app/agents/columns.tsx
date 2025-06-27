@@ -10,7 +10,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300 font-alexandria"
+        className="font-alexandria"
         column={column}
         title="Name"
       />
@@ -31,14 +31,14 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "ticker",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300 font-alexandria"
+        className="font-alexandria"
         column={column}
         title="Ticker"
       />
     ),
     cell: ({ row }) => (
       <div className="font-alexandria">
-        ${row.original.ticker || 'AGNT'}
+        { row.original.ticker && <h3>${row.original.ticker}</h3> }
       </div>
     )
   },
@@ -46,7 +46,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "price",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300 font-alexandria"
+        className="font-alexandria"
         column={column}
         title="Price"
       />
@@ -61,7 +61,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "tvl",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300 font-alexandria"
+        className="font-alexandria"
         column={column}
         title="TVL"
       />
@@ -76,9 +76,9 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "marketCapitalization",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300 font-alexandria"
+        className="font-alexandria"
         column={column}
-        title="Market Capitalization"
+        title="MC"
       />
     ),
     cell: ({ row }) => (
@@ -91,14 +91,14 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "holderCount",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300 font-alexandria"
+        className="font-alexandria"
         column={column}
         title="Holders"
       />
     ),
     cell: ({ row }) => (
       <div className="font-alexandria">
-        {Math.floor(Math.random() * 10000).toLocaleString()}
+        { row.original.holderCount && <h3>${row.original.holderCount}</h3> }
       </div>
     )
   }

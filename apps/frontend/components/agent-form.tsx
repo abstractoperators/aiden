@@ -180,8 +180,8 @@ function AgentForm({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Accordion type="multiple" className="flex flex-col gap-2">
-          <AccordionItem value="Name">
-            <AccordionTrigger>Name</AccordionTrigger>
+          <AccordionItem value="Name" className="bg-[#181C23] rounded-xl">
+            <AccordionTrigger className="font-alexandria">Name</AccordionTrigger>
             <AccordionContent>
               <FormField
                 name="name"
@@ -389,8 +389,8 @@ function AccordionList({
   })
 
   return (
-    <AccordionItem value={title}>
-      <AccordionTrigger>{title}</AccordionTrigger>
+    <AccordionItem value={title} className="bg-[#181C23] rounded-xl">
+      <AccordionTrigger className="font-alexandria">{title}</AccordionTrigger>
       <AccordionContent className="flex flex-col gap-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
@@ -586,10 +586,15 @@ function SubmitButton() {
   return (
     <Button
       className={cn(
-        "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%",
-        "font-semibold text-black dark:text-white text-d5",
-        "transition duration-300 hover:hue-rotate-60",
-        "px-12 py-8 rounded-xl",
+        "bg-[#0B101A]",
+        "border-2 border-orange-400",
+        "rounded-lg",
+        "px-8 py-4",
+        "text-white font-['Press_Start_2P','monospace'] text-xl",
+        "transition duration-300",
+        "hover:bg-orange-400 hover:text-black",
+        "focus:outline-none",
+        "shadow-none"
       )}
       type="submit"
     >
