@@ -7,13 +7,13 @@ import {
   LanguageCode,
   ResolutionString,
   widget,
-} from "@/public/static/charting_library";
+} from "@/public/charting_library";
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 
 const defaultWidgetProps: Partial<ChartingLibraryWidgetOptions> = {
   interval: "1D" as ResolutionString,
-  library_path: "/static/charting_library/",
+  library_path: "/charting_library/",
   locale: "en",
   charts_storage_url: "https://saveload.tradingview.com",
   charts_storage_api_version: "1.1",
@@ -28,7 +28,7 @@ export default function TokenChart({
 }: {
   token: TokenBase,
 }) {
-	const [isScriptReady, setIsScriptReady] = useState(true)
+	const [isScriptReady, setIsScriptReady] = useState(false)
   const widgetProps: Partial<ChartingLibraryWidgetOptions> = {
     symbol: token.ticker,
     ...defaultWidgetProps,
@@ -37,9 +37,10 @@ export default function TokenChart({
   return (
     <>
       <Script
-        src="/static/datafeeds/udf/dist/bundle.js"
+        src="/datafeeds/udf/dist/bundle.js"
         strategy="lazyOnload"
-				onReady={() => {setIsScriptReady(true)}}
+				onReady={() => setIsScriptReady(true)}
+				onLoad={() => setIsScriptReady(true)}
       />
 			{isScriptReady && <TVChartContainer {...widgetProps} />}
     </>
@@ -105,7 +106,10 @@ function TVChartContainer(props: Partial<ChartingLibraryWidgetOptions>) {
 
 	return (
     <Card>
-      <CardContent ref={chartContainerRef} className="min-h-[500px]" />
+      <CardContent
+				ref={chartContainerRef}
+				className="sm:min-h-[300px] md:min-h-[500px] lg:min-h-[700px]"
+			/>
     </Card>
 	);
 };
