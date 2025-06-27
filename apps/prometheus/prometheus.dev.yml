@@ -27,3 +27,8 @@ scrape_configs:
     basic_auth:
       username: "prometheus"
       password: "$PROMETHEUS_BASIC_AUTH"
+      
+  - job_name: 'agent-heartbeats'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:8001'
