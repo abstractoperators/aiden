@@ -58,7 +58,7 @@ pnpm start:client --character=your-character
 
 ### 5. Build Runtime
 
-Execute the "build and push parameterized runtime to staging" action.
+Execute the "build and push parameterized runtime to staging and prod" action.
 
 ### 6. Get Authentication Token
 
@@ -113,7 +113,7 @@ API documentation: [Get Task Status](https://api.staigen.space/docs#/default/get
 
 Repeat steps 6-9 for the production environment:
 
-1. Execute "build and push parameterized runtime to staging" action
+1. Execute "build and push parameterized runtime to staging and prod" action
 2. Get fresh auth token
 3. Retrieve production runtime list
 4. Update each production runtime
