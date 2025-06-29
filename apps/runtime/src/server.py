@@ -1,7 +1,3 @@
-from threading import Thread
-from time import sleep, time
-from prometheus_client import Gauge, start_http_server
-
 import json
 import os
 import signal
@@ -19,19 +15,6 @@ from pydantic import BaseModel, Field, SecretStr
 @asynccontextmanager
 async def lifespan(app: fastapi.FastAPI):
     load_dotenv()
-
-    AGENT_ID = os.getenv("AGENT_ID", "local-agent")
-    heartbeat_gauge = Gauge("agent_heartbeat", "Last heartbeat time", ["agent_id"])
-
-    def emit_heartbeat():
-        while True:
-            heartbeat_gauge.labels(agent_id=AGENT_ID).set(time())
-            sleep(10)
-
-    # Start Prometheus heartbeat metrics on port 8001
-    Thread(target=lambda: start_http_server(8001), daemon=True).start()
-    Thread(target=emit_heartbeat, daemon=True).start()
-
     yield
     print(stop_character())
 

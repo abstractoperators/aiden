@@ -10,7 +10,7 @@ groups:
           summary: "Agent started"
 
       - alert: AgentRestarted
-        expr: increase(agent_event_total{type="restart"}[1m]) > 0
+        expr: time() - agent_restart_timestamp < 60
         for: 0m
         labels:
           severity: warning
@@ -24,3 +24,11 @@ groups:
           severity: critical
         annotations:
           summary: "Agent killed"
+      - alert: AgentDown
+        expr: agent_liveness_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent {{ $labels.agent_id }} is not responding"
+
