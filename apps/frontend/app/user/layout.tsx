@@ -40,18 +40,17 @@ export default async function UserLayout({
         <Header />
         <div className="flex-1 flex">
           <UserSidebar
-            className="top-16 bg-anakiwa-light/30 dark:bg-anakiwa-darker/60 max-h-full"
+            className="top-16 max-h-full"
             collapsible="none"
             variant="floating"
             userAgents={userAgents}
           />
-          <SidebarInset className="bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur">
+          <SidebarInset >
             <main>
               {children}
             </main>
           </SidebarInset>
         </div>
-        <Footer />
       </div>
     </SidebarProvider>
   )

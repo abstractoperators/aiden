@@ -35,7 +35,7 @@ export default async function AgentCreation() {
   return (
     <div className="min-h-screen bg-[#121725] flex flex-col items-center pt-8">
       <div className="w-full max-w-5xl flex flex-col gap-6 items-center">
-        <h1 className="text-2xl font-alexandria font-bold text-white tracking-tight sm:text-2xl md:text-3xl lg:text-4xl mb-8">
+        <h1 className="text-2xl font-alexandria font-bold text-white tracking-tight sm:text-xl md:text-2xl lg:text-3xl mb-8">
           Create an Agent
         </h1>
         {

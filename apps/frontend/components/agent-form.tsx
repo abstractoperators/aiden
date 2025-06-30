@@ -181,7 +181,7 @@ function AgentForm({
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Accordion type="multiple" className="flex flex-col gap-2">
           <AccordionItem value="Name" className="bg-[#181C23] rounded-xl">
-            <AccordionTrigger className="font-alexandria">Name</AccordionTrigger>
+            <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
                 name="name"
@@ -592,7 +592,7 @@ function SubmitButton() {
         "px-8 py-4",
         "text-white font-['Press_Start_2P','monospace'] text-xl",
         "transition duration-300",
-        "hover:bg-orange-400 hover:text-black",
+        "hover:text-black",
         "focus:outline-none",
         "shadow-none"
       )}
