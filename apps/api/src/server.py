@@ -61,6 +61,7 @@ from threading import Lock
 
 agent_last_down_time: dict[str, datetime] = {}
 stopped_agents = set()
+stopped_agents_lock = Lock()
 agent_heartbeat_store: dict[str, datetime] = {}
 agent_heartbeat_lock = Lock()
 
@@ -80,7 +81,7 @@ agent_event_counter = Counter("agent_event_total", "Agent lifecycle events", ["t
 # For example, PATCH /users should just require the user_id in the JWT token, not in query params.
 
 async def monitor_agent_liveness():
-    print("[monitor_agent_liveness] Task started")
+    logger.info("[monitor_agent_liveness] Task started")
 
     while True:
         now = datetime.utcnow()
@@ -88,8 +89,9 @@ async def monitor_agent_liveness():
         with agent_heartbeat_lock:
             for agent_id, last_beat in agent_heartbeat_store.items():
                 # Skip agents purposelly stopped, can be removed if needed
-                if agent_id in stopped_agents:
-                    continue
+                with stopped_agents_lock:
+                    if agent_id in stopped_agents:
+                        continue
 
                 # Check if agent is alive or not
                 alive = (now - last_beat).total_seconds() < 75
@@ -106,7 +108,7 @@ async def monitor_agent_liveness():
                         downtime_seconds = (now - down_time).total_seconds()
 
                         if downtime_seconds <= 75:
-                            print(f"[RESTART DETECTED] Agent {agent_id} restarted after {downtime_seconds:.1f}s")
+                            logger.info(f"[RESTART DETECTED] Agent {agent_id} restarted after {downtime_seconds:.1f}s")
                             agent_restart_timestamp.labels(agent_id=str(agent_id)).set(time.time())
                             print(f"[RESTART METRIC] {agent_id} restarted at {int(time.time())}")
 
@@ -601,7 +603,8 @@ def stop_agent(
     agent_id: UUID,
     is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> Agent:
-    stopped_agents.add(agent_id)
+    with stopped_agents_lock:
+        stopped_agents.add(agent_id)
     """
     Stops an agent running on a runtime.
     """
