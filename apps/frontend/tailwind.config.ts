@@ -60,9 +60,9 @@ export default {
   			]
   		},
   		fontFamily: {
-  			sans: [
-  				'var(--font-inter)'
-  			],
+  			'pixelcraft': ['PixelCraft', 'sans-serif'],
+  			'alexandria': ['Alexandria', 'sans-serif'],
+  			'sans': ['PixelCraft', 'sans-serif'],
   			serif: [
   				'var(--font-aldrich)'
   			]
@@ -166,5 +166,18 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function({ addBase }: { addBase: any }) {
+      addBase({
+        'input, textarea, select, label, button': {
+          fontFamily: 'Alexandria, sans-serif',
+          borderColor: '#233447',
+        },
+        'input::placeholder, textarea::placeholder': {
+          fontFamily: 'Alexandria, sans-serif',
+        },
+      })
+    }
+  ],
 } satisfies Config;
