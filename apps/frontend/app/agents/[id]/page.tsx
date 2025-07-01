@@ -24,7 +24,6 @@ export default async function AgentHome({
     <main
       className={cn(
         "flex-1 self-stretch m-8 grid grid-cols-12 gap-2 p-12",
-        "bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur",
         "rounded-xl relative",
       )}
     >
@@ -47,7 +46,6 @@ export default async function AgentHome({
     <main
       className={cn(
         "flex-1 self-stretch m-8 grid grid-cols-12 gap-2 px-6 py-6",
-        "bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur",
         "rounded-xl relative",
         userOwnsAgent ? "pt-14": "",
       )}
@@ -61,7 +59,6 @@ export default async function AgentHome({
               size: "icon",
             }),
             "rounded-xl absolute top-2 right-6",
-            "hover:bg-anakiwa-lighter/60 dark:hover:bg-anakiwa-dark/40",
           )}
         >
           <Pencil strokeWidth={3} />
