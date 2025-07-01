@@ -14,10 +14,9 @@ export default async function AgentsTabs() {
         <div className="font-pixelcraft text-white text-2xl mb-4">AGENTS</div>
         <Tabs defaultValue="enlightened">
           <TabsList className="mb-6">
-            <TabsTrigger value="enlightened">Enlightened</TabsTrigger>
-            <div className="w-10 h-10">
-            </div>
-            <TabsTrigger value="incubating">Incubating</TabsTrigger>
+            <TabsTrigger value="enlightened" className="mr-4">Enlightened</TabsTrigger>
+            <TabsTrigger value="incubating" className="mr-4">Incubating</TabsTrigger>
+            <TabsTrigger value="myagents">My Agents</TabsTrigger>
           </TabsList>
           <TabsContent value="enlightened">
             {
@@ -35,6 +34,16 @@ export default async function AgentsTabs() {
               ? <DataTable columns={columns} data={incubating.data} paginationClassName="mt-8 flex justify-end" />
               : <div>
                   <h2 className="text-white font-alexandria">Unable to retrieve enlightened agents!</h2>
+                  <h3 className="text-white font-alexandria">{incubating.message}</h3>
+                </div>
+            }
+          </TabsContent>
+          <TabsContent value="myagents">
+            {
+              ( isSuccessResult(incubating) )
+              ? <DataTable columns={columns} data={incubating.data} paginationClassName="mt-8 flex justify-end" />
+              : <div>
+                  <h2 className="text-white font-alexandria">You don't have any agents yet!</h2>
                   <h3 className="text-white font-alexandria">{incubating.message}</h3>
                 </div>
             }
