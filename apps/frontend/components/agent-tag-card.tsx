@@ -8,15 +8,20 @@ export default function TagCard({
   tags: string[],
   title: string,
 }) {
+  const strippedTags = tags.filter(str => str.trim().length)
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-d6">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="flex gap-1">
-      {tags.length ? tags.map((str, index) => (
-        <Badge variant="outline" key={`${title}.${index}`}>{str}</Badge>
-      )) : "N/A"}
+      <CardContent className="flex flex-wrap gap-1">
+      {
+        strippedTags.length ?
+        strippedTags
+        .map((str, index) => (
+          <Badge variant="outline" key={`${title}.${index}`}>{str}</Badge>
+        )) : "N/A"
+      }
       </CardContent>
     </Card>
   )
