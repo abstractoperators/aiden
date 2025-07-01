@@ -223,7 +223,7 @@ export default function Chat({
   return (
   <div>
   {agent.runtimeId ? 
-    <Card className="justify-start items-center">
+    <Card className="justify-start items-center bg-[#181C23] border-[#233447] border-2">
       <ScrollArea className="bg-anakiwa-darker/50 w-full h-96 lg:h-[600px] rounded-xl p-2">
         <ol className="flex flex-col w-full">
           {chat.map(message => (
