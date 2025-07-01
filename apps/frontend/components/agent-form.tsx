@@ -190,7 +190,7 @@ function AgentForm({
                     <FormLabel></FormLabel>
                     <FormControl>
                       <Input
-                        className="placeholder:text-neutral-400"
+                        className="placeholder:text-neutral-400 font-alexandria"
                         placeholder="Name"
                         {...field}
                       />
@@ -229,6 +229,7 @@ function AgentForm({
               </div>
               <Button
                 type="button"
+                className="font-alexandria"
                 onClick={() =>
                   messageExamplesAppend([[{ user: "", content: { text: "", action: "" } }]])
                 }
@@ -247,7 +248,7 @@ function AgentForm({
               <FormField
                 name="twitter"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-start gap-2">
+                  <FormItem className="flex flex-row items-center justify-start gap-2 font-alexandria">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -352,10 +353,10 @@ function Style({ control }: { control: Control<FormType> }) {
     })
     return (
       <div className={cn(borderStyle, "flex flex-col gap-8 p-4")}>
-        <h3 className="font-semibold">{title}</h3>
+        <h3 className="font-semibold font-alexandria">{title}</h3>
         <FieldArray name={fullName} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
-        <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
+        <Button type="button" className="font-alexandria" onClick={() => append([" "])}>Add {title}</Button>
         {/* TODO: figure out why empty string yields unexpected behavior */}
       </div>
     )
@@ -394,7 +395,7 @@ function AccordionList({
       <AccordionContent className="flex flex-col gap-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
-        <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
+        <Button type="button" className="font-alexandria" onClick={() => append([" "])}>Add {title}</Button>
         {/* TODO: figure out why empty string yields unexpected behavior */}
       </AccordionContent>
     </AccordionItem>
@@ -467,7 +468,7 @@ function EnvironmentVariables() {
                     <FormItem>
                       <FormControl>
                         <Input
-                          className="placeholder:text-neutral-400"
+                          className="placeholder:text-neutral-400 font-alexandria"
                           placeholder={title}
                           {...formField}
                         />
@@ -481,13 +482,13 @@ function EnvironmentVariables() {
               </div>
             ))}
             </div>
-            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+            <Button type="button" variant="destructive" className="font-alexandria" onClick={() => remove(index)}>
               Remove
             </Button>
           </div>
         ))}
         </div>
-        <Button type="button" onClick={() => append([{ key: "", value: "" }])}>Add {title}</Button>
+        <Button type="button" className="font-alexandria" onClick={() => append([{ key: "", value: "" }])}>Add {title}</Button>
       </AccordionContent>
     </AccordionItem>
   )
@@ -584,12 +585,12 @@ function TokenComboboxAccordion() {
 
 function SubmitButton() {
   return (
-    <Button
-      className="px-5 py-1.5 border-2 border-orange-400 rounded-xl font-alexandria text-white text-base md:text-lg  font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+    <button
+      className="px-5 w-full py-1.5 border-2 border-orange-400 rounded-xl font-alexandria text-white text-base md:text-lg  font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
       type="submit"
     >
       Submit
-    </Button>
+    </button>
   )
 }
 

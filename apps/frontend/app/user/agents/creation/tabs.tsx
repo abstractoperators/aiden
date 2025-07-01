@@ -12,7 +12,7 @@ export default function FormTabs() {
     <div className="rounded-2xl border-2 bg-[#181C23] p-6 w-full">
       <Tabs defaultValue="json">
         <TabsList className="mb-6">
-          <TabsTrigger value="native">Native</TabsTrigger>
+          <TabsTrigger value="native" className="mr-4">Native</TabsTrigger>
           <TabsTrigger value="json">JSON</TabsTrigger>
         </TabsList>
         <TabsContent value="native">
