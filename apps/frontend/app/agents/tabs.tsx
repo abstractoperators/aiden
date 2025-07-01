@@ -6,12 +6,15 @@ import { getIncubating, getEnlightened, ClientAgent } from "@/lib/api/agent";
 import { isSuccessResult } from "@/lib/api/result";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsLoggedIn, useDynamicContext } from "@dynamic-labs/sdk-react-core";
 
 export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuery: string, setSearchQuery: (query: string) => void }) {
   const [enlightened, setEnlightened] = useState<ClientAgent[]>([]);
   const [incubating, setIncubating] = useState<ClientAgent[]>([]);
   const [isLoadingEnlightened, setIsLoadingEnlightened] = useState(true);
   const [isLoadingIncubating, setIsLoadingIncubating] = useState(true);
+  const isLoggedIn = useIsLoggedIn();
+  const { setShowAuthFlow } = useDynamicContext();
 
   useEffect(() => {
     
@@ -104,14 +107,30 @@ export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuer
             )}
           </TabsContent>
           <TabsContent value="myagents">
-            {isLoadingIncubating ? (
-              <LoadingSkeleton />
+            {!isLoggedIn ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                <h2 className="text-white font-alexandria text-xl">You need to be logged in to view your agents</h2>
+                <button
+                  onClick={() => setShowAuthFlow(true)}
+                  className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-pixelcraft text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+                  style={{ letterSpacing: '0.08em' }}
+                >
+                  <span className="text-left">REGISTER</span>
+                  <span className="ml-3 flex items-center justify-center w-8 h-8 bg-orange-400 rounded-lg transition-colors duration-200 group-hover:bg-white">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </span>
+                </button>
+              </div>
             ) : (
-              ( incubating.length > 0 )
-              ? <DataTable columns={columns} data={incubating} paginationClassName="mt-8 flex justify-end" />
-              : <div>
-                  <h2 className="text-white font-alexandria">You don't have any agents yet!</h2>
-                </div>
+              isLoadingIncubating ? (
+                <LoadingSkeleton />
+              ) : (
+                ( incubating.length > 0 )
+                ? <DataTable columns={columns} data={incubating} paginationClassName="mt-8 flex justify-end" />
+                : <div>
+                    <h2 className="text-white font-alexandria">You don't have any agents yet!</h2>
+                  </div>
+              )
             )}
           </TabsContent>
         </Tabs>

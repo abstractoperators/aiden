@@ -424,14 +424,14 @@ function FieldArray({
             <FormLabel></FormLabel>
             <FormControl>
               <Input
-                className="placeholder:text-neutral-400"
+                className="placeholder:text-neutral-400 font-alexandria border-[#233447]"
                 placeholder={title}
                 {...field}
               />
             </FormControl>
             <FormDescription />
             <FormMessage />
-            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+            <Button type="button" variant="destructive" className="font-alexandria" onClick={() => remove(index)}>
               Remove
             </Button>
           </FormItem>
