@@ -110,7 +110,7 @@ async def monitor_agent_liveness():
                         if downtime_seconds <= 75:
                             logger.info(f"[RESTART DETECTED] Agent {agent_id} restarted after {downtime_seconds:.1f}s")
                             agent_restart_timestamp.labels(agent_id=str(agent_id)).set(time.time())
-                            print(f"[RESTART METRIC] {agent_id} restarted at {int(time.time())}")
+                            logger.info("[RESTART METRIC] %s restarted at %d", agent_id, int(time.time()))
 
         await asyncio.sleep(15)
 
