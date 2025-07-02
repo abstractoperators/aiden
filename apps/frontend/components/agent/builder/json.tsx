@@ -35,7 +35,6 @@ import { CharacterSchema } from "@/lib/schemas/character";
 const MAX_FILE_SIZE = 5000000;
 
 const errorMap: z.ZodErrorMap = (issue, ctx) => {
-  console.log(issue)
   const fieldName = issue.path.join('.')
   const fieldNameMessage = (str: string) => [fieldName, str].join(' ')
   switch (issue.code) {

@@ -28,7 +28,7 @@ enum ModelProviderName {
     AKASH_CHAT_API = "akash_chat_api",
     LIVEPEER = "livepeer",
     LETZAI = "letzai",
-    DEEPSEEK="deepseek",
+    DEEPSEEK = "deepseek",
     INFERA="infera"
 }
 const ModelProviderNameEnum = z.nativeEnum(ModelProviderName)
