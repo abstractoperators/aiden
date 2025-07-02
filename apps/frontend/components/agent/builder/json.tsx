@@ -33,6 +33,30 @@ import EnvironmentVariables from "./environment-variables";
 import { CharacterSchema } from "@/lib/schemas/character";
 
 const MAX_FILE_SIZE = 5000000;
+
+const errorMap: z.ZodErrorMap = (issue, ctx) => {
+  console.log(issue)
+  const fieldName = issue.path.join('.')
+  const fieldNameMessage = (str: string) => [fieldName, str].join(' ')
+  switch (issue.code) {
+    case "invalid_type":
+      if (issue.received === "undefined") {
+        return { message: fieldNameMessage("is missing from your JSON") }
+      }
+      if (issue.expected.includes('|')) {
+        const formattedExpected = issue.expected.split('|').map(val => val.replaceAll('\'', '').trim()).join(', ')
+        return { message: fieldNameMessage(`must be one of the following: ${formattedExpected}`) }
+      }
+      return { message: fieldNameMessage(`needs to be a ${issue.expected}, but is currently a ${issue.received}`) }
+    case "invalid_enum_value":
+      return { message: fieldNameMessage(`must be one of the following: ${issue.options.join(', ')}`)}
+    case "unrecognized_keys":
+      return { message: `${issue.keys.join(', ')} are not valid field(s)`}
+    default:
+      return { message: ctx.defaultError }
+  }
+}
+
 const JsonAgentBuilderSchema = z.intersection(
   z.object({
     character: z
@@ -50,12 +74,15 @@ const JsonAgentBuilderSchema = z.intersection(
         }
       })
       .transform((val, ctx) => {
-        const parsed = CharacterSchema.safeParse(val)
+        const parsed = CharacterSchema.safeParse(val, { errorMap })
         if (parsed.success) {
           return parsed.data
         }
 
-        parsed.error.issues.forEach(issue => ctx.addIssue(issue))
+        parsed.error.issues.forEach(issue => ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: issue.message,
+        }))
         return z.NEVER
       }),
     characterFile: z
