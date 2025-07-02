@@ -34,7 +34,12 @@ import EnvironmentVariables from "./environment-variables"
 import { EnvSchema } from "@/lib/schemas/environment-variables"
 import { TokenSchema } from "@/lib/schemas/token"
 import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit"
-import { CharacterSchema } from "@/lib/schemas/character"
+import {
+  Character,
+  CharacterSchema,
+  Clients,
+  ModelProviderName,
+} from "@/lib/schemas/character"
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
@@ -83,6 +88,9 @@ function NativeAgentBuilder({
       twitter: false,
       env: [{ key: "", value: "", }],
       name: "",
+      clients: [],
+      modelProvider: ModelProviderName.OPENAI,
+      plugins: [],
       bio: [],
       lore: [],
       knowledge: [],
@@ -110,12 +118,15 @@ function NativeAgentBuilder({
 
   async function onSubmit(formData: NativeAgentBuilderSchema) {
     console.debug("AgentForm", formData)
-    const { env, isNewToken, twitter, ...data } = formData
-    const character = {
-      modelProvider: "openai",
-      clients: twitter ? ["twitter"] : [],
-      settings: { secrets: {} },
-      plugins: [],
+    const {
+      env,
+      isNewToken,
+      twitter,
+      clients,
+      ...data
+    } = formData
+    const character: Character = {
+      clients: twitter ? [Clients.TWITTER, ...clients] : clients,
       ...data,
     }
 

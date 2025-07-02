@@ -30,6 +30,7 @@ import { EnvSchema } from "@/lib/schemas/environment-variables";
 import { TokenSchema } from "@/lib/schemas/token";
 import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit";
 import EnvironmentVariables from "./environment-variables";
+import { CharacterSchema } from "@/lib/schemas/character";
 
 const MAX_FILE_SIZE = 5000000;
 const JsonAgentBuilderSchema = z.intersection(
@@ -37,17 +38,26 @@ const JsonAgentBuilderSchema = z.intersection(
     character: z
       .string()
       .min(1, "Cannot be empty")
-      .refine(
-        val => {
-          try {
-            JSON.parse(val)
-            return true
-          } catch {
-            return false
-          }
-        },
-        { message: "Must be valid JSON" },
-      ),
+      .transform((val, ctx) => {
+        try {
+          return JSON.parse(val)
+        } catch (parseError) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `${parseError}`,
+          })
+          return z.NEVER
+        }
+      })
+      .transform((val, ctx) => {
+        const parsed = CharacterSchema.safeParse(val)
+        if (parsed.success) {
+          return parsed.data
+        }
+
+        parsed.error.issues.forEach(issue => ctx.addIssue(issue))
+        return z.NEVER
+      }),
     characterFile: z
       .instanceof(File)
       .refine(file => file.size !== 0, "File may not be empty.")
@@ -63,7 +73,8 @@ const JsonAgentBuilderSchema = z.intersection(
   }).merge(EnvSchema),
   TokenSchema,
 )
-type JsonAgentBuilderSchema = z.infer<typeof JsonAgentBuilderSchema>
+type JsonAgentBuilderSchema = z.input<typeof JsonAgentBuilderSchema>
+type JsonAgentBuilderOutputSchema = z.output<typeof JsonAgentBuilderSchema>
 
 function JsonAgentBuilder({
   defaultValues,
@@ -80,7 +91,7 @@ function JsonAgentBuilder({
 
   const userId: string = user.userId
 
-  const form = useForm<JsonAgentBuilderSchema>({
+  const form = useForm<JsonAgentBuilderSchema, object, JsonAgentBuilderOutputSchema>({
     resolver: zodResolver(JsonAgentBuilderSchema),
     defaultValues: defaultValues ?? {
       character: "",
@@ -105,7 +116,7 @@ function JsonAgentBuilder({
   const { toast } = useToast()
   const { push } = useRouter()
 
-  async function onSubmit(formData: JsonAgentBuilderSchema) {
+  async function onSubmit(formData: JsonAgentBuilderOutputSchema) {
     console.debug("Agent Form Results", formData)
     const { character, env, isNewToken } = formData
 
@@ -114,7 +125,7 @@ function JsonAgentBuilder({
      * before redirecting the user to the agent's profile page. */
     return agentBuilderOnSubmit(agentId)({
       dynamicId: userId,
-      character: JSON.parse(character),
+      character,
       envFile: (
         env
         .filter(({value}) => value.length)
@@ -143,13 +154,13 @@ function JsonAgentBuilder({
                     <FormLabel></FormLabel>
                     <FormControl>
                       <Textarea
-                        rows={40}
+                        rows={25}
                         placeholder="Paste your agent's Eliza Character JSON here!"
                         className={cn(
                           "w-full rounded-xl text-nowrap",
                           "border border-input bg-anakiwa-lighter dark:bg-anakiwa-darkest px-3 py-2",
                           "text-base shadow-sm placeholder:text-muted-foreground",
-                          "disabled:opacity-50 md:text-sm resize-none",
+                          "disabled:opacity-50 md:text-sm resize-y",
                         )}
                         {...field}
                       />

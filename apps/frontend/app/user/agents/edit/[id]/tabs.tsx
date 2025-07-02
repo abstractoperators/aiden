@@ -7,6 +7,7 @@ import {
 import JsonAgentBuilder from "../../../../../components/agent/builder/json";
 import NativeAgentBuilder from "@/components/agent/builder/native";
 import { Agent } from "@/lib/api/agent";
+import { Clients } from "@/lib/schemas/character";
 
 export default function FormTabs({
   id,
@@ -28,7 +29,7 @@ export default function FormTabs({
       <TabsContent value="native">
         <NativeAgentBuilder
           defaultValues={{
-            twitter: characterJson.clients.includes("twitter"),
+            twitter: characterJson.clients.includes(Clients.TWITTER),
             isNewToken: false,
             ...commonProps,
             ...characterJson,
