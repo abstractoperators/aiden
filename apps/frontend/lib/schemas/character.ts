@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const stringListSchema = z.object({
+const StringListSchema = z.object({
   bio: z.string().trim().min(4, "Cannot be empty").array().min(1),
   lore: z.string().trim().min(1, "Cannot be empty").array(),
   knowledge: z.string().trim().min(1, "Cannot be empty").array().optional(),
@@ -9,7 +9,7 @@ const stringListSchema = z.object({
   topics: z.string().trim().min(1, "Cannot be empty").array(),
 })
 
-const characterSchema = z.object({
+const CharacterSchema = z.object({
   name: z.string().trim().min(1, "Cannot be empty"),
   messageExamples: z.object({
     user: z.string().trim().min(1, "Cannot be empty"),
@@ -23,7 +23,7 @@ const characterSchema = z.object({
     chat: z.string().trim().min(2, "Cannot be empty").array(),
     post: z.string().trim().min(2, "Cannot be empty").array(),
   }),
-}).merge(stringListSchema)
+}).merge(StringListSchema)
 
 interface Character {
   name: string
@@ -54,7 +54,7 @@ interface Character {
 }
 
 export {
-  characterSchema,
+  CharacterSchema,
 }
 
 export type {

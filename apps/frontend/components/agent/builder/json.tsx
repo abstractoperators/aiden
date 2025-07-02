@@ -21,23 +21,18 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  EnvironmentVariables,
-  envSchema,
-  onSubmitCreate,
-  onSubmitEdit,
-  SubmitButton,
-  // TokenAccordion,
-  tokenSchema,
-} from "@/components/agent/builder";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { EnvSchema } from "@/lib/schemas/environment-variables";
+import { TokenSchema } from "@/lib/schemas/token";
+import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit";
+import EnvironmentVariables from "./environment-variables";
 
 const MAX_FILE_SIZE = 5000000;
-const agentSchema = z.intersection(
+const JsonAgentBuilderSchema = z.intersection(
   z.object({
     character: z
       .string()
@@ -65,16 +60,16 @@ const agentSchema = z.intersection(
         { message: "Invalid file type, must be JSON." }
       )
       .optional(),
-  }).merge(envSchema),
-  tokenSchema,
+  }).merge(EnvSchema),
+  TokenSchema,
 )
-type AgentSchema = z.infer<typeof agentSchema>
+type JsonAgentBuilderSchema = z.infer<typeof JsonAgentBuilderSchema>
 
-function UploadForm({
+function JsonAgentBuilder({
   defaultValues,
   agentId,
 }: {
-  defaultValues?: AgentSchema,
+  defaultValues?: JsonAgentBuilderSchema,
   agentId?: string,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
@@ -85,8 +80,8 @@ function UploadForm({
 
   const userId: string = user.userId
 
-  const form = useForm<AgentSchema>({
-    resolver: zodResolver(agentSchema),
+  const form = useForm<JsonAgentBuilderSchema>({
+    resolver: zodResolver(JsonAgentBuilderSchema),
     defaultValues: defaultValues ?? {
       character: "",
       env: [{ key: "", value: "", }],
@@ -110,16 +105,14 @@ function UploadForm({
   const { toast } = useToast()
   const { push } = useRouter()
 
-  const onSubmitBase = agentId ? onSubmitEdit(agentId) : onSubmitCreate
-
-  async function onSubmit(formData: AgentSchema) {
+  async function onSubmit(formData: JsonAgentBuilderSchema) {
     console.debug("Agent Form Results", formData)
     const { character, env, isNewToken } = formData
 
     /** onSubmitCreate wraps the API creation of the agent.
      * It retrieves the API user ID and informs the user of success
      * before redirecting the user to the agent's profile page. */
-    return onSubmitBase({
+    return agentBuilderOnSubmit(agentId)({
       dynamicId: userId,
       character: JSON.parse(character),
       envFile: (
@@ -220,10 +213,10 @@ function UploadForm({
           {/* <TokenAccordion /> */}
 
         </Accordion>
-        <SubmitButton />
+        <AgentBuilderSubmit />
       </form>
     </Form>
   )
 }
 
-export default UploadForm
+export default JsonAgentBuilder

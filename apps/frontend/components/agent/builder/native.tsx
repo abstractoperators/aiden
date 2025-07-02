@@ -1,8 +1,7 @@
 "use client"
 
-import { Character, characterSchema } from "@/lib/character"
-import { capitalize, cn } from "@/lib/utils"
-import { useDynamicContext, Wallet } from "@dynamic-labs/sdk-react-core"
+import { cn } from "@/lib/utils"
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Accordion,
@@ -30,24 +29,12 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  createAgent,
-  stopAgent,
-  updateAgent,
-} from "@/lib/api/agent"
-import { toast } from "@/hooks/use-toast"
-import { getUser } from "@/lib/api/user"
 import { useRouter } from "next/navigation"
-import { isErrorResult, isNotFound, isSuccessResult } from "@/lib/api/result"
-import { useEffect, useState } from "react"
-import { getTokens, Token } from "@/lib/api/token"
-import { FormCombobox } from "../ui/combobox"
-import Link from "next/link"
-import {
-  // launchTokenFactory,
-  launchSchema as tokenLaunchSchema,
-  LaunchSchemaType as TokenLaunchType,
-} from "@/lib/contracts/bonding"
+import EnvironmentVariables from "./environment-variables"
+import { EnvSchema } from "@/lib/schemas/environment-variables"
+import { TokenSchema } from "@/lib/schemas/token"
+import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit"
+import { CharacterSchema } from "@/lib/schemas/character"
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
@@ -68,53 +55,30 @@ const styleTitles = {
   "chat": "Chat",
   "post": "Post",
 }
-const envTitles = {
-  "key": "Key",
-  "value": "Value",
-}
 
-const envSchema = z.object({
-  env: z.object({
-    key: z.string().trim(),
-    value: z.string().trim(),
-  }).array(),
-})
-const integrationsSchema = z.object({
+const IntegrationsSchema = z.object({
   twitter: z.boolean(),
 })
 
-const newTokenSchema = tokenLaunchSchema.extend({
-  isNewToken: z.literal(true),
-})
-const existingTokenSchema = z.object({
-  isNewToken: z.literal(false),
-  tokenId: z.string(),
-})
-const tokenSchema = z.discriminatedUnion(
-  "isNewToken", [
-  newTokenSchema,
-  existingTokenSchema,
-])
-
-const formSchema = z.intersection(
-  characterSchema
-  .merge(envSchema)
-  .merge(integrationsSchema),
-  tokenSchema,
+const NativeAgentBuilderSchema = z.intersection(
+  CharacterSchema
+  .merge(EnvSchema)
+  .merge(IntegrationsSchema),
+  TokenSchema,
 )
-type FormType = z.infer<typeof formSchema>
+type NativeAgentBuilderSchema = z.infer<typeof NativeAgentBuilderSchema>
 
-function NativeBuilder({
+function NativeAgentBuilder({
   defaultValues,
   agentId,
 } : {
-  defaultValues?: FormType,
+  defaultValues?: NativeAgentBuilderSchema,
   agentId?: string,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
 
-  const form = useForm<FormType>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<NativeAgentBuilderSchema>({
+    resolver: zodResolver(NativeAgentBuilderSchema),
     defaultValues: defaultValues ?? {
       twitter: false,
       env: [{ key: "", value: "", }],
@@ -144,10 +108,7 @@ function NativeBuilder({
 
   const { push } = useRouter()
 
-  // TODO: set up sei and eth addresses if undefined
-  const onSubmitBase = agentId ? onSubmitEdit(agentId) : onSubmitCreate
-
-  async function onSubmit(formData: FormType) {
+  async function onSubmit(formData: NativeAgentBuilderSchema) {
     console.debug("AgentForm", formData)
     const { env, isNewToken, twitter, ...data } = formData
     const character = {
@@ -161,7 +122,7 @@ function NativeBuilder({
     if (!user) throw new Error(`User ${user} does not exist!`)
     if (!user.userId) throw new Error(`User ${user} has no userId!`)
 
-    return onSubmitBase({
+    return agentBuilderOnSubmit(agentId)({
       dynamicId: user.userId,
       character,
       envFile: (
@@ -267,7 +228,7 @@ function NativeBuilder({
 
         </Accordion>
 
-        <SubmitButton />
+        <AgentBuilderSubmit />
       </form>
     </Form> : 
     <h1>
@@ -282,7 +243,7 @@ function MessageExample({
   parentRemove,
 }: {
   exampleIndex: number,
-  control: Control<FormType>,
+  control: Control<NativeAgentBuilderSchema>,
   parentRemove: UseFieldArrayRemove,
 }) {
   const { fields, append, remove } = useFieldArray({
@@ -342,7 +303,7 @@ function MessageExample({
   )
 }
 
-function Style({ control }: { control: Control<FormType> }) {
+function Style({ control }: { control: Control<NativeAgentBuilderSchema> }) {
   const getFullName = (name: string) => `style.${name}`
   function StyleHelper({ name, title }: { name: string, title: string }) {
     const fullName = getFullName(name)
@@ -380,7 +341,7 @@ function AccordionList({
 }: {
   title: string,
   name: string,
-  control: Control<FormType>,
+  control: Control<NativeAgentBuilderSchema>,
 }) {
   const { fields, append, remove } = useFieldArray({
     control,
@@ -409,7 +370,7 @@ function FieldArray({
 }: {
   name: string,
   title: string,
-  fields: FieldArrayWithId<FormType>[],
+  fields: FieldArrayWithId<NativeAgentBuilderSchema>[],
   remove: UseFieldArrayRemove,
 }) {
   return (
@@ -441,297 +402,4 @@ function FieldArray({
   )
 }
 
-function EnvironmentVariables() {
-  const name = "env"
-  const title = "Environment Variables"
-  const { fields, append, remove } = useFieldArray({
-    name,
-  })
-
-  return (
-    <AccordionItem value="Environment Variables">
-      <AccordionTrigger>
-        Environment Variables
-      </AccordionTrigger>
-      <AccordionContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-x-4 gap-y-2">
-        {fields.map((field, index) => (
-          <div key={field.id} className="flex gap-4 items-center">
-            <div className="flex gap-2 items-center">
-            {Object.entries(envTitles).map(([fieldName, title], entryIndex) => (
-              <div key={`envFormField.${entryIndex}`} className="flex gap-2 items-center">
-                <FormField
-                  key={`${name}.${index}.${fieldName}`}
-                  name={`${name}.${index}.${fieldName}`}
-                  render={({ field: formField }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          className="placeholder:text-neutral-400"
-                          placeholder={title}
-                          {...formField}
-                        />
-                      </FormControl>
-                      <FormDescription />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {entryIndex < Object.entries(envTitles).length - 1 && <div>=</div>}
-              </div>
-            ))}
-            </div>
-            <Button type="button" variant="destructive" onClick={() => remove(index)}>
-              Remove
-            </Button>
-          </div>
-        ))}
-        </div>
-        <Button type="button" onClick={() => append([{ key: "", value: "" }])}>Add {title}</Button>
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
-function TokenAccordion() {
-  return (
-    <AccordionItem value="Token">
-      <AccordionTrigger>Token</AccordionTrigger>
-      <AccordionContent>
-      {tokenLaunchSchema.keyof().options.map(name => (
-        <FormField
-          key={name}
-          name={name}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel></FormLabel>
-              <FormControl>
-                <Input
-                  className="placeholder:text-neutral-400"
-                  placeholder={capitalize(name)}
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Provide a {name} for your agent&apos;s token.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      ))}
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
-function TokenComboboxAccordion() {
-  const [tokens, setTokens] = useState<Token[]>([])
-  useEffect(() => {
-    getTokens().then(result => {
-      if (isSuccessResult(result)) {
-        setTokens(result.data)
-      } else { toast({
-        title: "Unable to fetch tokens!",
-        description: result.message,
-      })}
-    })
-  }, [])
-
-  return (
-    <AccordionItem value="Token">
-      <AccordionTrigger>Token</AccordionTrigger>
-      <AccordionContent>
-        <FormField
-          name="tokenId"
-          render={({ field: { value, onChange } }) => (
-            <FormItem>
-              <FormLabel></FormLabel>
-                <FormCombobox
-                  value={value}
-                  setValue={onChange}
-                  instructions="Select a token..."
-                  empty="No tokens found."
-                  search="Search tokens..."
-                  items={tokens.map(token => ({
-                    label: `${token.name} ($${token.ticker})`,
-                    value: token.id,
-                  }))}
-                />
-              <FormDescription>
-                Want more token details? Click&nbsp;
-                <Link
-                  href="/tokens"
-                  className={cn(
-                    "text-blue-600 underline text-sm mt-1",
-                    "hover:text-blue-700 dark:hover:text-blue-500",
-                    "transition duration-300",
-                    "inline-block",
-                  )}
-                >
-                  here
-                </Link>
-                .
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
-function SubmitButton() {
-  return (
-    <Button
-      className={cn(
-        "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%",
-        "font-semibold text-black dark:text-white text-d5",
-        "transition duration-300 hover:hue-rotate-60",
-        "px-12 py-8 rounded-xl",
-      )}
-      type="submit"
-    >
-      Submit
-    </Button>
-  )
-}
-
-interface SubmitProps {
-  dynamicId: string
-  character: Character
-  envFile: string
-  token: string | TokenLaunchType
-  push: (href: string, options?: { scroll: boolean }) => void
-  wallet: Wallet | null
-}
-
-async function onSubmitCreate({
-  dynamicId,
-  character,
-  envFile,
-  // token,
-  push,
-  // wallet,
-}: SubmitProps) {
-  console.debug("Character", character)
-  const userResult = await getUser({ dynamicId })
-  console.debug(dynamicId, userResult)
-
-  if (isErrorResult(userResult)) {
-    toast({
-      title: "Unable to retrieve AIDN user!",
-      description: userResult.message,
-    })
-    return
-  }
-
-  // const tokenId = (
-  //   (typeof token === "string") ?
-  //   token :
-  //   await (async () => {
-  //     const tokenResult = await launchTokenFactory(wallet)(token)
-  //     if (isErrorResult(tokenResult)) {
-  //       toast({
-  //         title: `Unable to save token ${token.tokenName} ($${token.ticker})`,
-  //         description: tokenResult.message,
-  //       })
-  //     } else {
-  //       toast({
-  //         title: `Token ${token.tokenName} ($${token.ticker}) created!`,
-  //       })
-  //       return tokenResult.data.id
-  //     }
-  //   })()
-  // )
-
-  const agentPayload = {
-    ownerId: userResult.data.id,
-    characterJson: character,
-    envFile,
-    // tokenId,
-  }
-  const agentResult = await createAgent(agentPayload)
-  if (isErrorResult(agentResult)) {
-    toast({
-      title: `Unable to create Agent ${character.name}!`,
-      description: agentResult.message,
-    })
-    return
-  }
-
-  toast({
-    title: `Agent ${character.name} Created!`,
-  })
-  const { id } = agentResult.data
-  push(`/agents/${id}`)
-}
-
-function onSubmitEdit(agentId: string) {
-  async function onSubmitEditHelper({
-    dynamicId,
-    character,
-    envFile,
-    push,
-  }: SubmitProps) {
-    console.debug("Character", character)
-    const userResult = await getUser({ dynamicId })
-    console.debug(dynamicId, userResult)
-
-    if (isErrorResult(userResult)) {
-      toast({
-        title: "Unable to retrieve AIDN user!",
-        description: userResult.message,
-      })
-      return
-    }
-
-    const agentPayload = {
-      ownerId: userResult.data.id,
-      characterJson: character,
-      envFile,
-    }
-
-    // update and stop agent
-    const updateResult = await updateAgent(agentId, agentPayload)
-    if (isErrorResult(updateResult)) {
-      toast({
-        title: `Unable to update Agent ${character.name}`,
-        description: updateResult.message,
-      })
-      return
-    }
-
-    const stopResult = await stopAgent(agentId)
-    if (isErrorResult(stopResult) && !isNotFound(stopResult)) {
-      console.error(`Failed to stop Agent ${agentId} status code ${stopResult.code}, ${stopResult.message}`)
-      toast({
-        title: `Unable to stop Agent ${character.name}`,
-        description: stopResult.message,
-      })
-      return
-    }
-    toast({
-      title: `Agent ${character.name} Updated!`,
-      description: "Agent has been updated and stopped.",
-    })
-
-    push(`/agents/${agentId}`)
-  }
-
-  return onSubmitEditHelper
-}
-
-export {
-  envSchema,
-  onSubmitCreate,
-  onSubmitEdit,
-  EnvironmentVariables,
-  SubmitButton,
-  TokenAccordion,
-  TokenComboboxAccordion,
-  tokenSchema,
-}
-
-export default NativeBuilder
+export default NativeAgentBuilder

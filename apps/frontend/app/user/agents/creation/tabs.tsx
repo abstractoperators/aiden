@@ -4,8 +4,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import UploadForm from "./upload-form";
-import NativeBuilder from "@/components/agent/builder";
+import JsonAgentBuilder from "../../../../components/agent/builder/json";
+import NativeAgentBuilder from "@/components/agent/builder/native";
 
 export default function FormTabs() {
   return (
@@ -15,10 +15,10 @@ export default function FormTabs() {
         <TabsTrigger value="json">JSON</TabsTrigger>
       </TabsList>
       <TabsContent value="native">
-        <NativeBuilder />
+        <NativeAgentBuilder />
       </TabsContent>
       <TabsContent value="json">
-        <UploadForm />
+        <JsonAgentBuilder />
       </TabsContent>
     </Tabs>
   )
