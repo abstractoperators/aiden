@@ -135,7 +135,7 @@ function NativeAgentBuilder({
 
     return agentBuilderOnSubmit(agentId)({
       dynamicId: user.userId,
-      character,
+      character: CharacterSchema.strip().parse(character),
       envFile: (
         env
         .filter(({value}) => value.length)
