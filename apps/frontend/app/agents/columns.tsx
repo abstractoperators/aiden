@@ -1,41 +1,16 @@
 'use client'
 
-import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
-import { Star } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import type { ClientAgent } from "@/lib/api/agent"
 
 export const columns: ColumnDef<ClientAgent>[] = [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300"
+        className="font-alexandria"
         column={column}
         title="Name"
       />
@@ -43,6 +18,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     cell: ({ row }) => (
       <Link
         href={`/agents/${row.original.id}`}
+        className="font-alexandria"
       >
         <hgroup>
           <h2 className="text-base">{row.getValue("name")}</h2>
@@ -52,33 +28,78 @@ export const columns: ColumnDef<ClientAgent>[] = [
     )
   },
   {
+    accessorKey: "ticker",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        className="font-alexandria"
+        column={column}
+        title="Ticker"
+      />
+    ),
+    cell: ({ row }) => (
+      <h2 className="text-base font-alexandria">
+        { row.original.ticker && <h3>${row.original.ticker}</h3> }
+      </h2>
+    )
+  },
+  {
+    accessorKey: "price",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        className="font-alexandria"
+        column={column}
+        title="Price"
+      />
+    ),
+    cell: ({ row }) => (
+      <h3 className="font-alexandria">
+        ${(Math.random() * 100).toFixed(2)}
+      </h3>
+    )
+  },
+  {
+    accessorKey: "tvl",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        className="font-alexandria"
+        column={column}
+        title="TVL"
+      />
+    ),
+    cell: ({ row }) => (
+      <h3 className="font-alexandria">
+        ${(Math.random() * 1000000).toLocaleString()}
+      </h3>
+    )
+  },
+  {
     accessorKey: "marketCapitalization",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300"
+        className="font-alexandria"
         column={column}
-        title="Market Capitalization"
+        title="MC"
       />
     ),
+    cell: ({ row }) => (
+      <h3 className="font-alexandria">
+        {row.getValue("marketCapitalization")}
+      </h3>
+    )
   },
   {
     accessorKey: "holderCount",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="text-neutral-300"
+        className="font-alexandria"
         column={column}
         title="Holders"
       />
-    )
-  },
-  {
-    id: "star",
+    ),
     cell: ({ row }) => (
-      <Button variant="ghost" size="icon">
-        {/* TODO: fill prop for Star */}
-        <Star />
-        <span className="sr-only">{row.getValue("name")}</span>
-      </Button>
+      <h3 className="font-alexandria">
+        { row.original.holderCount && <h3>${row.original.holderCount}</h3> }
+      </h3>
     )
   }
 ]

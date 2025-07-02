@@ -23,32 +23,20 @@ function LoginButton({
   children,
   className,
 }: React.PropsWithChildren<{className?: string}>) {
-  const bg = (
-    [
-      "bg-gradient-to-br",
-      "from-anakiwa",
-      "from-20%",
-      "to-carnation",
-      "to-80%",
-      "hover:hue-rotate-60",
-    ]
-    .join(" ")
-  )
+  
   const { primaryWallet, user, setShowAuthFlow } = useDynamicContext()
 
   return (primaryWallet && user) ? (
     <>{children}</>
   ) : (
-    <Button
+    <div
       className={cn(
-        common,
-        bg,
-        className,
+        "hover:text-orange-400 transition font-pixelcraft cursor-pointer",
       )}
       onClick={() => setShowAuthFlow(true)}
     >
-      Register Now
-    </Button>
+      Register
+    </div>
   )
 }
 
@@ -72,7 +60,6 @@ function LoginButtonHero({className}: {className?: string}) {
         common,
         bg,
       )}
-      asChild
     >
       <Link href="/user/agents/creation">
         Create an Agent
@@ -88,7 +75,6 @@ function LoginButtonHeader({className}: {className?: string}) {
       user &&
       primaryWallet &&
       <div className="flex items-center justify-between gap-2">
-        <CreateAgentButton />
         <UserMenu
           logout={handleLogOut}
           user={user}

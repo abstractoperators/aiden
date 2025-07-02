@@ -78,10 +78,23 @@ function UploadForm({
   agentId?: string,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
-  if (!user)
-    throw new Error(`User ${user} does not exist!`)
-  if (!user.userId)
-    throw new Error(`User ${user} has no userId!`)
+  
+  // Add loading state and proper error handling
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-white font-alexandria">Loading user data...</div>
+      </div>
+    )
+  }
+  
+  if (!user.userId) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-white font-alexandria">User not properly authenticated. Please log in again.</div>
+      </div>
+    )
+  }
 
   const userId: string = user.userId
 
@@ -139,7 +152,7 @@ function UploadForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Accordion type="multiple" defaultValue={["file",]} className="space-y-2">
           <AccordionItem value="file">
-            <AccordionTrigger className="font-semibold text-d6">
+            <AccordionTrigger className="font-semibold text-d6 text-white font-alexandria">
               Character JSON
             </AccordionTrigger>
             <AccordionContent>
@@ -154,9 +167,9 @@ function UploadForm({
                         placeholder="Paste your agent's Eliza Character JSON here!"
                         className={cn(
                           "w-full rounded-xl text-nowrap",
-                          "border border-input bg-anakiwa-lighter dark:bg-anakiwa-darkest px-3 py-2",
-                          "text-base shadow-sm placeholder:text-muted-foreground",
-                          "disabled:opacity-50 md:text-sm resize-none",
+                          "border border-[#233447] bg-[#181C23] px-3 py-2",
+                          "text-base shadow-sm placeholder:text-gray-400 text-white",
+                          "disabled:opacity-50 md:text-sm resize-none font-alexandria",
                         )}
                         {...field}
                       />
@@ -175,6 +188,7 @@ function UploadForm({
                         <Input
                           type="file"
                           accept=".json,application/json"
+                          className="text-white font-alexandria"
                           onChange={async (event) => {
                             onChange(event.target.files && event.target.files[0])
                             const file = event.target.files?.[0]
@@ -196,31 +210,33 @@ function UploadForm({
                           {...{ onBlur, disabled, name, ref }}
                         />
                       </FormControl>
-                      <FormDescription>
+                      <FormDescription className="text-gray-300 font-alexandria">
                         Upload a character JSON file.
                       </FormDescription>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
                 <Button
-                  size="icon"
-                  variant="default"
-                  className="my-2 rounded-xl"
-                  onClick={downloadCharacter} type="button"
+                  type="button"
+                  variant="outline"
+                  onClick={downloadCharacter}
+                  className="text-white border-[#233447] hover:bg-[#233447] font-alexandria"
                 >
-                  <Download />
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
                 </Button>
               </div>
             </AccordionContent>
           </AccordionItem>
-
-          <EnvironmentVariables />
-
-          {/* <TokenAccordion /> */}
-
         </Accordion>
-        <SubmitButton />
+        
+        <Accordion type="multiple" className="space-y-2">
+          <EnvironmentVariables />
+        </Accordion>
+        
+        <div className="flex justify-center pt-4">
+          <SubmitButton />
+        </div>
       </form>
     </Form>
   )

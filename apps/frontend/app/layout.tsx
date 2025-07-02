@@ -38,18 +38,8 @@ export default function RootLayout({
       ].join(" ")}
     >
       <body
-        className={[
-          // common
-          "w-screen min-h-screen",
-          "bg-cover bg-fixed bg-no-repeat",
-          // backup light background
-          "bg-right-top bg-anakiwa-lighter",
-          // backup dark background
-          "dark:bg-right dark:bg-anakiwa-darkest",
-          // background images
-          "bg-[url(/brand_assets/background-sky.png)]",
-          "dark:bg-[url(/brand_assets/background-orbit.png)]",
-        ].join(" ")}
+        className="w-screen min-h-screen bg-cover bg-center text-white font-minecraft"
+        style={{ backgroundImage: "url('/background.png')" }}
       >
         <DynamicProvider>
           <ThemeProvider

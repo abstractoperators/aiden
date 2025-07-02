@@ -180,7 +180,7 @@ function AgentForm({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Accordion type="multiple" className="flex flex-col gap-2">
-          <AccordionItem value="Name">
+          <AccordionItem value="Name" className="bg-[#181C23] border-[#233447] rounded-xl">
             <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
@@ -190,7 +190,7 @@ function AgentForm({
                     <FormLabel></FormLabel>
                     <FormControl>
                       <Input
-                        className="placeholder:text-neutral-400"
+                        className="placeholder:text-neutral-400 font-alexandria border-[#233447]"
                         placeholder="Name"
                         {...field}
                       />
@@ -229,6 +229,7 @@ function AgentForm({
               </div>
               <Button
                 type="button"
+                className="font-alexandria"
                 onClick={() =>
                   messageExamplesAppend([[{ user: "", content: { text: "", action: "" } }]])
                 }
@@ -247,7 +248,7 @@ function AgentForm({
               <FormField
                 name="twitter"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-start gap-2">
+                  <FormItem className="flex flex-row items-center justify-start gap-2 font-alexandria">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -352,10 +353,10 @@ function Style({ control }: { control: Control<FormType> }) {
     })
     return (
       <div className={cn(borderStyle, "flex flex-col gap-8 p-4")}>
-        <h3 className="font-semibold">{title}</h3>
+        <h3 className="font-semibold font-alexandria">{title}</h3>
         <FieldArray name={fullName} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
-        <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
+        <Button type="button" className="font-alexandria" onClick={() => append([" "])}>Add {title}</Button>
         {/* TODO: figure out why empty string yields unexpected behavior */}
       </div>
     )
@@ -389,12 +390,12 @@ function AccordionList({
   })
 
   return (
-    <AccordionItem value={title}>
-      <AccordionTrigger>{title}</AccordionTrigger>
+    <AccordionItem value={title} className="bg-[#181C23] rounded-xl">
+      <AccordionTrigger className="font-alexandria">{title}</AccordionTrigger>
       <AccordionContent className="flex flex-col gap-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />
         {/* @ts-expect-error TS not recognizing other property types */}
-        <Button type="button" onClick={() => append([" "])}>Add {title}</Button>
+        <Button type="button" className="font-alexandria" onClick={() => append([" "])}>Add {title}</Button>
         {/* TODO: figure out why empty string yields unexpected behavior */}
       </AccordionContent>
     </AccordionItem>
@@ -423,14 +424,14 @@ function FieldArray({
             <FormLabel></FormLabel>
             <FormControl>
               <Input
-                className="placeholder:text-neutral-400"
+                className="placeholder:text-neutral-400 font-alexandria border-[#233447]"
                 placeholder={title}
                 {...field}
               />
             </FormControl>
             <FormDescription />
             <FormMessage />
-            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+            <Button type="button" variant="destructive" className="font-alexandria" onClick={() => remove(index)}>
               Remove
             </Button>
           </FormItem>
@@ -467,7 +468,7 @@ function EnvironmentVariables() {
                     <FormItem>
                       <FormControl>
                         <Input
-                          className="placeholder:text-neutral-400"
+                          className="placeholder:text-neutral-400 font-alexandria"
                           placeholder={title}
                           {...formField}
                         />
@@ -481,13 +482,13 @@ function EnvironmentVariables() {
               </div>
             ))}
             </div>
-            <Button type="button" variant="destructive" onClick={() => remove(index)}>
+            <Button type="button" variant="destructive" className="font-alexandria" onClick={() => remove(index)}>
               Remove
             </Button>
           </div>
         ))}
         </div>
-        <Button type="button" onClick={() => append([{ key: "", value: "" }])}>Add {title}</Button>
+        <Button type="button" className="font-alexandria" onClick={() => append([{ key: "", value: "" }])}>Add {title}</Button>
       </AccordionContent>
     </AccordionItem>
   )
@@ -584,17 +585,12 @@ function TokenComboboxAccordion() {
 
 function SubmitButton() {
   return (
-    <Button
-      className={cn(
-        "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%",
-        "font-semibold text-black dark:text-white text-d5",
-        "transition duration-300 hover:hue-rotate-60",
-        "px-12 py-8 rounded-xl",
-      )}
+    <button
+      className="px-5 w-full py-1.5 border-2 border-orange-400 rounded-xl font-alexandria text-white text-base md:text-lg  font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
       type="submit"
     >
       Submit
-    </Button>
+    </button>
   )
 }
 

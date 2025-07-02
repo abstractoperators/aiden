@@ -38,8 +38,8 @@ export default function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:hue-rotate-60 transition duration-300">
-          <AvatarFallback className="bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%">
+        <Avatar className="cursor-pointer">
+          <AvatarFallback className="bg-[#181C23] border-2 border-[orange] hover:border-orange-400 transition">
             {
               (displayName === wallet.address) ?
               displayName.substring(0, 2) :
@@ -49,27 +49,27 @@ export default function UserMenu({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+        <DropdownMenuLabel className="font-alexandria">{displayName}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <Link href="/user">
             <DropdownMenuItem>
               <LayoutDashboard className={iconClassName} />
-              <span>Control Center</span>
+              <span className="font-alexandria">Control Center</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout}>
             <LogOut className={iconClassName} />
-            <span>Logout</span>
+            <span className="font-alexandria">Logout</span>
           </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <AppearanceMenu />
+          {/* <AppearanceMenu /> */}
           <DropdownMenuItem onClick={() => setShowDynamicUserProfile(true)}>
             <Settings2 className={iconClassName} />
-            <span>User Settings</span>
+            <span className="font-alexandria">User Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

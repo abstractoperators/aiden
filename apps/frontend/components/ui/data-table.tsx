@@ -48,11 +48,13 @@ import { useState } from "react"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  paginationClassName?: string
 }
 
 function DataTable<TData, TValue>({
   columns,
   data,
+  paginationClassName
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
 
@@ -69,16 +71,15 @@ function DataTable<TData, TValue>({
   })
 
   return (
-    <div>
-      <DataTableViewOptions table={table} />
-      <div className="rounded-md border">
+    <>
+      <div className="rounded-md border border-[#233447] font-alexandria">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="font-alexandria border-[#233447]">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="font-alexandria border-[#233447]">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -97,17 +98,18 @@ function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="font-alexandria border-[#233447]"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="font-alexandria border-[#233447]">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+              <TableRow className="font-alexandria border-[#233447]">
+                <TableCell colSpan={columns.length} className="h-24 text-center font-alexandria">
                   No results.
                 </TableCell>
               </TableRow>
@@ -115,8 +117,8 @@ function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
-    </div>
+      <div className={paginationClassName}><DataTablePagination table={table} /></div>
+    </>
   )
 }
 
@@ -228,20 +230,20 @@ function DataTablePagination<TData>({
 }: DataTablePaginationProps<TData>) {
   return (
     <div className="flex items-center justify-between px-2 mt-2">
-      <div className="flex-1 text-sm text-neutral-300 mr-2">
+      <div className="flex-1 text-sm text-neutral-300 mr-2 font-alexandria">
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium">Rows per page</p>
+          <p className="text-sm font-medium font-alexandria">Rows per page</p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
               table.setPageSize(Number(value))
             }}
           >
-            <SelectTrigger className="h-8 w-[70px]">
+            <SelectTrigger className="h-8 w-[70px] font-alexandria">
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
@@ -253,7 +255,7 @@ function DataTablePagination<TData>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+        <div className="flex w-[100px] items-center justify-center text-sm font-medium font-alexandria">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
           {table.getPageCount()}
         </div>
