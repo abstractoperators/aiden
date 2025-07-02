@@ -1,0 +1,26 @@
+groups:
+  - name: agent-lifecycle-alerts
+    rules:
+      - alert: AgentStarted
+        expr: increase(agent_event_total{type="start"}[1m]) > 0
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "Agent started"
+
+      - alert: AgentRestarted
+        expr: increase(agent_event_total{type="restart"}[1m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Agent restarted"
+
+      - alert: AgentKilled
+        expr: increase(agent_event_total{type="kill"}[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent killed"

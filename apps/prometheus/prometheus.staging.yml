@@ -1,5 +1,13 @@
 global:
-  scrape_interval: 15s # By default, scrape targets every 15 seconds.
+  scrape_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["localhost:9093"]
+
+rule_files:
+  - /etc/prometheus/alerts.rules.yml
 
 scrape_configs:
   - job_name: "prometheus"
@@ -13,8 +21,9 @@ scrape_configs:
 
   - job_name: "api"
     scrape_interval: 5s
+    metrics_path: /metrics_prometheus
     static_configs:
-      - targets: ["api.staigen.space"]
+      - targets: ["host.docker.internal:8003"]
     basic_auth:
       username: "prometheus"
       password: "$PROMETHEUS_BASIC_AUTH"
