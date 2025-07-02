@@ -1,8 +1,8 @@
 import { getEnlightened } from "@/lib/api/agent";
-import FormTabs from "./tabs";
 import { auth } from "@/auth";
 import { getUser } from "@/lib/api/user";
 import { isErrorResult, isSuccessResult } from "@/lib/api/result";
+import AgentBuilder from "@/components/agent/builder";
 
 export default async function AgentCreation() {
   // TODO consider removing in favor of context/context provider
@@ -38,7 +38,7 @@ export default async function AgentCreation() {
         (
           userAgents.data.length > 0 && !session.user.scopes.includes('admin') ?
           <h2>You may only have one agent at a time!</h2> :
-          <FormTabs />
+          <AgentBuilder />
         ) :
         <h2>Unable to prepare agent creation form!</h2>
       }

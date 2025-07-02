@@ -4,19 +4,20 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import JsonAgentBuilder from "../../../../../components/agent/builder/json";
+import JsonAgentBuilder from "@/components/agent/builder/json";
 import NativeAgentBuilder from "@/components/agent/builder/native";
 import { Agent } from "@/lib/api/agent";
 import { Clients } from "@/lib/schemas/character";
 
-export default function FormTabs({
+export default function AgentBuilder({
   id,
   characterJson,
   envFile,
   tokenId,
-}: Agent) {
+}: Partial<Agent>) {
+  const agentExists = !!(id && characterJson && envFile)
   const commonProps = {
-    env: envFile.map(({ key, value }) => ({key, value: value ?? ""})),
+    env: envFile?.map(({ key, value }) => ({key, value: value ?? ""})) ?? [],
     tokenId: tokenId || "",
   }
 
@@ -28,22 +29,22 @@ export default function FormTabs({
       </TabsList>
       <TabsContent value="native">
         <NativeAgentBuilder
-          defaultValues={{
+          defaultValues={agentExists ? {
             twitter: characterJson.clients.includes(Clients.TWITTER),
             isNewToken: false,
             ...commonProps,
             ...characterJson,
-          }}
+          } : undefined}
           agentId={id}
         />
       </TabsContent>
       <TabsContent value="json">
         <JsonAgentBuilder
-          defaultValues={{
+          defaultValues={agentExists ? {
             character: JSON.stringify(characterJson, null, 4),
             isNewToken: false,
             ...commonProps,
-          }}
+          } : undefined}
           agentId={id}
         />
       </TabsContent>
