@@ -49,6 +49,7 @@ enum Clients {
 const ClientsEnum = z.nativeEnum(Clients)
 type ClientsEnum = z.infer<typeof ClientsEnum>
 
+// TODO: preprocess on strings
 const CharacterSchema = z.object({
   name: z.string().trim().min(1, "Name cannot be empty"),
   clients: ClientsEnum.array(),
@@ -64,7 +65,10 @@ const CharacterSchema = z.object({
     user: z.string().trim().min(1, "The user in a message example cannot be empty"),
     content: z.object({
       text: z.string().trim().min(1, "The content text in a message example cannot be empty"),
-      action: z.string().trim().optional(), // TODO: convert empty strings to undefined or improve form to allow for toggle to include this field
+      action: z.preprocess(
+        arg => (typeof arg === 'string' && arg === '' ? undefined : arg),
+        z.string().trim().optional(),
+      ),
     })
   }).array().array(),
   postExamples: z.string().trim().min(1, "The post example cannot be empty").array(),
