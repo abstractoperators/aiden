@@ -64,7 +64,7 @@ const CharacterSchema = z.object({
     user: z.string().trim().min(1, "The user in a message example cannot be empty"),
     content: z.object({
       text: z.string().trim().min(1, "The content text in a message example cannot be empty"),
-      action: z.string().trim().min(1, "The content action in a message example cannot be empty").optional(),
+      action: z.string().trim().optional(), // TODO: convert empty strings to undefined or improve form to allow for toggle to include this field
     })
   }).array().array(),
   postExamples: z.string().trim().min(1, "The post example cannot be empty").array(),

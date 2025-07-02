@@ -53,7 +53,7 @@ const stringListTitles = {
 const messageExampleTitles = {
   "user": "User",
   "content.text": "Text",
-  "context.action": "Action (Optional)",
+  "content.action": "Action (Optional)",
 }
 const styleTitles = {
   "all": "All",
