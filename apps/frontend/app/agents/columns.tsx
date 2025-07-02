@@ -37,9 +37,9 @@ export const columns: ColumnDef<ClientAgent>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="font-alexandria">
+      <h2 className="text-base font-alexandria">
         { row.original.ticker && <h3>${row.original.ticker}</h3> }
-      </div>
+      </h2>
     )
   },
   {
@@ -52,9 +52,9 @@ export const columns: ColumnDef<ClientAgent>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="font-alexandria">
+      <h3 className="font-alexandria">
         ${(Math.random() * 100).toFixed(2)}
-      </div>
+      </h3>
     )
   },
   {
@@ -67,9 +67,9 @@ export const columns: ColumnDef<ClientAgent>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="font-alexandria">
+      <h3 className="font-alexandria">
         ${(Math.random() * 1000000).toLocaleString()}
-      </div>
+      </h3>
     )
   },
   {
@@ -82,9 +82,9 @@ export const columns: ColumnDef<ClientAgent>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="font-alexandria">
+      <h3 className="font-alexandria">
         {row.getValue("marketCapitalization")}
-      </div>
+      </h3>
     )
   },
   {
@@ -97,9 +97,9 @@ export const columns: ColumnDef<ClientAgent>[] = [
       />
     ),
     cell: ({ row }) => (
-      <div className="font-alexandria">
+      <h3 className="font-alexandria">
         { row.original.holderCount && <h3>${row.original.holderCount}</h3> }
-      </div>
+      </h3>
     )
   }
 ]
