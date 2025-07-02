@@ -41,7 +41,7 @@ import { useRouter } from "next/navigation"
 import { isErrorResult, isNotFound, isSuccessResult } from "@/lib/api/result"
 import { useEffect, useState } from "react"
 import { getTokens, Token } from "@/lib/api/token"
-import { FormCombobox } from "./ui/combobox"
+import { FormCombobox } from "../ui/combobox"
 import Link from "next/link"
 import {
   // launchTokenFactory,
@@ -104,7 +104,7 @@ const formSchema = z.intersection(
 )
 type FormType = z.infer<typeof formSchema>
 
-function AgentForm({
+function NativeBuilder({
   defaultValues,
   agentId,
 } : {
@@ -734,4 +734,4 @@ export {
   tokenSchema,
 }
 
-export default AgentForm
+export default NativeBuilder

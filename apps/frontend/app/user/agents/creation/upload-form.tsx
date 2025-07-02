@@ -29,7 +29,7 @@ import {
   SubmitButton,
   // TokenAccordion,
   tokenSchema,
-} from "@/components/agent-form";
+} from "@/components/agent/builder";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";

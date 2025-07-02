@@ -1,12 +1,12 @@
 'use client'
 
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { TokenBase } from "@/lib/api/token"
 import Link from "next/link"
-import { Card } from "./ui/card"
+import { Card } from "../ui/card"
 
-export default function AgentCard({
+export default function FaceCard({
   name,
   token,
   avatarSource,

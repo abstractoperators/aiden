@@ -5,7 +5,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import UploadForm from "../../creation/upload-form";
-import AgentForm from "@/components/agent-form";
+import NativeBuilder from "@/components/agent/builder";
 import { Agent } from "@/lib/api/agent";
 
 export default function FormTabs({
@@ -26,7 +26,7 @@ export default function FormTabs({
         <TabsTrigger value="json">JSON</TabsTrigger>
       </TabsList>
       <TabsContent value="native">
-        <AgentForm
+        <NativeBuilder
           defaultValues={{
             twitter: characterJson.clients.includes("twitter"),
             isNewToken: false,

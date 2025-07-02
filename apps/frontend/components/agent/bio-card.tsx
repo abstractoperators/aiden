@@ -1,5 +1,5 @@
 import { Character } from "@/lib/character";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export default function BiographyCard({
   bio,
