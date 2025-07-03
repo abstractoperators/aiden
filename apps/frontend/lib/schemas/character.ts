@@ -49,7 +49,9 @@ enum Clients {
 const ClientsEnum = z.nativeEnum(Clients)
 type ClientsEnum = z.infer<typeof ClientsEnum>
 
-// TODO: preprocess on strings
+const filterEmptyStrings = (arr: string[]) => arr.filter(str => str !== '')
+const FilteredStringArraySchema = z.string().trim().array().transform(filterEmptyStrings)
+
 const CharacterSchema = z.object({
   name: z.string().trim().min(1, "Name cannot be empty"),
   clients: ClientsEnum.array(),
@@ -57,11 +59,17 @@ const CharacterSchema = z.object({
   settings: z.object({
     secrets: z.object({}).catchall(z.string().trim()).optional(),
   }).optional(),
-  plugins: z.string().trim().startsWith("@elizaos/plugin-", "Any valid plugin must start with \"@elizaos/plugin-\"").array(),
-  bio: z.string().trim().min(1, "The biography entry cannot be empty").array().min(1, "The biography must have at least one entry"),
-  lore: z.string().trim().min(1, "The lore entry cannot be empty").array(),
-  knowledge: z.string().trim().min(1, "The knowledge entry cannot be empty").array().optional(),
-  messageExamples: z.object({
+  plugins: FilteredStringArraySchema.refine(
+    arr => arr.every(str => str.startsWith("@elizaos/plugin-"),
+    "Any valid plugin must start with \"@elizaos/plugin-\""),
+  ),
+  bio: FilteredStringArraySchema.refine(
+    arr => arr.length > 0,
+    "The biography must have at least one nonempty entry",
+  ),
+  lore: FilteredStringArraySchema,
+  knowledge: FilteredStringArraySchema.optional(),
+  messageExamples: z.object({ // TODO: filter out empty objects
     user: z.string().trim().min(1, "The user in a message example cannot be empty"),
     content: z.object({
       text: z.string().trim().min(1, "The content text in a message example cannot be empty"),
@@ -69,16 +77,16 @@ const CharacterSchema = z.object({
         arg => (typeof arg === 'string' && arg === '' ? undefined : arg),
         z.string().trim().optional(),
       ),
-    })
-  }).array().array(),
-  postExamples: z.string().trim().min(1, "The post example cannot be empty").array(),
-  adjectives: z.string().trim().min(1, "The adjective cannot be empty").array(),
-  topics: z.string().trim().min(1, "The topic cannot be empty").array(),
+    }).strict()
+  }).strict().array().array().transform(arr => arr.filter(subArray => subArray.length > 0)),
+  postExamples: FilteredStringArraySchema,
+  adjectives: FilteredStringArraySchema,
+  topics: FilteredStringArraySchema,
   style: z.object({
-    all: z.string().trim().min(1, "The \"all\" style entry cannot be empty").array(),
-    chat: z.string().trim().min(1, "The \"chat\" style entry cannot be empty").array(),
-    post: z.string().trim().min(1, "The \"post\" style entry cannot be empty").array(),
-  }),
+    all: FilteredStringArraySchema,
+    chat: FilteredStringArraySchema,
+    post: FilteredStringArraySchema,
+  }).strict(),
 }).strict()
 type Character = z.infer<typeof CharacterSchema>
 
