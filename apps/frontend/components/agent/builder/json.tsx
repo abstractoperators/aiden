@@ -30,7 +30,7 @@ import { EnvSchema } from "@/lib/schemas/environment-variables";
 import { TokenSchema } from "@/lib/schemas/token";
 import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit";
 import EnvironmentVariables from "./environment-variables";
-import { CharacterSchema } from "@/lib/schemas/character";
+import { Character, CharacterSchema, ModelProviderName } from "@/lib/schemas/character";
 
 const MAX_FILE_SIZE = 5000000;
 
@@ -120,7 +120,7 @@ function JsonAgentBuilder({
   const form = useForm<JsonAgentBuilderSchema, object, JsonAgentBuilderOutputSchema>({
     resolver: zodResolver(JsonAgentBuilderSchema),
     defaultValues: defaultValues ?? {
-      character: "",
+      character: JSON.stringify(defaultCharacter, null, 4),
       env: [{ key: "", value: "", }],
       isNewToken: true,
       tokenName: "TEMPORARY",
@@ -254,6 +254,24 @@ function JsonAgentBuilder({
       </form>
     </Form>
   )
+}
+
+const defaultCharacter: Character = {
+  name: "",
+  clients: [],
+  modelProvider: ModelProviderName.OPENAI,
+  plugins: [],
+  bio: [],
+  lore: [],
+  messageExamples: [],
+  postExamples: [],
+  adjectives: [],
+  topics: [],
+  style: {
+    all: [],
+    chat: [],
+    post: [],
+  },
 }
 
 export default JsonAgentBuilder
