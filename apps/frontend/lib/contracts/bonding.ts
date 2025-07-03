@@ -8,10 +8,10 @@ import {
   PublicClient,
   WalletClient,
 } from "viem";
-import { z } from "zod";
 import { saveToken, Token } from "../api/token";
 import { Result } from "../api/result";
 import { getClientFromWallet, getPublicClient } from "./client";
+import { LaunchTokenSchema } from "../schemas/token";
 
 const BONDING_CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS as `0x${string}` ?? "0x"
 const BONDING_ABI = BONDING_JSON.abi
@@ -139,17 +139,11 @@ async function sellForSei({
   });
 }
 
-const launchSchema = z.object({
-  tokenName: z.string().min(1, "Name cannot be empty"),
-  ticker: z.string().min(1, "Ticker cannot be empty"),
-})
-type LaunchSchemaType = z.infer<typeof launchSchema>
-
 function launchTokenFactory(wallet: Wallet | null) {
   async function launchToken({
     tokenName: name,
     ticker,
-  }: LaunchSchemaType): Promise<Result<Token>> {
+  }: LaunchTokenSchema): Promise<Result<Token>> {
     const client = await getClientFromWallet(wallet)
     const contract = getBondingContract(client)
 
@@ -206,12 +200,10 @@ export {
   getBondingContract,
   getTokenInfo,
   buyWithSei,
-  launchSchema,
   launchTokenFactory,
   sellForSei,
 }
 
 export type {
-  LaunchSchemaType,
   TokenInfo,
 }

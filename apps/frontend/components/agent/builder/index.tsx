@@ -4,18 +4,20 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import UploadForm from "../../creation/upload-form";
-import AgentForm from "@/components/agent-form";
+import JsonAgentBuilder from "@/components/agent/builder/json";
+import NativeAgentBuilder from "@/components/agent/builder/native";
 import { Agent } from "@/lib/api/agent";
+import { Clients } from "@/lib/schemas/character";
 
-export default function FormTabs({
+export default function AgentBuilder({
   id,
   characterJson,
   envFile,
   tokenId,
-}: Agent) {
+}: Partial<Agent>) {
+  const agentExists = !!(id && characterJson && envFile)
   const commonProps = {
-    env: envFile.map(({ key, value }) => ({key, value: value ?? ""})),
+    env: envFile?.map(({ key, value }) => ({key, value: value ?? ""})) ?? [],
     tokenId: tokenId || "",
   }
 
@@ -26,23 +28,23 @@ export default function FormTabs({
         <TabsTrigger value="json">JSON</TabsTrigger>
       </TabsList>
       <TabsContent value="native">
-        <AgentForm
-          defaultValues={{
-            twitter: characterJson.clients.includes("twitter"),
+        <NativeAgentBuilder
+          defaultValues={agentExists ? {
+            twitter: characterJson.clients.includes(Clients.TWITTER),
             isNewToken: false,
             ...commonProps,
             ...characterJson,
-          }}
+          } : undefined}
           agentId={id}
         />
       </TabsContent>
       <TabsContent value="json">
-        <UploadForm
-          defaultValues={{
+        <JsonAgentBuilder
+          defaultValues={agentExists ? {
             character: JSON.stringify(characterJson, null, 4),
             isNewToken: false,
             ...commonProps,
-          }}
+          } : undefined}
           agentId={id}
         />
       </TabsContent>
