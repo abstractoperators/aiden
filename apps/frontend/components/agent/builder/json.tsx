@@ -34,6 +34,24 @@ import { Character, CharacterSchema, ModelProviderName } from "@/lib/schemas/cha
 
 const MAX_FILE_SIZE = 5000000;
 
+const defaultCharacter: Character = {
+  name: "",
+  clients: [],
+  modelProvider: ModelProviderName.OPENAI,
+  plugins: [],
+  bio: [],
+  lore: [],
+  messageExamples: [],
+  postExamples: [],
+  adjectives: [],
+  topics: [],
+  style: {
+    all: [],
+    chat: [],
+    post: [],
+  },
+}
+
 const errorMap: z.ZodErrorMap = (issue, ctx) => {
   const fieldName = issue.path.join('.')
   const fieldNameMessage = (str: string) => [fieldName, str].join(' ')
@@ -254,24 +272,6 @@ function JsonAgentBuilder({
       </form>
     </Form>
   )
-}
-
-const defaultCharacter: Character = {
-  name: "",
-  clients: [],
-  modelProvider: ModelProviderName.OPENAI,
-  plugins: [],
-  bio: [],
-  lore: [],
-  messageExamples: [],
-  postExamples: [],
-  adjectives: [],
-  topics: [],
-  style: {
-    all: [],
-    chat: [],
-    post: [],
-  },
 }
 
 export default JsonAgentBuilder
