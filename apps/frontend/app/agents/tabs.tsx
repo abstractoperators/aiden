@@ -9,7 +9,7 @@ export default async function AgentsTabs() {
   const incubating = await getIncubating();
 
   return (
-    <Tabs defaultValue="enlightened">
+    <Tabs defaultValue="incubating">
       <TabsList>
         <TabsTrigger value="enlightened">Enlightened</TabsTrigger>
         <TabsTrigger value="incubating">Incubating</TabsTrigger>

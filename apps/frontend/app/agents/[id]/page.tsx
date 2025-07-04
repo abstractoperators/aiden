@@ -4,7 +4,8 @@ import BiographyCard from "@/components/agent-bio-card"
 import AgentCard from "@/components/agent-card"
 import TagCard from "@/components/agent-tag-card"
 import Chat from "@/components/chat"
-// import SwapCard from "@/components/token/swap"
+import TokenChart from "@/components/token/chart"
+import SwapCard from "@/components/token/swap"
 import { buttonVariants } from "@/components/ui/button"
 import { getAgent } from "@/lib/api/agent"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
@@ -75,9 +76,10 @@ export default async function AgentHome({
           <TagCard tags={character.topics} title="Topics" />
           <TagCard tags={character.adjectives} title="Adjectives" />
         </div>
+        {token && <TokenChart token={token} />}
       </div>
       <div className="col-span-5 flex flex-col justify-start items-stretch gap-2">
-        {/* <SwapCard token={token}/> */}
+        {token && <SwapCard token={token}/>}
         <Chat init={agent} />
       </div>
     </main>
