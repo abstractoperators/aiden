@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import {
   createResource,
+  deleteResource,
   fromApiEndpoint,
   getResource,
   updateResource,
@@ -112,27 +113,6 @@ async function stopAgent(agentId: string): Promise<Result<Agent>> {
   return createResource<Agent>(new URL(
     `${baseUrlPath.href}/${agentId}/stop`
   ))
-
-  if (isBadRequest(result)) {
-    if (result.message.includes("task for runtime")) { // we picked a bad runtime
-      console.debug(`Unable to start agent ${agentId} on runtime ${runtimeId}`)
-      // this could loop indefinitely if runtimes are perpetually unavailable, so we limit the number of tries
-      if (maxTries > 0) {
-        console.debug(`Trying a new runtime`)
-        return startAgent({ agentId, maxTries: maxTries - 1})
-      }
-    } else { // agent is already starting but we don't know the runtime
-      return createSuccessResult({ agentId })
-    }
-  }
-
-  return result
-}
-
-async function stopAgent(agentId: string): Promise<Result<Agent>> {
-  return createResource<Agent>(new URL(
-    `${baseUrlPath.href}/${agentId}/stop`
-  ))
 }
 
 async function getAgentStartTaskStatus(
@@ -202,6 +182,13 @@ async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<R
   })
   revalidatePath(AGENT_PATH)
   return ret
+}
+
+async function deleteAgent(agentId: string) {
+  return deleteResource(
+    baseUrlSegment,
+    agentId,
+  )
 }
 
 export {
