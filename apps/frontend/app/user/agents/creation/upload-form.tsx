@@ -167,7 +167,7 @@ function UploadForm({
                         placeholder="Paste your agent's Eliza Character JSON here!"
                         className={cn(
                           "w-full rounded-xl text-nowrap",
-                          "border border-[#233447] bg-[#181C23] px-3 py-2",
+                          "border bg-[#181C23] px-3 py-2",
                           "text-base shadow-sm placeholder:text-gray-400 text-white",
                           "disabled:opacity-50 md:text-sm resize-none font-alexandria",
                         )}
@@ -220,9 +220,9 @@ function UploadForm({
                   type="button"
                   variant="outline"
                   onClick={downloadCharacter}
-                  className="text-white border-[#233447] hover:bg-[#233447] font-alexandria"
+                  className="text-white font-alexandria mt-2"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="h-4 w-4" />
                   Download
                 </Button>
               </div>

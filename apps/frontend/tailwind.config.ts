@@ -208,7 +208,7 @@ export default {
         'h1, h2, h3, h4, h5, h6': {
           fontFamily: 'PixelCraft, serif',
         },
-        'input, textarea, select, label, button': {
+        'input, textarea, select, label, button, div': {
           fontFamily: 'Alexandria, sans-serif',
           borderColor: '#233447',
         },

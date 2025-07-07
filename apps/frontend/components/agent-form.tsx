@@ -49,7 +49,7 @@ import {
   LaunchSchemaType as TokenLaunchType,
 } from "@/lib/contracts/bonding"
 
-const borderStyle = "rounded-xl border border-black dark:border-white"
+const borderStyle = "rounded-xl border"
 
 const stringListTitles = {
   "bio": "Biography",
@@ -180,7 +180,7 @@ function AgentForm({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Accordion type="multiple" className="flex flex-col gap-2">
-          <AccordionItem value="Name" className="bg-[#181C23] border-[#233447] rounded-xl">
+          <AccordionItem value="Name" className="bg-[#181C23] rounded-xl">
             <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
@@ -190,7 +190,7 @@ function AgentForm({
                     <FormLabel></FormLabel>
                     <FormControl>
                       <Input
-                        className="placeholder:text-neutral-400 font-alexandria border-[#233447]"
+                        className="placeholder:text-neutral-400"
                         placeholder="Name"
                         {...field}
                       />
@@ -424,7 +424,7 @@ function FieldArray({
             <FormLabel></FormLabel>
             <FormControl>
               <Input
-                className="placeholder:text-neutral-400 font-alexandria border-[#233447]"
+                className="placeholder:text-neutral-400"
                 placeholder={title}
                 {...field}
               />
