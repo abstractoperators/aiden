@@ -167,7 +167,7 @@ function UploadForm({
                         placeholder="Paste your agent's Eliza Character JSON here!"
                         className={cn(
                           "w-full rounded-xl text-nowrap",
-                          "border bg-[#181C23] px-3 py-2",
+                          "border bg-panel px-3 py-2",
                           "text-base shadow-sm placeholder:text-gray-400 text-white",
                           "disabled:opacity-50 md:text-sm resize-none font-alexandria",
                         )}

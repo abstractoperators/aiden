@@ -14,7 +14,7 @@ export default function DescriptionCard({
   adjectives,
 }: Character) {
   return (
-    <Card className="bg-[#181C23] border">
+    <Card className="bg-panel border">
       <CardHeader>
         <CardTitle className="text-2xl text-white font-alexandria">Basics</CardTitle>
       </CardHeader>

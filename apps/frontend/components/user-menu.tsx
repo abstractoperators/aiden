@@ -39,7 +39,7 @@ export default function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarFallback className="bg-[#181C23] border-2 border-[orange] hover:border-orange-400 transition">
+          <AvatarFallback className="bg-panel border-2 border-[orange] hover:border-orange-400 transition">
             {
               (displayName === wallet.address) ?
               displayName.substring(0, 2) :

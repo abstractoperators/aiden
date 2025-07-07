@@ -180,7 +180,7 @@ function AgentForm({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Accordion type="multiple" className="flex flex-col gap-2">
-          <AccordionItem value="Name" className="bg-[#181C23] rounded-xl">
+          <AccordionItem value="Name" className="bg-panel rounded-xl">
             <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
@@ -390,7 +390,7 @@ function AccordionList({
   })
 
   return (
-    <AccordionItem value={title} className="bg-[#181C23] rounded-xl">
+    <AccordionItem value={title} className="bg-panel rounded-xl">
       <AccordionTrigger className="font-alexandria">{title}</AccordionTrigger>
       <AccordionContent className="flex flex-col gap-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />

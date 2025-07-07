@@ -118,6 +118,9 @@ export default {
   				darker: '#b91c1c',
   				darkest: '#991b1b'
   			},
+			panel: {
+				DEFAULT: '#181C23',
+			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

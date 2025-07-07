@@ -9,7 +9,7 @@ export default function AgentsDashboard() {
       <div className="w-full max-w-5xl flex flex-col items-center mt-8 p-10">
         {/* Search Field */}
         {/* <div className="w-full max-w-5xl mb-8">
-          <div className="flex items-center border bg-[#181C23] rounded-xl w-full px-2 py-1.5">
+          <div className="flex items-center border bg-panel rounded-xl w-full px-2 py-1.5">
             <input
               type="text"
               placeholder="Search Agents"
@@ -22,7 +22,7 @@ export default function AgentsDashboard() {
           </div>
         </div> */}
         {/* Table Container with Tabs */}
-        <div className="bg-[#121725] rounded-2xl border shadow-lg p-0 mt-2 w-full max-w-5xl mb-8">
+        <div className="rounded-2xl border shadow-lg p-0 mt-2 w-full max-w-5xl mb-8">
           <AgentsTabs searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         </div>
       </div>

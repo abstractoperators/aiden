@@ -19,7 +19,7 @@ export default function AgentCard({
   return (
     <Card
       className={cn(
-        "justify-center items-center bg-[#181C23] border-2",
+        "justify-center items-center bg-panel border",
       )}
     >
       <Avatar className="w-32 h-32 rounded-full border-2 overflow-hidden relative">

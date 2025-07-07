@@ -12,7 +12,7 @@ export default function Home() {
   const isLoggedIn = useIsLoggedIn();
   const { setShowAuthFlow } = useDynamicContext();
   return (
-    <div className="relative min-h-screen flex flex-col justify-between bg-[#181C23] text-white font-mono bg-cover bg-center" style={{ backgroundImage: "url('/background.png')" }}>
+    <div className="relative min-h-screen flex flex-col justify-between text-white font-mono bg-cover bg-center" style={{ backgroundImage: "url('/background.png')" }}>
       {/* Top Bar */}
       <header className="flex justify-between items-center px-8 py-6">
         {/* Logo */}
@@ -62,7 +62,7 @@ export default function Home() {
 
       {/* Social Links */}
       <footer className="flex justify-center pb-8">
-        <div className="bg-[#181C23] rounded-full px-6 py-2 flex gap-6 border border-[#23272F] shadow-lg">
+        <div className="bg-panel rounded-full px-6 py-2 flex gap-6 border border-[#23272F] shadow-lg">
           <SocialLinks />
         </div>
       </footer>
