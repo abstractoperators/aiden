@@ -1,0 +1,34 @@
+groups:
+  - name: agent-lifecycle-alerts
+    rules:
+      - alert: AgentStarted
+        expr: increase(agent_event_total{type="start"}[1m]) > 0
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "Agent started"
+
+      - alert: AgentRestarted
+        expr: time() - agent_restart_timestamp < 60
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Agent restarted"
+
+      - alert: AgentKilled
+        expr: increase(agent_event_total{type="kill"}[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent killed"
+      - alert: AgentDown
+        expr: agent_liveness_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent {{ $labels.agent_id }} is not responding"
+

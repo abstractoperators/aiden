@@ -1,4 +1,26 @@
-FROM prom/prometheus:v3.2.1
+FROM debian:bullseye
+
+# Install curl and extract tools
+RUN apt-get update && \
+    apt-get install -y curl tar && \
+    apt-get clean
+
+# Set versions
+ENV PROM_VERSION=2.52.0
+ENV ALERTMANAGER_VERSION=0.27.0
+
+# Download Prometheus
+RUN curl -LO https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz && \
+    tar -xzf prometheus-${PROM_VERSION}.linux-amd64.tar.gz && \
+    mv prometheus-${PROM_VERSION}.linux-amd64/prometheus /bin/prometheus && \
+    mv prometheus-${PROM_VERSION}.linux-amd64/promtool /bin/promtool
+
+# Download Alertmanager
+RUN curl -LO https://github.com/prometheus/alertmanager/releases/download/v${ALERTMANAGER_VERSION}/alertmanager-${ALERTMANAGER_VERSION}.linux-amd64.tar.gz && \
+    tar -xzf alertmanager-${ALERTMANAGER_VERSION}.linux-amd64.tar.gz && \
+    mv alertmanager-${ALERTMANAGER_VERSION}.linux-amd64/alertmanager /bin/alertmanager && \
+    mv alertmanager-${ALERTMANAGER_VERSION}.linux-amd64/amtool /bin/amtool
+
 
 COPY prometheus.dev.yml /etc/prometheus/
 COPY web.dev.yml /etc/prometheus/
@@ -9,5 +31,12 @@ COPY web.staging.yml /etc/prometheus/
 COPY prometheus.yml /etc/prometheus/
 COPY web.yml /etc/prometheus/
 
+# Shared alert rules
+COPY alerts.rules.yml /etc/prometheus/
+
+# Shared Alertmanager config
+COPY alertmanager.yml /etc/prometheus/
+
 COPY start.sh .
+EXPOSE 9090 9093
 ENTRYPOINT ["./start.sh"]
