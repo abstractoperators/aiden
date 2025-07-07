@@ -3,10 +3,9 @@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { z } from "zod"
 import { toast } from "@/hooks/use-toast";
 import {
@@ -23,6 +22,9 @@ import { Skeleton } from "./ui/skeleton"
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 import { getDisplayName } from "@/lib/dynamic/user"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
+import { LoaderCircle, SendHorizontal } from "lucide-react"
+import TextareaAutosize from "react-textarea-autosize"
+import { cn } from "@/lib/utils"
 
 const formSchema = z.object({
   message: z.string(),
@@ -51,7 +53,11 @@ export default function Chat({
   const [agent, setAgent] = useState<Agent>(init)
   const [agentStartTask, setAgentStartTask] = useState<AgentStartTask>()
   const [chat, setChat] = useState<Message[]>([])
+
   const { user, primaryWallet } = useDynamicContext()
+  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
+
+  const chatBottomRef = useRef<HTMLLIElement | null>(null)
 
   useEffect(() => {
     const failureToast = (description?: string) => toast({
@@ -67,7 +73,7 @@ export default function Chat({
           switch (startResult.code) {
             case 400:
               failureToast(
-                "AIDEN overloaded! Please contact the AIDEN support team."
+                "AIDN overloaded! Please contact the support team."
               )
               return
             case 401:
@@ -138,7 +144,16 @@ export default function Chat({
     }
   }, [agent, agentStartTask])
 
-  const senderName = (user && primaryWallet) ? `${getDisplayName(user, primaryWallet)} (You)` : 'You'
+  useEffect(() => {
+    if (chat.length === 0)
+      return
+
+    const lastMessage = chat[chat.length - 1]
+    const isNotFromUser = lastMessage.sender !== senderName
+
+    if (isNotFromUser)
+      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chat, senderName])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -147,7 +162,13 @@ export default function Chat({
     }
   })
 
+  const { control, handleSubmit, formState } = form
+
+  const isLoading = formState.isSubmitting
+
   async function onSubmit(formData: z.infer<typeof formSchema>) {
+    if (formData.message.length === 0)
+      return
     try {
       // TODO: global chat???
       setChat(msgs => msgs.concat({
@@ -155,6 +176,12 @@ export default function Chat({
         text: formData.message,
         sender: senderName, // TODO: get user name here if applicable
       }))
+
+      form.setValue(
+        "message",
+        "",
+        { shouldDirty: false, shouldTouch: false },
+      )
 
       // TODO: better wait indicator/feedback
       // TODO: move to server side
@@ -196,7 +223,7 @@ export default function Chat({
   return (
   <div>
   {agent.runtimeId ? 
-    <div className="flex flex-col w-full justify-start items-center gap-8">
+    <Card className="justify-start items-center">
       <ScrollArea className="bg-anakiwa-darker/50 w-full h-96 lg:h-[600px] rounded-xl p-2">
         <ol className="flex flex-col w-full">
           {chat.map(message => (
@@ -204,7 +231,7 @@ export default function Chat({
               key={message.id}
               className={(message.sender === senderName) ? right : left}
             >
-              <Card className="max-w-3/4 break-words">
+              <Card className="w-4/5 break-words">
                 <CardHeader>
                   <CardTitle>{message.sender}</CardTitle>
                   <Separator />
@@ -213,29 +240,53 @@ export default function Chat({
               </Card>
             </li>
           ))}
+          <li ref={chatBottomRef} />
         </ol>
       </ScrollArea>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="w-4/5 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="w-full flex gap-2">
           <FormField
-            control={form.control}
+            control={control}
             name="message"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex-1">
                 <FormControl>
-                  <Textarea placeholder="Type your message here." {...field} />
+                  <TextareaAutosize
+                    minRows={2}
+                    className={cn(
+                      "flex w-full rounded-xl",
+                      "border border-input bg-transparent px-3 py-2",
+                      "text-base shadow-sm placeholder:text-muted-foreground",
+                      "focus-visible:outline-none focus-visible:ring-1",
+                      "focus-visible:ring-ring disabled:cursor-not-allowed",
+                      "disabled:opacity-50 md:text-sm resize-none",
+                    )}
+                    placeholder="Type your message here. Press enter to submit and shift + enter for a new line."
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        e.currentTarget.form?.requestSubmit()
+                      }
+                    }}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit">Send message</Button>
+          <Button type="submit" disabled={isLoading} size="icon">
+          { isLoading ?
+            <LoaderCircle className="animate-spin" /> :
+            <SendHorizontal />
+          }
+          </Button>
         </form>
       </Form>
-    </div> : <div className="flex flex-col w-full justify-start items-center gap-8">
+    </Card> : <Card className="justify-start items-center">
       <Skeleton className="w-full h-96 lg:h-[600px] rounded-xl p-2" />
-      Waking agent up
-    </div>
+      <p>Waking agent up</p>
+    </Card>
   }
   </div>)
 }

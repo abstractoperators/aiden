@@ -15,7 +15,7 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 WORKDIR /app
 
 # Copy package.json and other configuration files
-COPY eliza/package.json eliza/pnpm-lock.yaml eliza/pnpm-workspace.yaml eliza/.npmrc eliza/turbo.json ./
+COPY eliza/package.json eliza/pnpm-lock.yaml eliza/pnpm-workspace.yaml eliza/.npmrc eliza/turbo.json eliza/tsconfig.json ./
 
 # Copy the rest of the application code
 COPY eliza/agent ./agent

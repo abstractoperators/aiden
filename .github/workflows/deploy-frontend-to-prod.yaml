@@ -26,9 +26,11 @@ jobs:
             - name: Create apps/frontend/.env.local
               run: |
                 touch apps/frontend/.env.local
-                echo NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=08b64418-c698-4620-8ea2-d0e1a31ff10f >> apps/frontend/.env.local
-                echo API_ENDPOINT=https://api.aiden.space >> apps/frontend/.env.local
-                echo AUTH_URL=https://aiden.space >> apps/frontend/.env.local
+                echo NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=292edbc7-9096-4e79-81a6-7ed1e1b7411a >> apps/frontend/.env.local
+                echo API_ENDPOINT=https://api.aidn.fun >> apps/frontend/.env.local
+                echo AUTH_URL=https://aidn.fun >> apps/frontend/.env.local
+                echo NEXT_SEI_NET=main >> apps/frontend/.env.local
+                echo NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS=0xDdFF841E7bb9c2180D160eE5E11663ca127Fd21e >> apps/frontend/.env.local
 
             - name: Build and tag frontend
               run: |
@@ -39,6 +41,7 @@ jobs:
                   make aws-ecr-push-frontend-prod
 
     force-redeployment:
+        needs: build-and-push-frontend
         runs-on: ubuntu-latest
         steps:
             - name: Configure aws credentials

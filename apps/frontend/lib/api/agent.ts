@@ -3,13 +3,12 @@
 import { revalidatePath } from "next/cache"
 import {
   createResource,
-  deleteResource,
   fromApiEndpoint,
   getResource,
   updateResource,
 } from "./common"
-import { getRuntime, Runtime } from "./runtime"
-import { Token } from "./token"
+import { Runtime } from "./runtime"
+import { TokenBase } from "./token"
 import { AgentStartTask, TaskStatus } from "./task"
 // TODO: remove when we have a better setup to start agents on runtimes, e.g. background process on client or queuing on API
 import { setTimeout } from "node:timers/promises"
@@ -18,7 +17,6 @@ import {
   createSuccessResult,
   isBadRequest,
   isErrorResult,
-  isSuccessResult,
   Result,
 } from "./result"
 
@@ -55,7 +53,7 @@ type AgentUpdate = Partial<AgentBase>
 interface Agent {
   id: string
   runtime?: Runtime | null
-  token?: Token | null
+  token?: TokenBase | null
   envFile: { key: string, value: string | null }[]
   elizaAgentId?: string | null
   ownerId: string
@@ -88,17 +86,31 @@ async function startAgent({
   runtimeId?: string,
   maxTries?: number,
 }): Promise<Result<AgentStartTask>> {
-  if (!runtimeId) {
-    const runtime = await getRuntime()
-    if (isErrorResult(runtime)) {
-      return runtime
-    } else {
-      runtimeId = runtime.data.id
+  const result = await createResource<AgentStartTask>(new URL(
+    runtimeId ?
+    `${baseUrlPath.href}/${agentId}/start/${runtimeId}` :
+    `${baseUrlPath.href}/${agentId}/start`
+  ))
+
+  if (isBadRequest(result)) {
+    if (result.message.includes("task for runtime")) { // we picked a bad runtime
+      console.debug(`Unable to start agent ${agentId} on runtime ${runtimeId}`)
+      // this could loop indefinitely if runtimes are perpetually unavailable, so we limit the number of tries
+      if (maxTries > 0) {
+        console.debug(`Trying a new runtime`)
+        return startAgent({ agentId, maxTries: maxTries - 1})
+      }
+    } else { // agent is already starting but we don't know the runtime
+      return createSuccessResult({ agentId })
     }
   }
 
-  const result = await createResource<AgentStartTask>(new URL(
-    `${baseUrlPath.href}/${agentId}/start/${runtimeId}`
+  return result
+}
+
+async function stopAgent(agentId: string): Promise<Result<Agent>> {
+  return createResource<Agent>(new URL(
+    `${baseUrlPath.href}/${agentId}/stop`
   ))
 
   if (isBadRequest(result)) {
@@ -192,17 +204,6 @@ async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<R
   return ret
 }
 
-async function deleteAgent(agentId: string) {
-  const deleteResult = await deleteResource(
-    baseUrlSegment,
-    agentId,
-  )
-
-  if (isSuccessResult(deleteResult))
-    revalidatePath(AGENT_PATH)
-  return deleteResult
-}
-
 export {
   createAgent,
   deleteAgent,
@@ -218,5 +219,4 @@ export {
 export type {
   ClientAgent,
   Agent,
-  Token,
 }

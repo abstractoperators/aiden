@@ -40,7 +40,7 @@ def get_aws_config(num: int) -> AWSConfig:
             http_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/0418e5a3323e20fc",  # noqa
             https_listener_arn="arn:aws:elasticloadbalancing:us-east-1:008971649127:listener/app/aiden/c75e38614c895163/5ccef0a9112d870c",  # noqa
             service_name=f"aiden-runtime-{num}",
-            host="aiden.space",
+            host="aidn.fun",
             subdomain=f"aiden-runtime-{num}",
             cluster="Aiden",
             task_definition_arn=(

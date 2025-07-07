@@ -2,19 +2,23 @@
 
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
+import { TokenBase } from "@/lib/api/token"
+import Link from "next/link"
+import { Card } from "./ui/card"
 
 export default function AgentCard({
   name,
+  token,
   avatarSource,
 }: {
   name: string,
+  token?: TokenBase | null,
   avatarSource?: string,
 }) {
   return (
-    <div
+    <Card
       className={cn(
-        "flex flex-col justify-center items-center space-y-8 p-8",
-        "bg-anakiwa-darker/30 dark:bg-anakiwa/30 rounded-xl"
+        "justify-center items-center",
       )}
     >
       <Avatar className="w-32 h-32 rounded-full border-2 overflow-hidden relative">
@@ -26,7 +30,19 @@ export default function AgentCard({
         />
         <AvatarFallback className="text-4xl">{name.substring(0, 1)}</AvatarFallback>
       </Avatar>
-      <h1 className="text-4xl font-bold text-center">{name}</h1>
-    </div>
+      <hgroup>
+        <h1 className="text-4xl font-bold text-center">{name}</h1>
+        {token && (
+          <h2 className="text-2xl font-bold text-center text-muted-foreground transition duration-300 hover:text-carnation">
+            <Link
+              href={`https://seitrace.com/address/${token.evmContractAddress}?chain=atlantic-2`}
+              target="_blank"
+            >
+              {token.name} ${token.ticker}
+            </Link>
+          </h2>
+        )}
+      </hgroup>
+    </Card>
   )
 }

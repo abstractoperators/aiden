@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 const scopedRoutes: {
   path: string,
@@ -17,6 +17,10 @@ const get403Message = () => {
   )
 }
 
+const temporaryCheckBackSoon = (req: NextRequest) => {
+  return NextResponse.redirect(new URL('/signup', req.url))
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const auth = req.auth
@@ -31,11 +35,11 @@ export default auth((req) => {
       token: auth?.user?.token.length,
     }
   }
-  console.log("pathname:", pathname)
-  console.log("auth:", consoleAuth)
+  console.debug("pathname:", pathname)
+  console.debug("auth:", consoleAuth)
 
   if (!auth || !auth.user) {
-    console.log(
+    console.debug(
       "User is trying to access protected route",
       pathname,
       "without any authorization!",
@@ -51,12 +55,13 @@ export default auth((req) => {
     if (pathname.startsWith(path)) {
       // Check if the user has scopes
       if (!auth.user.scopes) {
-        console.log(
+        console.debug(
           "User is trying to access scoped route",
           pathname,
           "without any scopes!",
         )
-        return get403Message()
+        return temporaryCheckBackSoon(req)
+        // return get403Message()
       } else {
         // Check if the user has at least one required scope
         const scopes = auth.user.scopes
@@ -65,13 +70,13 @@ export default auth((req) => {
         );
 
         if (!hasScope) {
-          console.log("User does not have any scope to access route", pathname)
-          return get403Message()
+          console.debug("User does not have any scope to access route", pathname)
+          return temporaryCheckBackSoon(req)
+          // return get403Message()
         }
       }
     }
   }
-  console.log("Successfully authenticated and authorized!")
 })
 
 export const config = {

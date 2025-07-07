@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { Chain, sei, seiTestnet } from "viem/chains"
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -36,14 +37,38 @@ function camelize<O>(
   } else if (value instanceof Array) {
     return value.map(item => camelize(item)) as O
   } else {
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => (
-      [camelCase(k), v]))
-    ) as O
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => ([
+      camelCase(k),
+      (
+        ( true
+          && v instanceof Object
+          && Object.keys(v).every(key => typeof key === "string")
+        )
+        ? camelize(v as Record<string, unknown>)
+        : v
+      ),
+    ]))) as O
+  }
+}
+
+function capitalize(value: string): string {
+  return value.length ? value[0].toUpperCase() + value.slice(1) : value
+}
+
+function getSeiNet(): Chain {
+  switch (process.env.NEXT_SEI_NET) {
+    case "main":
+      return sei
+    case "test":
+    default:
+      return seiTestnet
   }
 }
 
 export {
   cn,
   camelize,
+  capitalize,
+  getSeiNet,
   snakify,
 }

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import TypeVar
 from uuid import UUID
-
+from sqlalchemy import ScalarResult
 from sqlalchemy.sql import text
 from sqlmodel import Session, col, select
 
@@ -32,7 +32,6 @@ from .models import (
 )
 
 M = TypeVar("M", bound=Base)
-N = TypeVar("N", bound=Base)
 
 
 # region Generics
@@ -43,7 +42,7 @@ def create_generic(session: Session, model: M) -> M:
     return model
 
 
-def update_generic(session: Session, model: M, model_update: N) -> M:
+def update_generic(session: Session, model: M, model_update: Base) -> M:
     fields_payload = model_update.model_dump(exclude_unset=True)
     model.sqlmodel_update(fields_payload)
     session.add(model)
@@ -53,7 +52,7 @@ def update_generic(session: Session, model: M, model_update: N) -> M:
     return model
 
 
-def delete_generic(session: Session, model: M) -> None:
+def delete_generic(session: Session, model: Base) -> None:
     session.delete(model)
     session.commit()
     return None
@@ -107,7 +106,7 @@ def create_agent(session: Session, agent: AgentBase) -> Agent:
     return create_generic(session, Agent(**agent.model_dump()))
 
 
-def update_agent(session, agent: Agent, agent_update: AgentUpdate) -> Agent:
+def update_agent(session: Session, agent: Agent, agent_update: AgentUpdate) -> Agent:
     return update_generic(session, agent, agent_update)
 
 
@@ -198,10 +197,25 @@ def get_runtime(session: Session, runtime_id: UUID) -> Runtime | None:
 
 
 def get_runtimes(
-    session: Session, skip: int = 0, limit: int = 100
-) -> Sequence[Runtime]:
-    stmt = select(Runtime).offset(skip).limit(limit)
-    return session.scalars(stmt).all()
+    session: Session,
+    unused: bool = False,
+    skip: int = 0,
+    limit: int = 100,
+) -> ScalarResult[Runtime]:
+    stmt = select(Runtime)
+    if unused:
+        stmt = (
+            stmt
+            .outerjoin(Agent)
+            .where(Agent.runtime_id == None)
+        )
+    stmt = (
+        stmt
+        .offset(skip)
+        .limit(limit)
+    )
+
+    return session.scalars(stmt)
 
 
 def update_runtime(
@@ -243,7 +257,7 @@ def delete_token(session: Session, token: Token) -> None:
 
 
 # region Tasks
-def get_task(session: Session, task_id: UUID) -> dict | None:
+def get_task(session: Session, task_id: UUID) -> dict[str, str] | None:
     query = text("""
         SELECT task_id, status FROM celery_taskmeta WHERE task_id = :task_id
         """).bindparams(task_id=str(task_id))

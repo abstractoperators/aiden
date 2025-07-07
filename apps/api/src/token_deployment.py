@@ -2,6 +2,7 @@ import json
 import os
 
 from eth_account import Account
+from eth_utils import event_abi_to_log_topic
 from web3 import AsyncHTTPProvider, AsyncWeb3
 
 SEI_RPC_URL = os.getenv("SEI_RPC_URL")  # Get the SEI EVM RPC URL
@@ -11,7 +12,11 @@ SEI_RPC_URL = os.getenv("SEI_RPC_URL")  # Get the SEI EVM RPC URL
 async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
     SEI_RPC_URL = os.getenv("SEI_RPC_URL")
     PRIVATE_KEY = os.getenv("TOKEN_DEPLOYER_PRIVATE_KEY")
-
+    BONDING_CONTRACT_ADDRESS = os.getenv("BONDING_CONTRACT_ADDRESS")
+    if not SEI_RPC_URL or not PRIVATE_KEY or not BONDING_CONTRACT_ADDRESS:
+        raise ValueError(
+            "Missing SEI_RPC_URL, TOKEN_DEPLOYER_PRIVATE_KEY, or BONDING_CONTRACT_ADDRESS"
+        )
     # Initialize async provider
     w3 = AsyncWeb3(AsyncHTTPProvider(SEI_RPC_URL))
 
@@ -21,10 +26,10 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
 
     # Load ABI and bytecode
     with open(
-        "./src/bonding_token/artifacts/contracts/BondingCurveToken.sol/BondingCurveToken.json",
-        "r",
+        "./src/launchpad-contracts/artifacts/contracts/Bonding.sol/Bonding.json", "r"
     ) as f:
         contract_json = json.load(f)
+
     contract_abi: list[dict] = contract_json["abi"]
     contract_bytecode = contract_json["bytecode"]
 
@@ -33,39 +38,55 @@ async def deploy_token(name, ticker) -> tuple[str, list[dict]]:
     deployer_address = account.address
 
     # Deploy contract
-    contract = w3.eth.contract(abi=contract_abi, bytecode=contract_bytecode)
+    bonding_contract = w3.eth.contract(  # type: ignore
+        address=BONDING_CONTRACT_ADDRESS,
+        abi=contract_abi,
+        bytecode=contract_bytecode,
+    )
 
     nonce = await w3.eth.get_transaction_count(deployer_address)
     gas_price = await w3.eth.gas_price
     chain_id = await w3.eth.chain_id
     # Build transaction with the given name and ticker
-    deploy_txn = await contract.constructor(name, ticker).build_transaction(
+
+    launch_fee = await bonding_contract.functions.assetLaunchFee().call()
+
+    launch_token_with_sei_txn = await bonding_contract.functions.launchWithSei(
+        name,
+        ticker,
+    ).build_transaction(
         {
             "from": deployer_address,
             "nonce": nonce,
             "gas": 5000000,
             "gasPrice": gas_price,
             "chainId": chain_id,
+            "value": launch_fee,
         }
     )
 
-    # Sign and send deployment transaction
-    signed_txn = w3.eth.account.sign_transaction(deploy_txn, PRIVATE_KEY)
+    # Sign and send launch transaction
+    signed_txn = w3.eth.account.sign_transaction(launch_token_with_sei_txn, PRIVATE_KEY)
     tx_hash = await w3.eth.send_raw_transaction(signed_txn.raw_transaction)
-    print(f"Deployment TX sent: {tx_hash.hex()}")
 
     # Wait for deployment receipt
     receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
-    # Mypy complains, but it's working fine.
-    contract_address = receipt.contractAddress  # type: ignore
-    print(f"Contract deployed at: {contract_address}")
+    logs = receipt.get("logs")
+    abi = bonding_contract.events.Launched().abi
+    launched_topic_hash = event_abi_to_log_topic(abi)
+    launched_event_log = None
+    if not logs:
+        raise ValueError("No logs found in the transaction receipt")
+    for log in logs:
+        topics = log.get("topics")
+        if topics and topics[0] == launched_topic_hash:
+            launched_event_log = log
+            break
 
-    # Test buying a tiny amount (To remove in prod)
-    buy_amount = w3.to_wei(0.01, "ether")  # Buying 0.01 SEI worth of tokens
-    receipt = await buy_token(buy_amount, contract_address)
-    print(receipt)
+    parsed_log = bonding_contract.events.Launched().process_log(launched_event_log)
+    token_address = parsed_log.get("args").get("token")
 
-    return contract_address, contract_abi
+    return token_address
 
 
 async def buy_token(buy_amount, contract_address):
