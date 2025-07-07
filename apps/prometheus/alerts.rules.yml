@@ -9,13 +9,14 @@ groups:
         annotations:
           summary: "Agent started"
 
-      - alert: AgentRestarted
-        expr: time() - agent_restart_timestamp < 60
+      - alert: AgentRestartFailed
+        expr: increase(agent_event_total{type="restart_failed"}[1m]) > 0
         for: 0m
         labels:
-          severity: warning
+          severity: critical
         annotations:
-          summary: "Agent restarted"
+          summary: "Agent restart failed after max retries"
+          description: "Agent failed to restart after {{ $value }} retries"
 
       - alert: AgentKilled
         expr: increase(agent_event_total{type="kill"}[1m]) > 0

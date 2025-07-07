@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 from datetime import datetime, timedelta
 import os
 from base64 import b64decode
@@ -65,6 +66,13 @@ stopped_agents_lock = Lock()
 agent_heartbeat_store: dict[str, datetime] = {}
 agent_heartbeat_lock = Lock()
 
+AUTO_RESTART_ENABLED = True
+MAX_RETRIES = 2
+BACKOFF_SECONDS = 30
+
+# Retry state: { agent_id: {count, last_attempt} }
+agent_retry_state = defaultdict(lambda: {"count": 0, "last_attempt": None})
+
 agent_liveness_gauge = Gauge(
     "agent_liveness_status",
     "Heartbeat status of agents (1 = alive, 0 = dead)",
@@ -104,15 +112,33 @@ async def monitor_agent_liveness():
                 
                     if agent_id not in agent_last_down_time:
                         agent_last_down_time[agent_id] = now
-                else:
-                    if agent_id in agent_last_down_time:
-                        down_time = agent_last_down_time.pop(agent_id)
-                        downtime_seconds = (now - down_time).total_seconds()
+                    
+                    retry_state = agent_retry_state[agent_id]
+                    count = retry_state["count"]
+                    last_attempt = retry_state["last_attempt"]
 
-                        if downtime_seconds <= 75:
-                            logger.info(f"[RESTART DETECTED] Agent {agent_id} restarted after {downtime_seconds:.1f}s")
-                            agent_restart_timestamp.labels(agent_id=str(agent_id)).set(time.time())
-                            logger.info("[RESTART METRIC] %s restarted at %d", agent_id, int(time.time()))
+                    time_since_last = (now - last_attempt).total_seconds() if last_attempt else None
+                    if count < MAX_RETRIES and (last_attempt is None or time_since_last >= BACKOFF_SECONDS):
+                        logger.warning(f"[RETRY] Agent {agent_id} retry {count+1}/{MAX_RETRIES}")
+                        agent_retry_state[agent_id]["count"] += 1
+                        agent_retry_state[agent_id]["last_attempt"] = now
+                    elif count >= MAX_RETRIES:
+                        # emit a failed retry alert metric
+                        agent_event_counter.labels("restart_failed").inc()
+
+                else:
+                    agent_last_down_time.pop(agent_id, None)
+                    agent_retry_state.pop(agent_id, None)
+                    agent_restart_timestamp.labels(agent_id=str(agent_id)).set(time.time())
+                    logger.info(f"[RESTART DETECTED] Agent {agent_id} back up")
+                    # if agent_id in agent_last_down_time:
+                    #     down_time = agent_last_down_time.pop(agent_id)
+                    #     downtime_seconds = (now - down_time).total_seconds()
+
+                    #     if downtime_seconds <= 75:
+                    #         logger.info(f"[RESTART DETECTED] Agent {agent_id} restarted after {downtime_seconds:.1f}s")
+                    #         agent_restart_timestamp.labels(agent_id=str(agent_id)).set(time.time())
+                    #         logger.info("[RESTART METRIC] %s restarted at %d", agent_id, int(time.time()))
 
         await asyncio.sleep(15)
 
@@ -933,4 +959,26 @@ def cleanup_idle_runtimes(session: Session) -> None:
     if len(idle_runtimes) > RUNTIME_IDLE_POOL_SIZE:
         excess = idle_runtimes[RUNTIME_IDLE_POOL_SIZE:]
         for r in excess:
-            delete_runtime.delay(r.id)
+            tasks.delete_runtime.delay(r.id)
+
+
+@app.post("/agent/heartbeat")
+async def heartbeat(request: Request):
+    body = await request.json()
+    agent_id = body.get("agent_id")
+
+    if not agent_id:
+        return {"error": "Missing agent_id"}
+
+    now = datetime.utcnow()
+    with agent_heartbeat_lock:
+        agent_heartbeat_store[agent_id] = now
+
+    # Optional: Prometheus metric update
+    agent_liveness_gauge.labels(agent_id=agent_id).set(1)
+
+    return {
+        "status": "heartbeat received",
+        "agent_id": agent_id,
+        "timestamp": now.isoformat()
+    }
