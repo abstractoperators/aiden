@@ -77,7 +77,7 @@ export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuer
   return (
     <>
       <div className="rounded-2xl border-1 bg-panel p-6 w-full">
-        <div className="font-pixelcraft text-white text-2xl mb-4">AGENTS</div>
+        <div className="text-white text-2xl mb-4">AGENTS</div>
         <Tabs defaultValue="enlightened">
           <TabsList className="mb-6">
             <TabsTrigger value="enlightened" className="mr-4">Enlightened</TabsTrigger>
@@ -91,7 +91,7 @@ export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuer
               ( enlightened.length > 0 )
               ? <DataTable columns={columns} data={enlightened} paginationClassName="mt-8 flex justify-end" />
               : <div>
-                  <h2 className="text-white font-alexandria">Unable to retrieve enlightened agents!</h2>
+                  <h2 className="text-white">Unable to retrieve enlightened agents!</h2>
                 </div>
             )}
           </TabsContent>
@@ -102,17 +102,17 @@ export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuer
               ( incubating.length > 0 )
               ? <DataTable columns={columns} data={incubating} paginationClassName="mt-8 flex justify-end" />
               : <div>
-                  <h2 className="text-white font-alexandria">Unable to retrieve incubating agents!</h2>
+                  <h2 className="text-white">Unable to retrieve incubating agents!</h2>
                 </div>
             )}
           </TabsContent>
           <TabsContent value="myagents">
             {!isLoggedIn ? (
               <div className="flex flex-col items-center justify-center py-12 space-y-6">
-                <h2 className="text-white font-alexandria text-xl">You need to be logged in to view your agents</h2>
+                <h2 className="text-white text-xl">You need to be logged in to view your agents</h2>
                 <button
                   onClick={() => setShowAuthFlow(true)}
-                  className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-pixelcraft text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+                  className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-alexandria text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
                   style={{ letterSpacing: '0.08em' }}
                 >
                   <span className="text-left">REGISTER</span>
@@ -128,7 +128,7 @@ export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuer
                 ( incubating.length > 0 )
                 ? <DataTable columns={columns} data={incubating} paginationClassName="mt-8 flex justify-end" />
                 : <div>
-                    <h2 className="text-white font-alexandria">You don't have any agents yet!</h2>
+                    <h2 className="text-white">You don't have any agents yet!</h2>
                   </div>
               )
             )}

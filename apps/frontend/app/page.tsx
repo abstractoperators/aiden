@@ -18,7 +18,7 @@ export default function Home() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3">
           <Image src="/brand_assets/blue-ghost.svg" alt="AIDN Logo" width={48} height={48} style={{ filter: 'brightness(0) invert(1)' }} />
-          <span className="font-bold text-4xl tracking-widest font-sans">AIDN</span>
+          <span className="font-bold text-4xl tracking-widest font-pixelcraft">AIDN</span>
         </Link>
         {/* Nav */}
         <nav className="flex items-center gap-8 text-sm font-bold font-sans">
@@ -39,7 +39,7 @@ export default function Home() {
           <h2 className="text-lg md:text-xl font-bold tracking-widest text-gray-300 mb-2 font-pixelcraft">HIGH PERFORMANCE ONCHAIN AI AGENTS</h2>
           { !isLoggedIn && <button
             onClick={() => setShowAuthFlow(true)}
-            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-pixelcraft text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-alexandria text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
             style={{ letterSpacing: '0.08em' }}
           >
             <span className="text-left">REGISTER</span>
@@ -49,7 +49,7 @@ export default function Home() {
           </button>}
           { isLoggedIn && <Link
             href="/user/agents/creation"
-            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-pixelcraft text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-orange-400 rounded-2xl bg-[#111522] font-alexandria text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
             style={{ letterSpacing: '0.08em' }}
           >
             <span className="text-left">CREATE AN AGENT</span>

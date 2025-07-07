@@ -13,8 +13,8 @@ export default function AgentsDashboard() {
             <input
               type="text"
               placeholder="Search Agents"
-              className="flex-1 bg-transparent outline-none text-white font-alexandria placeholder:text-gray-400
-               placeholder:text-lg placeholder:font-alexandria pl-2 pr-2"
+              className="flex-1 bg-transparent outline-none text-white placeholder:text-gray-400
+               placeholder:text-lg pl-2 pr-2"
             />
             <button className="flex items-center justify-center w-10 h-10 bg-[#1B202F] border rounded-lg ml-2">
               <svg className="w-5 h-5 text-gray-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>

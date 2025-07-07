@@ -16,7 +16,7 @@ export default function Header() {
   const pathname = usePathname();
 
   return (
-    <header className="w-full bg-[#121725] h-16 flex items-center justify-between px-8">
+    <header className="w-full bg-panel h-16 flex items-center justify-between px-8">
       {/* Left: Logo */}
       <Link href="/" className="flex items-center gap-3 select-none">
         <Image src="/brand_assets/blue-ghost.svg" alt="AIDN Logo" width={32} height={32} style={{ filter: 'brightness(0) invert(1)' }} />
@@ -37,7 +37,7 @@ export default function Header() {
               href={menu.href}
               className={
                 isActive
-                  ? "font-pixelcraft uppercase text-white bg-[#121725] border-2 border-orange-400 rounded-lg px-4 py-1 text-base tracking-widest shadow font-bold"
+                  ? "font-pixelcraft uppercase text-white bg-panel border-2 border-orange-400 rounded-lg px-4 py-1 text-base tracking-widest shadow font-bold"
                   : "font-pixelcraft uppercase text-gray-400 px-4 py-1 text-base tracking-widest hover:text-white transition"
               }
             >

@@ -19,9 +19,9 @@ export default async function AgentCreation() {
   const userResult = await getUser({dynamicId: session.user.id})
 
   if (isErrorResult(userResult)) { return (
-    <div className="min-h-screen bg-[#121725] flex flex-col items-center pt-8">
+    <div className="min-h-screen bg-panel flex flex-col items-center pt-8">
       <div className="w-full max-w-5xl flex flex-col gap-6 items-center">
-        <div className="text-white font-alexandria">
+        <div className="text-white">
           <h1>Unable to retrieve AIDN user!</h1>
           <h2>{userResult.message}</h2>
         </div>
@@ -35,17 +35,17 @@ export default async function AgentCreation() {
   return (
     <div className="min-h-screen flex flex-col items-center pt-8">
       <div className="w-full max-w-5xl flex flex-col gap-6 items-center">
-        <h1 className="text-2xl font-alexandria font-bold text-white tracking-tight sm:text-xl md:text-2xl lg:text-3xl mb-8">
+        <h1 className="text-2xl font-bold text-white tracking-tight sm:text-xl md:text-2xl lg:text-3xl mb-8">
           Create an Agent
         </h1>
         {
           isSuccessResult(userAgents) ?
           (
             userAgents.data.length > 0 && !session.user.scopes.includes('admin') ?
-            <h2 className="text-white font-alexandria">You may only have one agent at a time!</h2> :
+            <h2 className="text-white">You may only have one agent at a time!</h2> :
             <FormTabs />
           ) :
-          <h2 className="text-white font-alexandria">Unable to prepare agent creation form!</h2>
+          <h2 className="text-white">Unable to prepare agent creation form!</h2>
         }
       </div>
     </div>

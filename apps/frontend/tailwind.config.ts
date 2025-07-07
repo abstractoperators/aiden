@@ -208,10 +208,10 @@ export default {
         'html, body': {
           fontFamily: 'Alexandria, sans-serif',
         },
-        'h1, h2, h3, h4, h5, h6': {
+        'a': {
           fontFamily: 'PixelCraft, serif',
         },
-        'input, textarea, select, label, button, div': {
+        'input, textarea, select, label, button, div, h1, h2, h3, h4, h5, h6, p': {
           fontFamily: 'Alexandria, sans-serif',
           borderColor: '#233447',
         },

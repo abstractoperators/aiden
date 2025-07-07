@@ -10,7 +10,6 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="font-alexandria"
         column={column}
         title="Name"
       />
@@ -20,8 +19,8 @@ export const columns: ColumnDef<ClientAgent>[] = [
         href={`/agents/${row.original.id}`}
       >
         <hgroup className="flex items-center gap-2">
-          <h2 className="font-alexandria text-base">{row.getValue("name")}</h2>
-          { row.original.ticker && <h3 className="font-alexandria text-base">${row.original.ticker}</h3> }
+          <h2 className="text-base font-alexandria  ">{row.getValue("name")}</h2>
+          { row.original.ticker && <h3 className="text-base">${row.original.ticker}</h3> }
         </hgroup>
       </Link>
     )
@@ -31,13 +30,12 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "price",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="font-alexandria"
         column={column}
         title="Price"
       />
     ),
     cell: ({ row }) => (
-      <h3 className="font-alexandria">
+      <h3>
         {/* TODO: Add actual price */}
         ${(Math.random() * 100).toFixed(2)}
       </h3>
@@ -47,13 +45,12 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "tvl",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="font-alexandria"
         column={column}
         title="TVL"
       />
     ),
     cell: ({ row }) => (
-      <h3 className="font-alexandria">
+      <h3>
         {/* TODO: Add actual TVL */}
         ${(Math.random() * 1000000).toLocaleString()} 
       </h3>
@@ -63,13 +60,12 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "marketCapitalization",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="font-alexandria"
         column={column}
         title="MC"
       />
     ),
     cell: ({ row }) => (
-      <h3 className="font-alexandria">
+      <h3>
         {row.getValue("marketCapitalization")}
       </h3>
     )
@@ -78,13 +74,12 @@ export const columns: ColumnDef<ClientAgent>[] = [
     accessorKey: "holderCount",
     header: ({ column }) => (
       <DataTableColumnHeader
-        className="font-alexandria"
         column={column}
         title="Holders"
       />
     ),
     cell: ({ row }) => (
-      <h3 className="font-alexandria">
+      <h3>
         { row.original.holderCount && <h3>${row.original.holderCount}</h3> }
       </h3>
     )
