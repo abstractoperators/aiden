@@ -637,7 +637,7 @@ def stop_agent(
             stop_endpoint = f"{runtime.url}/controller/character/stop"
             resp = requests.post(stop_endpoint, timeout=3)
             resp.raise_for_status()
-        except Exception as e:
+        except requests.RequestException as e:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to stop agent subprocess: {str(e)}"
