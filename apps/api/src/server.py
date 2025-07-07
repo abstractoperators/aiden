@@ -77,6 +77,8 @@ agent_live_gauge = Gauge("agent_live_count", "Current live agents")
 agent_killed_counter = Counter("agent_killed_total", "Total agents killed")
 agent_event_counter = Counter("agent_event_total", "Agent lifecycle events", ["type"])
 
+RUNTIME_IDLE_POOL_SIZE = int(os.getenv("RUNTIME_IDLE_POOL_SIZE", 2))
+
 # TODO: Change a ton of endpoints to not require information that is already in the JWT token.
 # For example, PATCH /users should just require the user_id in the JWT token, not in query params.
 
@@ -631,16 +633,25 @@ def stop_agent(
         if not eliza_agent_id:
             raise HTTPException(status_code=404, detail="Agent does not have an Eliza ID")
 
-        stop_endpoint = f"{runtime.url}/controller/character/stop"
-        resp = requests.post(stop_endpoint, timeout=3)
-        resp.raise_for_status()
-
+        try:
+            stop_endpoint = f"{runtime.url}/controller/character/stop"
+            resp = requests.post(stop_endpoint, timeout=3)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to stop agent subprocess: {str(e)}"
+            )
         stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+
+        logger.info(f"[stop_agent] Agent {agent.id} stopped by user {is_admin_or_owner.__self__.id}")
 
          #Prometheus metrics
         agent_live_gauge.dec()
         agent_killed_counter.inc()
         agent_event_counter.labels("kill").inc()
+
+        cleanup_idle_runtimes(session)
 
         return stopped_agent
 
@@ -912,3 +923,14 @@ def delete_runtime(
 @app.get("/metrics_prometheus")
 async def metrics_prometheus():
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+def cleanup_idle_runtimes(session: Session) -> None:
+    """
+    Deletes idle runtimes if they exceed the allowed pool size.
+    """
+    idle_runtimes = crud.get_idle_runtimes(session)  # Returns runtimes with no agent
+
+    if len(idle_runtimes) > RUNTIME_IDLE_POOL_SIZE:
+        excess = idle_runtimes[RUNTIME_IDLE_POOL_SIZE:]
+        for r in excess:
+            delete_runtime.delay(r.id)
