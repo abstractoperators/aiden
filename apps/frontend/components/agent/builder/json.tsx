@@ -21,38 +21,87 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  EnvironmentVariables,
-  envSchema,
-  onSubmitCreate,
-  onSubmitEdit,
-  SubmitButton,
-  // TokenAccordion,
-  tokenSchema,
-} from "@/components/agent-form";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { EnvSchema } from "@/lib/schemas/environment-variables";
+import { TokenSchema } from "@/lib/schemas/token";
+import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit";
+import EnvironmentVariables from "./environment-variables";
+import { Character, CharacterSchema, ModelProviderName } from "@/lib/schemas/character";
 
 const MAX_FILE_SIZE = 5000000;
-const agentSchema = z.intersection(
+
+const defaultCharacter: Character = {
+  name: "",
+  clients: [],
+  modelProvider: ModelProviderName.OPENAI,
+  plugins: [],
+  bio: [],
+  lore: [],
+  messageExamples: [],
+  postExamples: [],
+  adjectives: [],
+  topics: [],
+  style: {
+    all: [],
+    chat: [],
+    post: [],
+  },
+}
+
+const errorMap: z.ZodErrorMap = (issue, ctx) => {
+  const fieldName = issue.path.join('.')
+  const fieldNameMessage = (str: string) => [fieldName, str].join(' ')
+  switch (issue.code) {
+    case "invalid_type":
+      if (issue.received === "undefined") {
+        return { message: fieldNameMessage("is missing from your JSON") }
+      }
+      if (issue.expected.includes('|')) {
+        const formattedExpected = issue.expected.split('|').map(val => val.replaceAll('\'', '').trim()).join(', ')
+        return { message: fieldNameMessage(`must be one of the following: ${formattedExpected}`) }
+      }
+      return { message: fieldNameMessage(`needs to be a ${issue.expected}, but is currently a ${issue.received}`) }
+    case "invalid_enum_value":
+      return { message: fieldNameMessage(`must be one of the following: ${issue.options.join(', ')}`)}
+    case "unrecognized_keys":
+      return { message: `${issue.keys.join(', ')} are not valid field(s)`}
+    default:
+      return { message: ctx.defaultError }
+  }
+}
+
+const JsonAgentBuilderSchema = z.intersection(
   z.object({
     character: z
       .string()
       .min(1, "Cannot be empty")
-      .refine(
-        val => {
-          try {
-            JSON.parse(val)
-            return true
-          } catch {
-            return false
-          }
-        },
-        { message: "Must be valid JSON" },
-      ),
+      .transform((val, ctx) => {
+        try {
+          return JSON.parse(val)
+        } catch (parseError) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `${parseError}`,
+          })
+          return z.NEVER
+        }
+      })
+      .transform((val, ctx) => {
+        const parsed = CharacterSchema.safeParse(val, { errorMap })
+        if (parsed.success) {
+          return parsed.data
+        }
+
+        parsed.error.issues.forEach(issue => ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: issue.message,
+        }))
+        return z.NEVER
+      }),
     characterFile: z
       .instanceof(File)
       .refine(file => file.size !== 0, "File may not be empty.")
@@ -65,16 +114,17 @@ const agentSchema = z.intersection(
         { message: "Invalid file type, must be JSON." }
       )
       .optional(),
-  }).merge(envSchema),
-  tokenSchema,
+  }).merge(EnvSchema),
+  TokenSchema,
 )
-type AgentSchema = z.infer<typeof agentSchema>
+type JsonAgentBuilderSchema = z.input<typeof JsonAgentBuilderSchema>
+type JsonAgentBuilderOutputSchema = z.output<typeof JsonAgentBuilderSchema>
 
-function UploadForm({
+function JsonAgentBuilder({
   defaultValues,
   agentId,
 }: {
-  defaultValues?: AgentSchema,
+  defaultValues?: JsonAgentBuilderSchema,
   agentId?: string,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
@@ -85,10 +135,10 @@ function UploadForm({
 
   const userId: string = user.userId
 
-  const form = useForm<AgentSchema>({
-    resolver: zodResolver(agentSchema),
+  const form = useForm<JsonAgentBuilderSchema, object, JsonAgentBuilderOutputSchema>({
+    resolver: zodResolver(JsonAgentBuilderSchema),
     defaultValues: defaultValues ?? {
-      character: "",
+      character: JSON.stringify(defaultCharacter, null, 4),
       env: [{ key: "", value: "", }],
       isNewToken: true,
       tokenName: "TEMPORARY",
@@ -110,18 +160,16 @@ function UploadForm({
   const { toast } = useToast()
   const { push } = useRouter()
 
-  const onSubmitBase = agentId ? onSubmitEdit(agentId) : onSubmitCreate
-
-  async function onSubmit(formData: AgentSchema) {
+  async function onSubmit(formData: JsonAgentBuilderOutputSchema) {
     console.debug("Agent Form Results", formData)
     const { character, env, isNewToken } = formData
 
     /** onSubmitCreate wraps the API creation of the agent.
      * It retrieves the API user ID and informs the user of success
      * before redirecting the user to the agent's profile page. */
-    return onSubmitBase({
+    return agentBuilderOnSubmit(agentId)({
       dynamicId: userId,
-      character: JSON.parse(character),
+      character,
       envFile: (
         env
         .filter(({value}) => value.length)
@@ -150,13 +198,13 @@ function UploadForm({
                     <FormLabel></FormLabel>
                     <FormControl>
                       <Textarea
-                        rows={40}
+                        rows={25}
                         placeholder="Paste your agent's Eliza Character JSON here!"
                         className={cn(
                           "w-full rounded-xl text-nowrap",
                           "border border-input bg-anakiwa-lighter dark:bg-anakiwa-darkest px-3 py-2",
                           "text-base shadow-sm placeholder:text-muted-foreground",
-                          "disabled:opacity-50 md:text-sm resize-none",
+                          "disabled:opacity-50 md:text-sm resize-y",
                         )}
                         {...field}
                       />
@@ -220,10 +268,10 @@ function UploadForm({
           {/* <TokenAccordion /> */}
 
         </Accordion>
-        <SubmitButton />
+        <AgentBuilderSubmit />
       </form>
     </Form>
   )
 }
 
-export default UploadForm
+export default JsonAgentBuilder
