@@ -18,30 +18,15 @@ export const columns: ColumnDef<ClientAgent>[] = [
     cell: ({ row }) => (
       <Link
         href={`/agents/${row.original.id}`}
-        className="font-alexandria"
       >
-        <hgroup>
-          <h2 className="text-base">{row.getValue("name")}</h2>
-          { row.original.ticker && <h3>${row.original.ticker}</h3> }
+        <hgroup className="flex items-center gap-2">
+          <h2 className="font-alexandria text-base">{row.getValue("name")}</h2>
+          { row.original.ticker && <h3 className="font-alexandria text-base">${row.original.ticker}</h3> }
         </hgroup>
       </Link>
     )
   },
-  {
-    accessorKey: "ticker",
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        className="font-alexandria"
-        column={column}
-        title="Ticker"
-      />
-    ),
-    cell: ({ row }) => (
-      <h2 className="text-base font-alexandria">
-        { row.original.ticker && <h3>${row.original.ticker}</h3> }
-      </h2>
-    )
-  },
+  
   {
     accessorKey: "price",
     header: ({ column }) => (
@@ -53,6 +38,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     ),
     cell: ({ row }) => (
       <h3 className="font-alexandria">
+        {/* TODO: Add actual price */}
         ${(Math.random() * 100).toFixed(2)}
       </h3>
     )
@@ -68,7 +54,8 @@ export const columns: ColumnDef<ClientAgent>[] = [
     ),
     cell: ({ row }) => (
       <h3 className="font-alexandria">
-        ${(Math.random() * 1000000).toLocaleString()}
+        {/* TODO: Add actual TVL */}
+        ${(Math.random() * 1000000).toLocaleString()} 
       </h3>
     )
   },
