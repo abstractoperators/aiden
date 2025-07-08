@@ -88,9 +88,6 @@ async def get_history(
     from_: float | None = None,
     countback: int | None = None,
 ) -> dict[str, str | Decimal | float | Sequence[float] | Sequence[Decimal]]:
-    print(f"resolution is {resolution}")
-    print(f"symbol is {symbol}")
-    print(f"to {to} from {from_} countback {countback}")
     if not from_ and not countback:
         raise HTTPException(status_code=400, detail=f"At least one of 'countback' or 'from' must be set")
     if resolution not in supported_resolutions:
