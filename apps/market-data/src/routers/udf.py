@@ -8,10 +8,7 @@ from fastapi import APIRouter, HTTPException
 from src.db import crud, Session
 from src.db.models import (
     TokenSymbolType,
-    TokenTimeseriesBase,
-    TokenTimeseries,
     TokenSymbol,
-    TokenSymbolBase,
 )
 from src.routers.utils import obj_or_404
 
@@ -49,12 +46,6 @@ async def resolve_symbol(symbol: str) -> TokenSymbol:
             TokenSymbol,
             symbol,
         )
-
-
-@router.post('/symbols')
-async def insert_token(token_info: TokenSymbolBase) -> TokenSymbol:
-    with Session() as session:
-        return crud.create_token_symbol(session, token_info)
 
 
 @router.get('/search')
@@ -127,9 +118,3 @@ async def get_history(
             'c': prices if len(prices) > 1 else prices[0],
             'v': volumes if len(volumes) > 1 else volumes[0],
         }
-
-
-@router.post('/history')
-async def insert_timeseries(timeseries: TokenTimeseriesBase) -> TokenTimeseries:
-    with Session() as session:
-        return crud.create_token_timeseries(session, timeseries)

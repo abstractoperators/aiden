@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlmodel import func, Session, or_, select, TIMESTAMP
 
 from .models import (
+    Base,
     TokenSymbol,
     TokenSymbolBase,
     TokenTimeseries,
@@ -16,6 +17,12 @@ def create_generic[M](session: Session, model: M) -> M:
     session.commit()
     session.refresh(model)
     return model
+
+
+def delete_generic(session: Session, model: Base) -> None:
+    session.delete(model)
+    session.commit()
+    return None
 
 
 # endregion Generics
@@ -54,6 +61,10 @@ def search_token_symbols(
         .limit(limit)
     )
     return session.exec(stmt)
+
+
+def delete_token_symbol(session: Session, token_symbol: TokenSymbol) -> None:
+    return delete_generic(session, token_symbol)
 
 
 # endregion Token Symbols

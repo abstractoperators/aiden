@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src import logger
 from src.db.setup import init_db, test_db_connection
+from src.routers.crud import router as crud_router
 from src.routers.udf import router as udf_router
 
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title='AIDN Market Data API', lifespan=lifespan)
 app.include_router(udf_router, prefix='')
+app.include_router(crud_router, prefix='')
 
 
 env = os.getenv("ENV")
