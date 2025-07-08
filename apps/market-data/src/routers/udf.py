@@ -1,3 +1,4 @@
+# https://www.tradingview.com/charting-library-docs/latest/connecting_data/UDF
 from decimal import Decimal
 from time import time
 from typing import Sequence
