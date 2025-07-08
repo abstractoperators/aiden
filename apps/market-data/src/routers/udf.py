@@ -17,8 +17,8 @@ from src.routers.utils import obj_or_404
 router = APIRouter()
 
 supported_resolutions = {
-    '1m': 'minute',
-    '1h': 'hour',
+    '1': 'minute',
+    '60': 'hour',
     '1D': 'day',
     '1W': 'week',
     '1M': 'month',
