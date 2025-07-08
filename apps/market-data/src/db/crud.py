@@ -6,6 +6,7 @@ from .models import (
     Base,
     TokenSymbol,
     TokenSymbolBase,
+    TokenSymbolUpdate,
     TokenTimeseries,
     TokenTimeseriesBase,
 )
@@ -19,6 +20,17 @@ def create_generic[M](session: Session, model: M) -> M:
     return model
 
 
+def update_generic[M](session: Session, model: M, model_update: Base) -> M:
+    fields_payload = model_update.model_dump(exclude_unset=True)
+    model.sqlmodel_update(fields_payload)
+    session.add(model)
+    session.commit()
+    session.refresh(model)
+
+    return model
+
+
+# TODO: catch foreignkey error
 def delete_generic(session: Session, model: Base) -> None:
     session.delete(model)
     session.commit()
@@ -61,6 +73,10 @@ def search_token_symbols(
         .limit(limit)
     )
     return session.exec(stmt)
+
+
+def update_token_symbol(session: Session, symbol: TokenSymbol, update: TokenSymbolUpdate) -> TokenSymbol:
+    return update_generic(session, symbol, update)
 
 
 def delete_token_symbol(session: Session, token_symbol: TokenSymbol) -> None:
