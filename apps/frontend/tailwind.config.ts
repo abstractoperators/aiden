@@ -119,7 +119,8 @@ export default {
   				darkest: '#991b1b'
   			},
 			panel: {
-				DEFAULT: '#181C23',
+				DEFAULT: 'hsl(var(--panel))',
+				foreground: 'hsl(var(--panel-foreground))'
 			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

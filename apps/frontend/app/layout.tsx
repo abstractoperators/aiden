@@ -38,8 +38,7 @@ export default function RootLayout({
       ].join(" ")}
     >
       <body
-        className="w-screen min-h-screen bg-cover bg-center text-white font-minecraft"
-        style={{ backgroundImage: "url('/background.png')" }}
+        className="w-screen min-h-screen bg-background text-foreground font-minecraft"
       >
         <DynamicProvider>
           <ThemeProvider

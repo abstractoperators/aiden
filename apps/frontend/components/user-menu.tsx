@@ -66,7 +66,7 @@ export default function UserMenu({
           </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {/* <AppearanceMenu /> */}
+          <AppearanceMenu />
           <DropdownMenuItem onClick={() => setShowDynamicUserProfile(true)}>
             <Settings2 className={iconClassName} />
             <span>User Settings</span>

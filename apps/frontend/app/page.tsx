@@ -12,7 +12,7 @@ export default function Home() {
   const isLoggedIn = useIsLoggedIn();
   const { setShowAuthFlow } = useDynamicContext();
   return (
-    <div className="relative min-h-screen flex flex-col justify-between text-white font-mono bg-cover bg-center" style={{ backgroundImage: "url('/background.png')" }}>
+    <div className="relative min-h-screen flex flex-col justify-between text-foreground font-mono bg-background">
       {/* Top Bar */}
       <header className="flex justify-between items-center px-8 py-6">
         {/* Logo */}
@@ -36,10 +36,10 @@ export default function Home() {
         <div className="flex flex-col items-center gap-8">
           <Image src="/brand_assets/blue-ghost.svg" alt="AIDN Logo Large" width={120} height={120} style={{ filter: 'brightness(0) invert(1)' }} />
           <h1 className="text-4xl md:text-5xl font-bold tracking-widest mt-2 font-pixelcraft">AIDN</h1>
-          <h2 className="text-lg md:text-xl font-bold tracking-widest text-gray-300 mb-2 font-pixelcraft">HIGH PERFORMANCE ONCHAIN AI AGENTS</h2>
+          <h2 className="text-lg md:text-xl font-bold tracking-widest text-muted-foreground mb-2 font-pixelcraft">HIGH PERFORMANCE ONCHAIN AI AGENTS</h2>
           { !isLoggedIn && <button
             onClick={() => setShowAuthFlow(true)}
-            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-anakiwa rounded-2xl bg-panel text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-anakiwa rounded-2xl bg-panel text-panel-foreground text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
             style={{ letterSpacing: '0.08em' }}
           >
             <span className="text-left">REGISTER</span>
@@ -49,7 +49,7 @@ export default function Home() {
           </button>}
           { isLoggedIn && <Link
             href="/user/agents/creation"
-            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-anakiwa rounded-2xl bg-panel text-white text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+            className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-anakiwa rounded-2xl bg-panel text-panel-foreground text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
             style={{ letterSpacing: '0.08em' }}
           >
             <span className="text-left">CREATE AN AGENT</span>
@@ -62,7 +62,7 @@ export default function Home() {
 
       {/* Social Links */}
       <footer className="flex justify-center pb-8">
-        <div className="bg-panel rounded-full px-6 py-2 flex gap-6 border border-[#23272F] shadow-lg">
+        <div className="bg-panel rounded-full px-6 py-2 flex gap-6 border border-border shadow-lg">
           <SocialLinks />
         </div>
       </footer>

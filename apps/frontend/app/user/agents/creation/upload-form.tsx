@@ -83,7 +83,7 @@ function UploadForm({
   if (!user) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-white">Loading user data...</div>
+        <div className="text-foreground">Loading user data...</div>
       </div>
     )
   }
@@ -91,7 +91,7 @@ function UploadForm({
   if (!user.userId) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-white">User not properly authenticated. Please log in again.</div>
+        <div className="text-foreground">User not properly authenticated. Please log in again.</div>
       </div>
     )
   }
@@ -152,7 +152,7 @@ function UploadForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Accordion type="multiple" defaultValue={["file",]} className="space-y-2">
           <AccordionItem value="file">
-            <AccordionTrigger className="font-semibold text-d6 text-white">
+            <AccordionTrigger className="font-semibold text-d6 text-foreground">
               Character JSON
             </AccordionTrigger>
             <AccordionContent>
@@ -168,7 +168,7 @@ function UploadForm({
                         className={cn(
                           "w-full rounded-xl text-nowrap",
                           "border bg-panel px-3 py-2",
-                          "text-base shadow-sm placeholder:text-gray-400 text-white",
+                          "text-base shadow-sm placeholder:text-gray-400 text-foreground",
                           "disabled:opacity-50 md:text-sm resize-none",
                         )}
                         {...field}
@@ -188,7 +188,7 @@ function UploadForm({
                         <Input
                           type="file"
                           accept=".json,application/json"
-                          className="text-white"
+                          className="text-foreground"
                           onChange={async (event) => {
                             onChange(event.target.files && event.target.files[0])
                             const file = event.target.files?.[0]
@@ -220,7 +220,7 @@ function UploadForm({
                   type="button"
                   variant="outline"
                   onClick={downloadCharacter}
-                  className="text-white mt-2"
+                  className="text-foreground mt-2"
                 >
                   <Download className="h-4 w-4" />
                   Download

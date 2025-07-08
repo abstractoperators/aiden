@@ -65,6 +65,9 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --panel: 220 13% 98%;
+    --panel-foreground: 222.2 84% 4.9%;
   }
 
   .dark {
@@ -103,6 +106,9 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --panel: 220 13% 11%;
+    --panel-foreground: 210 40% 98%;
   }
 }
 

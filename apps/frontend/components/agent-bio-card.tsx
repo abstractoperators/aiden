@@ -17,7 +17,8 @@ export default function BiographyCard({
             "text-black dark:text-white" :
             "text-anakiwa-darker dark:text-carnation-light"
           }
-          key={`bio.${index}`}
+          key={`bio.${
+            index}`}
         >
           {str}
         </p>

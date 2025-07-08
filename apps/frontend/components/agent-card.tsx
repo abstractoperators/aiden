@@ -32,9 +32,9 @@ export default function AgentCard({
         <AvatarFallback className="text-4xl">{name.substring(0, 1)}</AvatarFallback>
       </Avatar>
       <hgroup>
-        <h1 className="text-2xl font-bold text-center text-white">{name}</h1>
+        <h1 className="text-2xl font-bold text-center text-foreground">{name}</h1>
         {token && (
-          <h2 className="text-xl font-bold text-center text-white">
+          <h2 className="text-xl font-bold text-center text-foreground">
             <Link
               href={`https://seitrace.com/address/${token.evmContractAddress}?chain=atlantic-2`}
               target="_blank"
