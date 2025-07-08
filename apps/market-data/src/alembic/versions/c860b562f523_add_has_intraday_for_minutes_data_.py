@@ -26,9 +26,20 @@ def upgrade() -> None:
         sa.Column(
             'has_intraday',
             sa.Boolean(),
-            nullable=False,
-            default=True,
+            nullable=True,
         ),
+    )
+
+    # Set to True, then make it non-nullable
+    conn = op.get_bind()
+    stmt = sa.text("UPDATE tokensymbol SET has_intraday = false")
+    conn.execute(stmt)
+
+    op.alter_column(
+        'tokensymbol',
+        'has_intraday',
+        existing_type=sa.Boolean(),
+        nullable=False,
     )
 
 
