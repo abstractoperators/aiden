@@ -57,6 +57,10 @@ class TokenSymbolBase(Base):
         description="Exchange on which the token is traded.  The name will be displayed in the chart legend for this token.",
         default="AIDN",
     )
+    has_intraday: bool = Field(
+        description="Flag indicating intraday (minutes) data for this symbol.",
+        default=True,
+    )
     format: TokenSymbolFormat = Field(
         description="Format of displaying labels on the price scale. Can be 'price' or 'volume'.",
         default=TokenSymbolFormat.PRICE,
