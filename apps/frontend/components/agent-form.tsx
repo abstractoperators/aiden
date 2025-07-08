@@ -585,7 +585,7 @@ function TokenComboboxAccordion() {
 function SubmitButton() {
   return (
     <button
-      className="px-5 w-full py-1.5 border-2 border-orange-400 rounded-xl text-white text-base md:text-lg  font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+      className="px-5 w-full py-1.5 border-2 border-anakiwa rounded-xl text-white text-base md:text-lg  font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
       type="submit"
     >
       Submit

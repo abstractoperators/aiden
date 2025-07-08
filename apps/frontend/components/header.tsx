@@ -37,8 +37,8 @@ export default function Header() {
               href={menu.href}
               className={
                 isActive
-                  ? "font-pixelcraft uppercase text-white bg-panel border-2 border-orange-400 rounded-lg px-4 py-1 text-base tracking-widest shadow font-bold"
-                  : "font-pixelcraft uppercase text-gray-400 px-4 py-1 text-base tracking-widest hover:text-white transition"
+                  ? "font-pixelcraft uppercase hover:text-anakiwa text-white bg-panel border-2 border-anakiwa rounded-lg px-4 py-1 text-base tracking-widest shadow font-bold"
+                  : "font-pixelcraft uppercase hover:text-anakiwa text-gray-400 px-4 py-1 text-base tracking-widest hover:text-white transition"
               }
             >
               {menu.name}

@@ -31,7 +31,7 @@ function LoginButton({
   ) : (
     <div
       className={cn(
-        "hover:text-orange-400 transition font-pixelcraft cursor-pointer",
+        "hover:text-anakiwa transition font-pixelcraft cursor-pointer",
       )}
       onClick={() => setShowAuthFlow(true)}
     >
