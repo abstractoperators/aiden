@@ -66,7 +66,7 @@ async def search_symbol(
     def helper(symbol: TokenSymbol):
         ret = symbol.model_dump(include={'description', 'exchange', 'name', 'ticker', 'type'})
         ret['symbol'] = ret['name']
-        del[ret['name']]
+        ret.pop('name')
         return ret
 
     with Session() as session:
