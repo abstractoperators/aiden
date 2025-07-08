@@ -18,6 +18,7 @@ const defaultWidgetProps: Partial<ChartingLibraryWidgetOptions> = {
   library_path: "/charting_library/",
   locale: "en",
   charts_storage_url: "https://saveload.tradingview.com",
+  charts_storage_api_version: "1.1",
   fullscreen: false,
   autosize: true,
 }
@@ -70,6 +71,7 @@ function TVChartContainer(props: Partial<ChartingLibraryWidgetOptions>) {
       disabled_features: ["use_localstorage_for_settings"],
       enabled_features: ["study_templates"],
       charts_storage_url: props.charts_storage_url,
+      charts_storage_api_version: props.charts_storage_api_version,
       fullscreen: props.fullscreen,
       autosize: props.autosize,
     };
