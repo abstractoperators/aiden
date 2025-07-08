@@ -32,7 +32,7 @@ def upgrade() -> None:
 
     # Set to True, then make it non-nullable
     conn = op.get_bind()
-    stmt = sa.text("UPDATE tokensymbol SET has_intraday = false")
+    stmt = sa.text("UPDATE tokensymbol SET has_intraday = true")
     conn.execute(stmt)
 
     op.alter_column(
