@@ -1,3 +1,5 @@
+// https://www.tradingview.com/charting-library-docs/latest/core_concepts/Widget-Constructor
+// https://github.com/tradingview/charting-library-examples/blob/master/nextjs/pages/index.tsx
 "use client"
 
 import { TokenBase } from "@/lib/api/token";
