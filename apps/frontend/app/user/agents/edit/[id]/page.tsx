@@ -23,7 +23,8 @@ export default async function AgentEdit({
     </div>
   )}
 
-  const { characterJson, ownerId } = agentResult.data
+  const agent = agentResult.data
+  const { characterJson: {name}, ownerId } = agent
 
   const session = await auth()
   const user = session?.user?.id && await getUser({dynamicId: session.user.id})
@@ -32,7 +33,7 @@ export default async function AgentEdit({
   return (userOwnsAgent ? 
     <div className="my-16 mx-16 space-y-8">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-        Edit Agent {characterJson.name}
+        Edit Agent {name}
       </h1>
       <FormTabs
         {...agentResult.data}
@@ -50,12 +51,12 @@ export default async function AgentEdit({
         </Link>
       </Button>
       <div className="pt-32 flex flex-col space-y-2 items-start">
-        <h2 className="text-d4">Delete Agent {characterJson.name} </h2>
-        <DeleteAgentButton name={characterJson.name} />
+        <h2 className="text-d4">Delete Agent {name} </h2>
+        <DeleteAgentButton agent={agent} />
       </div>
     </div> : <div className="my-16 mx-16">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl my-8">
-        You don&#39;t own agent {characterJson.name}!
+        You don&#39;t own agent {name}!
       </h1>
     </div>
   )
