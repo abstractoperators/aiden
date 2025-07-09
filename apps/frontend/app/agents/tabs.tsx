@@ -112,12 +112,12 @@ export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuer
                 <h2 className="text-foreground text-xl font-alexandria">You need to be logged in to view your agents</h2>
                 <button
                   onClick={() => setShowAuthFlow(true)}
-                  className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-anakiwa rounded-2xl bg-panel font-alexandria text-panel-foreground text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white hover:border-white hover:text-white"
+                  className="group inline-flex items-center justify-center px-5 py-1.5 border-2 border-anakiwa rounded-2xl bg-panel text-foreground dark:text-panel-foreground font-alexandria text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-anakiwa hover:border-anakiwa hover:bg-anakiwa hover:text-white dark:hover:border-white dark:hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105"
                   style={{ letterSpacing: '0.08em' }}
                 >
                   <span className="text-left">REGISTER</span>
-                  <span className="ml-3 flex items-center justify-center w-8 h-8 bg-anakiwa rounded-lg transition-colors duration-200 group-hover:bg-white">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  <span className="ml-3 flex items-center justify-center w-8 h-8 bg-anakiwa rounded-lg transition-colors duration-200 group-hover:bg-white group-hover:text-anakiwa">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                   </span>
                 </button>
               </div>
