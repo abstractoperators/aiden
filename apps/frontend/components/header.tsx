@@ -19,7 +19,13 @@ export default function Header() {
     <header className="w-full bg-panel h-16 flex items-center justify-between px-8">
       {/* Left: Logo */}
       <Link href="/" className="flex items-center gap-3 select-none">
-        <Image src="/brand_assets/blue-ghost.svg" alt="AIDN Logo" width={32} height={32} style={{ filter: 'brightness(0) invert(1)' }} />
+        <Image 
+          src="/brand_assets/blue-ghost.svg" 
+          alt="AIDN Logo" 
+          width={32} 
+          height={32} 
+          className="filter brightness-0 dark:invert transition-all duration-300" 
+        />
         <span className="font-pixelcraft text-foreground text-2xl tracking-widest">AIDN</span>
       </Link>
       {/* Right: Menus */}
@@ -37,8 +43,8 @@ export default function Header() {
               href={menu.href}
               className={
                 isActive
-                  ? "font-pixelcraft uppercase hover:text-anakiwa text-panel-foreground bg-panel border-2 border-anakiwa rounded-lg px-4 py-1 text-base tracking-widest shadow font-bold"
-                  : "font-pixelcraft uppercase hover:text-anakiwa text-muted-foreground px-4 py-1 text-base tracking-widest hover:text-foreground transition"
+                  ? "font-pixelcraft uppercase hover:text-anakiwa text-foreground dark:text-panel-foreground bg-panel border-2 border-anakiwa rounded-lg px-4 py-1 text-base tracking-widest shadow-lg font-bold transition-all duration-300 hover:shadow-xl hover:scale-105"
+                  : "font-pixelcraft uppercase hover:text-anakiwa text-muted-foreground px-4 py-1 text-base tracking-widest hover:text-foreground transition-all duration-300 hover:scale-105"
               }
             >
               {menu.name}

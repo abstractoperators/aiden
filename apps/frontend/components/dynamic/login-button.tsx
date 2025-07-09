@@ -10,11 +10,13 @@ import CreateAgentButton from "../create-agent-button"
 const common = (
   [
     "font-semibold",
-    "text-black",
+    "text-white",
     "dark:text-white",
     "rounded-xl",
-    "transition",
+    "transition-all",
     "duration-300",
+    "hover:scale-105",
+    "hover:shadow-lg",
   ]
   .join(" ")
 )
@@ -31,7 +33,7 @@ function LoginButton({
   ) : (
     <div
       className={cn(
-        "hover:text-anakiwa transition font-pixelcraft cursor-pointer",
+        "hover:text-anakiwa transition-all duration-300 font-pixelcraft cursor-pointer hover:scale-105",
       )}
       onClick={() => setShowAuthFlow(true)}
     >
@@ -48,7 +50,9 @@ function LoginButtonHero({className}: {className?: string}) {
       "from-20%",
       "to-carnation-dark",
       "to-80%",
-      "hover:hue-rotate-60",
+      "hover:from-anakiwa",
+      "hover:to-carnation",
+      "shadow-md",
     ]
     .join(" ")
   )
