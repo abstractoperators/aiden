@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LoginButtonHeader } from '@/components/dynamic/login-button';
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
+import VisitorMenu from '@/components/visitor-menu'
 
 const menus = [
   { name: 'CREATE AGENT', href: '/user/agents/creation', isLoggedIn: true },
@@ -52,6 +53,7 @@ export default function Header() {
           )
         })}
         <LoginButtonHeader className="px-4 py-2" />
+        {!isLoggedIn && <VisitorMenu />}
       </nav>
     </header>
   )
