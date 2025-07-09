@@ -18,13 +18,9 @@ import { isErrorResult, isNotFound } from "@/lib/api/result";
 import { useRouter } from "next/navigation";
 
 export default function DeleteAgentButton({
-  agent: {
-    characterJson: { name },
-    id,
-  },
-}: {
-  agent: Agent,
-}) {
+  characterJson: { name },
+  id,
+}: Agent) {
   const { toast } = useToast()
   const { push } = useRouter()
 
