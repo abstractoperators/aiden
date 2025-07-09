@@ -44,15 +44,15 @@ export default function Header() {
               href={menu.href}
               className={
                 isActive
-                  ? "font-pixelcraft uppercase hover:text-anakiwa text-foreground dark:text-panel-foreground bg-panel border-2 border-anakiwa rounded-lg px-4 py-1 text-base tracking-widest shadow-lg font-bold transition-all duration-300 hover:shadow-xl hover:scale-105"
-                  : "font-pixelcraft uppercase hover:text-anakiwa text-muted-foreground px-4 py-1 text-base tracking-widest hover:text-foreground transition-all duration-300 hover:scale-105"
+                  ? "font-pixelcraft uppercase hover:text-anakiwa text-foreground dark:text-panel-foreground bg-panel rounded-lg px-4 py-1 text-base tracking-widest font-bold transition-all duration-300 hover:scale-105"
+                  : "border-2 border-anakiwa rounded-lg bg-panel px-4 py-1 font-pixelcraft uppercase hover:text-anakiwa text-muted-foreground px-4 py-1 text-base tracking-widest hover:text-foreground transition-all duration-300 hover:scale-105"
               }
             >
               {menu.name}
             </Link>
           )
         })}
-        <LoginButtonHeader className="px-4 py-2" />
+        <LoginButtonHeader className="px-4 py-2 border-2 border-anakiwa rounded-lg" />
         {!isLoggedIn && <VisitorMenu />}
       </nav>
     </header>

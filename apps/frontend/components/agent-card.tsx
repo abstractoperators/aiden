@@ -32,13 +32,13 @@ export default function AgentCard({
         <AvatarFallback className="text-4xl bg-anakiwa text-white">{name.substring(0, 1)}</AvatarFallback>
       </Avatar>
       <hgroup className="mt-4 text-center">
-        <h1 className="text-2xl font-bold text-center text-foreground">{name}</h1>
+        <h1 className="text-2xl font-bold text-center text-foreground font-alexandria">{name}</h1>
         {token && (
           <h2 className="text-xl font-bold text-center text-foreground">
             <Link
               href={`https://seitrace.com/address/${token.evmContractAddress}?chain=atlantic-2`}
               target="_blank"
-              className="hover:text-anakiwa transition-colors duration-300"
+              className="hover:text-anakiwa transition-colors duration-300 font-alexandria"
             >
               {token.name} ${token.ticker}
             </Link>

@@ -20,7 +20,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
       >
         <hgroup className="flex items-center gap-2">
           <h2 className="text-base font-alexandria  ">{row.getValue("name")}</h2>
-          { row.original.ticker && <h3 className="text-base">${row.original.ticker}</h3> }
+          { row.original.ticker && <h3 className="text-base text-anakiwa-dark dark:text-anakiwa-light">${row.original.ticker}</h3> }
         </hgroup>
       </Link>
     )

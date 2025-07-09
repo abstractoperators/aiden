@@ -13,7 +13,7 @@ export default function Home() {
   const isLoggedIn = useIsLoggedIn();
   const { setShowAuthFlow } = useDynamicContext();
   return (
-    <div className="relative min-h-screen flex flex-col justify-between text-foreground font-mono bg-background">
+    <div className="relative min-h-screen flex flex-col justify-between text-foreground font-mono">
       {/* Top Bar */}
       <header className="flex justify-between items-center px-8 py-6">
         {/* Logo */}
