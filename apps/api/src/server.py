@@ -1,3 +1,5 @@
+import asyncio
+from datetime import datetime, timedelta
 import os
 from base64 import b64decode
 from collections.abc import Sequence
@@ -12,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
-
+import time
 from src import logger, tasks
 from src.auth import (
     IsAdminDepends,
@@ -55,13 +57,65 @@ from src.models import (
 )
 from src.setup import test_db_connection
 from src.utils import obj_or_404
+from threading import Lock
+
+agent_last_down_time: dict[str, datetime] = {}
+stopped_agents = set()
+stopped_agents_lock = Lock()
+agent_heartbeat_store: dict[str, datetime] = {}
+agent_heartbeat_lock = Lock()
+
+agent_liveness_gauge = Gauge(
+    "agent_liveness_status",
+    "Heartbeat status of agents (1 = alive, 0 = dead)",
+    ["agent_id"]
+)
+
+agent_restart_timestamp = Gauge("agent_restart_timestamp", "Unix timestamp of last restart", ["agent_id"])
 
 agent_live_gauge = Gauge("agent_live_count", "Current live agents")
 agent_killed_counter = Counter("agent_killed_total", "Total agents killed")
 agent_event_counter = Counter("agent_event_total", "Agent lifecycle events", ["type"])
 
+RUNTIME_IDLE_POOL_SIZE = int(os.getenv("RUNTIME_IDLE_POOL_SIZE", 2))
+
 # TODO: Change a ton of endpoints to not require information that is already in the JWT token.
 # For example, PATCH /users should just require the user_id in the JWT token, not in query params.
+
+async def monitor_agent_liveness():
+    logger.info("[monitor_agent_liveness] Task started")
+
+    while True:
+        now = datetime.utcnow()
+
+        with agent_heartbeat_lock:
+            for agent_id, last_beat in agent_heartbeat_store.items():
+                # Skip agents purposelly stopped, can be removed if needed
+                with stopped_agents_lock:
+                    if agent_id in stopped_agents:
+                        continue
+
+                # Check if agent is alive or not
+                alive = (now - last_beat).total_seconds() < 75
+
+                agent_liveness_gauge.labels(agent_id=str(agent_id)).set(1 if alive else 0)
+
+                if not alive:
+                
+                    if agent_id not in agent_last_down_time:
+                        agent_last_down_time[agent_id] = now
+                else:
+                    if agent_id in agent_last_down_time:
+                        down_time = agent_last_down_time.pop(agent_id)
+                        downtime_seconds = (now - down_time).total_seconds()
+
+                        if downtime_seconds <= 75:
+                            logger.info(f"[RESTART DETECTED] Agent {agent_id} restarted after {downtime_seconds:.1f}s")
+                            agent_restart_timestamp.labels(agent_id=str(agent_id)).set(time.time())
+                            logger.info("[RESTART METRIC] %s restarted at %d", agent_id, int(time.time()))
+
+        await asyncio.sleep(15)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
@@ -71,6 +125,8 @@ async def lifespan(app: FastAPI):  # noqa
     else:
         logger.error("DB Connection Failed")
         raise Exception("DB Connection Failed")
+    
+    asyncio.create_task(monitor_agent_liveness())
     yield
 
 
@@ -152,6 +208,15 @@ async def ping():
     pong
     """
     return "pong"
+
+@app.post("/agents/{agent_id}/heartbeat")
+async def agent_heartbeat(agent_id: UUID):
+    """
+    Receives a heartbeat ping and updates in-memory store.
+    """
+    with agent_heartbeat_lock:
+        agent_heartbeat_store[str(agent_id)] = datetime.utcnow()
+    return {"message": "heartbeat received"}
 
 
 @app.post("/agents")
@@ -540,6 +605,8 @@ def stop_agent(
     agent_id: UUID,
     is_admin_or_owner: IsAdminOrOwnerDepends,
 ) -> Agent:
+    with stopped_agents_lock:
+        stopped_agents.add(agent_id)
     """
     Stops an agent running on a runtime.
     """
@@ -566,16 +633,25 @@ def stop_agent(
         if not eliza_agent_id:
             raise HTTPException(status_code=404, detail="Agent does not have an Eliza ID")
 
-        stop_endpoint = f"{runtime.url}/controller/character/stop"
-        resp = requests.post(stop_endpoint, timeout=3)
-        resp.raise_for_status()
-
+        try:
+            stop_endpoint = f"{runtime.url}/controller/character/stop"
+            resp = requests.post(stop_endpoint, timeout=3)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to stop agent subprocess: {str(e)}"
+            )
         stopped_agent = crud.update_agent(session, agent, AgentUpdate(runtime_id=None))
+
+        logger.info(f"[stop_agent] Agent {agent.id} stopped by user {is_admin_or_owner.__self__.id}")
 
          #Prometheus metrics
         agent_live_gauge.dec()
         agent_killed_counter.inc()
         agent_event_counter.labels("kill").inc()
+
+        cleanup_idle_runtimes(session)
 
         return stopped_agent
 
@@ -843,10 +919,18 @@ def delete_runtime(
         )
 
         return runtime_delete_task
-    
-
-
 
 @app.get("/metrics_prometheus")
 async def metrics_prometheus():
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+def cleanup_idle_runtimes(session: Session) -> None:
+    """
+    Deletes idle runtimes if they exceed the allowed pool size.
+    """
+    idle_runtimes = crud.get_idle_runtimes(session)  # Returns runtimes with no agent
+
+    if len(idle_runtimes) > RUNTIME_IDLE_POOL_SIZE:
+        excess = idle_runtimes[RUNTIME_IDLE_POOL_SIZE:]
+        for r in excess:
+            delete_runtime.delay(r.id)
