@@ -72,6 +72,7 @@ function DataTable<TData, TValue>({
 
   return (
     <>
+      <DataTableViewOptions table={table} />
       <div className="rounded-md border">
         <Table>
           <TableHeader>
