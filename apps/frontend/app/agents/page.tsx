@@ -1,12 +1,8 @@
 'use client'
 
-import { useState } from "react";
 import AgentsTabs from "./tabs";
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 
 export default function AgentsDashboard() {
-  const [searchQuery, setSearchQuery] = useState("");
   return (
       <div className="w-full max-w-5xl flex flex-col items-center mt-8 p-10">
         {/* Search Field */}
@@ -24,7 +20,7 @@ export default function AgentsDashboard() {
         </div> */}
         {/* Table Container with Tabs */}
         <div className="rounded-2xl border shadow-lg p-0 mt-2 w-full max-w-5xl mb-8">
-          <AgentsTabs searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <AgentsTabs />
         </div>
       </div>
   )
