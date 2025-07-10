@@ -38,7 +38,7 @@ export default function RootLayout({
       ].join(" ")}
     >
       <body
-        className="w-screen min-h-screen bg-background text-foreground font-minecraft"
+        className="w-screen min-h-screen bg-background text-foreground"
       >
         <DynamicProvider>
           <ThemeProvider
