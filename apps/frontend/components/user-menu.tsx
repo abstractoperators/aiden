@@ -7,6 +7,7 @@ import {
   UserProfile,
   Wallet,
 } from "@dynamic-labs/sdk-react-core";
+
 import {
   DropdownMenu,
   DropdownMenuContent,

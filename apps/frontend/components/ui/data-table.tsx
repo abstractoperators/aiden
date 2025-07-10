@@ -48,13 +48,11 @@ import { useState } from "react"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  paginationClassName?: string
 }
 
 function DataTable<TData, TValue>({
   columns,
   data,
-  paginationClassName
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
 
@@ -117,7 +115,7 @@ function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className={paginationClassName}><DataTablePagination table={table} /></div>
+      <DataTablePagination table={table} />
     </>
   )
 }
@@ -230,7 +228,7 @@ function DataTablePagination<TData>({
 }: DataTablePaginationProps<TData>) {
   return (
     <div className="flex items-center justify-between px-2 mt-2">
-      <div className="flex-1 text-sm text-neutral-300 mr-2 text-anakiwa-dark dark:text-anakiwa-light">
+      <div className="flex-1 text-sm mr-2 text-foreground">
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
