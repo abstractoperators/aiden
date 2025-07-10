@@ -213,6 +213,7 @@ function UploadForm({
                       <FormDescription className="text-gray-300">
                         Upload a character JSON file.
                       </FormDescription>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
