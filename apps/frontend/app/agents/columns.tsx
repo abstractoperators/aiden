@@ -80,7 +80,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
     ),
     cell: ({ row }) => (
       <h3>
-        { row.original.holderCount && <h3>${row.original.holderCount}</h3> }
+        { row.original.holderCount && <span>${row.original.holderCount}</span> }
       </h3>
     )
   }
