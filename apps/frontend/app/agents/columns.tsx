@@ -19,7 +19,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
         href={`/agents/${row.original.id}`}
       >
         <hgroup className="flex items-center gap-2">
-          <h2 className="text-base font-alexandria  ">{row.getValue("name")}</h2>
+          <h2 className="text-base font-alexandria">{row.getValue("name")}</h2>
           { row.original.ticker && <h3 className="text-base text-anakiwa-dark dark:text-anakiwa-light">${row.original.ticker}</h3> }
         </hgroup>
       </Link>
@@ -34,7 +34,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
         title="Price"
       />
     ),
-    cell: ({ row }) => (
+    cell: ({ }) => (
       <h3>
         {/* TODO: Add actual price */}
         ${(Math.random() * 100).toFixed(2)}
@@ -49,7 +49,7 @@ export const columns: ColumnDef<ClientAgent>[] = [
         title="TVL"
       />
     ),
-    cell: ({ row }) => (
+    cell: ({ }) => (
       <h3>
         {/* TODO: Add actual TVL */}
         ${(Math.random() * 1000000).toLocaleString()} 
