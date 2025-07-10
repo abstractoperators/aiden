@@ -5,7 +5,6 @@ import { columns } from "./columns"
 import { getIncubating, getEnlightened, ClientAgent } from "@/lib/api/agent";
 import { isSuccessResult } from "@/lib/api/result";
 import { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useIsLoggedIn, useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { Button } from "@/components/ui/button";
 
