@@ -52,15 +52,15 @@ export default function AgentsTabs({ searchQuery, setSearchQuery }: { searchQuer
     console.log('Rendering with loading states:', { isLoadingEnlightened, isLoadingIncubating });
   }, [isLoadingEnlightened, isLoadingIncubating]);
 
-  // Filter agents based on search query
-  const filterAgents = (agents: ClientAgent[]) => {
-    if (!searchQuery.trim()) return agents;
+  // // Filter agents based on search query
+  // const filterAgents = (agents: ClientAgent[]) => {
+  //   if (!searchQuery.trim()) return agents;
 
-    return agents.filter(agent => 
-      agent.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.ticker?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
+  //   return agents.filter(agent => 
+  //     agent.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     agent.ticker?.toLowerCase().includes(searchQuery.toLowerCase())
+  //   );
+  // };
 
   // Loading skeleton component
   const LoadingSkeleton = () => (
