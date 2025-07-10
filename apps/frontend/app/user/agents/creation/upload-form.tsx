@@ -229,9 +229,6 @@ function UploadForm({
               </div>
             </AccordionContent>
           </AccordionItem>
-        </Accordion>
-        
-        <Accordion type="multiple" className="space-y-2">
           <EnvironmentVariables />
         </Accordion>
         
