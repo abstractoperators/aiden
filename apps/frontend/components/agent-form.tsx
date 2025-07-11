@@ -49,7 +49,7 @@ import {
   LaunchSchemaType as TokenLaunchType,
 } from "@/lib/contracts/bonding"
 
-const borderStyle = "rounded-xl border border-black dark:border-white"
+const borderStyle = "rounded-xl border"
 
 const stringListTitles = {
   "bio": "Biography",
@@ -180,7 +180,7 @@ function AgentForm({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Accordion type="multiple" className="flex flex-col gap-2">
-          <AccordionItem value="Name">
+          <AccordionItem value="Name" className="bg-panel rounded-xl">
             <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
@@ -389,7 +389,7 @@ function AccordionList({
   })
 
   return (
-    <AccordionItem value={title}>
+    <AccordionItem value={title} className="bg-panel rounded-xl">
       <AccordionTrigger>{title}</AccordionTrigger>
       <AccordionContent className="flex flex-col gap-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />
@@ -585,12 +585,7 @@ function TokenComboboxAccordion() {
 function SubmitButton() {
   return (
     <Button
-      className={cn(
-        "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%",
-        "font-semibold text-black dark:text-white text-d5",
-        "transition duration-300 hover:hue-rotate-60",
-        "px-12 py-8 rounded-xl",
-      )}
+      className="px-5 w-full py-5 border-2 border-anakiwa rounded-xl text-foreground dark:text-foreground text-base md:text-lg font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-anakiwa hover:border-anakiwa hover:bg-anakiwa bg-panel hover:text-white dark:hover:border-white dark:hover:text-white shadow-lg hover:shadow-xl transform"
       type="submit"
     >
       Submit

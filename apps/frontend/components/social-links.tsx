@@ -29,11 +29,11 @@ export function SocialLinks() {
         <Link
           key={href}
           href={href}
-          className="text-gray-500 hover:text-gray-700"
+          className="group p-2 rounded-full transition-all duration-300 hover:bg-anakiwa/20 hover:scale-110 dark:hover:bg-anakiwa/30"
           target="_blank"
         >
           <Image
-            className="transition duration-300 w-6 rounded-full hover:invert-[.4] dark:invert dark:hover:invert-[.7]"
+            className="transition-all duration-300 w-6 h-6 rounded-full filter dark:invert group-hover:filter-none group-hover:brightness-0 group-hover:invert"
             src={src}
             alt={alt}
           />

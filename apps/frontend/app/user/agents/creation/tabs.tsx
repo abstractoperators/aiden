@@ -9,8 +9,8 @@ import AgentForm from "@/components/agent-form";
 
 export default function FormTabs() {
   return (
-    <Tabs className="bg-anakiwa-lighter/50 dark:bg-anakiwa-darker/50 p-4 rounded-xl" defaultValue="json">
-      <TabsList>
+    <Tabs defaultValue="json" className="rounded-2xl border bg-panel p-6 w-full">
+      <TabsList className="mb-6 flex gap-4">
         <TabsTrigger value="native">Native</TabsTrigger>
         <TabsTrigger value="json">JSON</TabsTrigger>
       </TabsList>

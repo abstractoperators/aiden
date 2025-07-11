@@ -223,7 +223,7 @@ export default function Chat({
   return (
   <div>
   {agent.runtimeId ? 
-    <Card className="justify-start items-center">
+    <Card className="justify-start items-center bg-panel border">
       <ScrollArea className="bg-anakiwa-darker/50 w-full h-96 lg:h-[600px] rounded-xl p-2">
         <ol className="flex flex-col w-full">
           {chat.map(message => (
@@ -256,7 +256,7 @@ export default function Chat({
                     className={cn(
                       "flex w-full rounded-xl",
                       "border border-input bg-transparent px-3 py-2",
-                      "text-base shadow-sm placeholder:text-muted-foreground",
+                      "text-foreground shadow-sm placeholder:text-muted-foreground",
                       "focus-visible:outline-none focus-visible:ring-1",
                       "focus-visible:ring-ring disabled:cursor-not-allowed",
                       "disabled:opacity-50 md:text-sm resize-none",

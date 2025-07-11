@@ -78,13 +78,7 @@ function UploadForm({
   agentId?: string,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
-  if (!user)
-    throw new Error(`User ${user} does not exist!`)
-  if (!user.userId)
-    throw new Error(`User ${user} has no userId!`)
-
-  const userId: string = user.userId
-
+  
   const form = useForm<AgentSchema>({
     resolver: zodResolver(agentSchema),
     defaultValues: defaultValues ?? {
@@ -97,6 +91,28 @@ function UploadForm({
   })
   const { handleSubmit, setValue, getValues } = form
 
+  const { toast } = useToast()
+  const { push } = useRouter()
+
+  // Add loading state and proper error handling
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-foreground">Loading user data...</div>
+      </div>
+    )
+  }
+  
+  if (!user.userId) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-foreground">User not properly authenticated. Please log in again.</div>
+      </div>
+    )
+  }
+
+  const userId: string = user.userId
+
   async function downloadCharacter() {
     const blob = new Blob([getValues("character")], { type: "application/json" })
     const url = URL.createObjectURL(blob)
@@ -106,9 +122,6 @@ function UploadForm({
     link.click()
     URL.revokeObjectURL(url)
   }
-
-  const { toast } = useToast()
-  const { push } = useRouter()
 
   const onSubmitBase = agentId ? onSubmitEdit(agentId) : onSubmitCreate
 
@@ -139,7 +152,7 @@ function UploadForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Accordion type="multiple" defaultValue={["file",]} className="space-y-2">
           <AccordionItem value="file">
-            <AccordionTrigger className="font-semibold text-d6">
+            <AccordionTrigger className="font-semibold text-d6 text-foreground">
               Character JSON
             </AccordionTrigger>
             <AccordionContent>
@@ -154,8 +167,8 @@ function UploadForm({
                         placeholder="Paste your agent's Eliza Character JSON here!"
                         className={cn(
                           "w-full rounded-xl text-nowrap",
-                          "border border-input bg-anakiwa-lighter dark:bg-anakiwa-darkest px-3 py-2",
-                          "text-base shadow-sm placeholder:text-muted-foreground",
+                          "border bg-panel px-3 py-2",
+                          "text-base shadow-sm placeholder:text-gray-400 text-foreground",
                           "disabled:opacity-50 md:text-sm resize-none",
                         )}
                         {...field}
@@ -175,6 +188,7 @@ function UploadForm({
                         <Input
                           type="file"
                           accept=".json,application/json"
+                          className="text-foreground"
                           onChange={async (event) => {
                             onChange(event.target.files && event.target.files[0])
                             const file = event.target.files?.[0]
@@ -196,7 +210,7 @@ function UploadForm({
                           {...{ onBlur, disabled, name, ref }}
                         />
                       </FormControl>
-                      <FormDescription>
+                      <FormDescription className="text-gray-300">
                         Upload a character JSON file.
                       </FormDescription>
                       <FormMessage />
@@ -204,23 +218,23 @@ function UploadForm({
                   )}
                 />
                 <Button
-                  size="icon"
-                  variant="default"
-                  className="my-2 rounded-xl"
-                  onClick={downloadCharacter} type="button"
+                  type="button"
+                  variant="outline"
+                  onClick={downloadCharacter}
+                  className="text-foreground mt-2"
                 >
-                  <Download />
+                  <Download className="h-4 w-4" />
+                  Download
                 </Button>
               </div>
             </AccordionContent>
           </AccordionItem>
-
           <EnvironmentVariables />
-
-          {/* <TokenAccordion /> */}
-
         </Accordion>
-        <SubmitButton />
+        
+        <div className="flex justify-center pt-4">
+          <SubmitButton />
+        </div>
       </form>
     </Form>
   )

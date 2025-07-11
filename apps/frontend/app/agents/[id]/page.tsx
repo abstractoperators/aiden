@@ -25,12 +25,11 @@ export default async function AgentHome({
     <main
       className={cn(
         "flex-1 self-stretch m-8 grid grid-cols-12 gap-2 p-12",
-        "bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur",
-        "rounded-xl relative",
+        "rounded-xl relative bg-panel border border-border shadow-lg",
       )}
     >
-      <h1>Unable to retrieve Agent information!</h1>
-      <h2>{agentResult.message}</h2>
+      <h1 className="text-foreground text-2xl font-bold">Unable to retrieve Agent information!</h1>
+      <h2 className="text-foreground">{agentResult.message}</h2>
     </main>
   )}
 
@@ -47,9 +46,8 @@ export default async function AgentHome({
   return (
     <main
       className={cn(
-        "flex-1 self-stretch m-8 grid grid-cols-12 gap-2 px-6 py-6",
-        "bg-anakiwa-lightest/50 dark:bg-anakiwa-darkest/50 backdrop-blur",
-        "rounded-xl relative",
+        "flex-1 self-stretch m-8 grid grid-cols-12 gap-4 px-6 py-6",
+        "rounded-xl relative bg-panel border border-border shadow-lg",
         userOwnsAgent ? "pt-14": "",
       )}
     >
@@ -61,22 +59,21 @@ export default async function AgentHome({
               variant: "ghost",
               size: "icon",
             }),
-            "rounded-xl absolute top-2 right-6",
-            "hover:bg-anakiwa-lighter/60 dark:hover:bg-anakiwa-dark/40",
+            "rounded-xl absolute top-2 right-6 hover:bg-anakiwa hover:text-white transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg",
           )}
         >
           <Pencil strokeWidth={3} />
         </Link>
       }
-      <div className="col-span-7 flex flex-col items-stretch gap-2">
+      <div className="col-span-7 flex flex-col items-stretch gap-4">
         <AgentCard name={name} token={token} />
         <BiographyCard {...character} />
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-4">
           <TagCard tags={character.topics} title="Topics" />
           <TagCard tags={character.adjectives} title="Adjectives" />
         </div>
       </div>
-      <div className="col-span-5 flex flex-col justify-start items-stretch gap-2">
+      <div className="col-span-5 flex flex-col justify-start items-stretch gap-4">
         {/* <SwapCard token={token}/> */}
         <Chat init={agent} />
       </div>

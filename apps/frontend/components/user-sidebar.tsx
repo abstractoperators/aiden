@@ -96,7 +96,7 @@ export async function UserSidebar({ userAgents, ...props }: UserSidebarProps) {
             <SidebarGroup>
               <SidebarGroupLabel
                 asChild
-                className="group/label text-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="group/label text-md text-sidebar-foreground"
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip={parent.title}>
