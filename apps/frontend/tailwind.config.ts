@@ -64,8 +64,6 @@ export default {
   			'alexandria': ['Alexandria', 'sans-serif'],
   			'sans': ['Alexandria', 'sans-serif'],
   			'serif': ['PixelCraft', 'serif'],
-  			'display': ['PixelCraft', 'serif'],
-  			'body': ['Alexandria', 'sans-serif']
   		},
   		colors: {
   			// Primary color - Anakiwa (blue)
@@ -202,24 +200,5 @@ export default {
   		}
   	}
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    function({ addBase }: { addBase: any }) {
-      addBase({
-        'html, body': {
-          fontFamily: 'Alexandria, sans',
-        },
-        'a': {
-          fontFamily: 'PixelCraft, serif',
-        },
-        'input, textarea, select, label, button, div, h1, h2, h3, h4, h5, h6, p': {
-          fontFamily: 'Alexandria, sans',
-          borderColor: '#233447',
-        },
-        'input::placeholder, textarea::placeholder': {
-          fontFamily: 'Alexandria, sans',
-        },
-      })
-    }
-  ],
+  plugins: [require("tailwindcss-animate")],
 } satisfies Config;
