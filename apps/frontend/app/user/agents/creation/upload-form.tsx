@@ -79,6 +79,21 @@ function UploadForm({
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
   
+  const form = useForm<AgentSchema>({
+    resolver: zodResolver(agentSchema),
+    defaultValues: defaultValues ?? {
+      character: "",
+      env: [{ key: "", value: "", }],
+      isNewToken: true,
+      tokenName: "TEMPORARY",
+      ticker: "HOLDER",
+    },
+  })
+  const { handleSubmit, setValue, getValues } = form
+
+  const { toast } = useToast()
+  const { push } = useRouter()
+
   // Add loading state and proper error handling
   if (!user) {
     return (
@@ -98,18 +113,6 @@ function UploadForm({
 
   const userId: string = user.userId
 
-  const form = useForm<AgentSchema>({
-    resolver: zodResolver(agentSchema),
-    defaultValues: defaultValues ?? {
-      character: "",
-      env: [{ key: "", value: "", }],
-      isNewToken: true,
-      tokenName: "TEMPORARY",
-      ticker: "HOLDER",
-    },
-  })
-  const { handleSubmit, setValue, getValues } = form
-
   async function downloadCharacter() {
     const blob = new Blob([getValues("character")], { type: "application/json" })
     const url = URL.createObjectURL(blob)
@@ -119,9 +122,6 @@ function UploadForm({
     link.click()
     URL.revokeObjectURL(url)
   }
-
-  const { toast } = useToast()
-  const { push } = useRouter()
 
   const onSubmitBase = agentId ? onSubmitEdit(agentId) : onSubmitCreate
 

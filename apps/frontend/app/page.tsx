@@ -9,6 +9,7 @@ import { useDynamicContext } from "@dynamic-labs/sdk-react-core"
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
 import { Button } from '@/components/ui/button';
 import VisitorMenu from '@/components/visitor-menu';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const isLoggedIn = useIsLoggedIn();
@@ -52,7 +53,16 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <Button
                 onClick={() => setShowAuthFlow(true)}
-                className="group inline-flex items-center justify-center px-5 py-6 border-2 border-anakiwa rounded-2xl bg-panel text-foreground dark:text-panel-foreground text-base md:text-lg tracking-widest font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-anakiwa hover:border-anakiwa hover:bg-anakiwa hover:text-white dark:hover:border-white dark:hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                className={cn(
+                  "group inline-flex items-center justify-center px-5 py-6",
+                  "border-2 border-anakiwa rounded-2xl bg-panel",
+                  "text-foreground dark:text-panel-foreground text-base",
+                  "md:text-lg tracking-widest font-bold font-sans",
+                  "transition-all duration-200 focus:outline-none",
+                  "focus:ring-2 focus:ring-anakiwa hover:border-anakiwa",
+                  "hover:bg-anakiwa hover:text-white dark:hover:border-white",
+                  "dark:hover:text-white shadow-lg hover:shadow-xl transform hover:scale-105",
+                )}
                 style={{ letterSpacing: '0.08em' }}
               >
                 <span className="text-left">REGISTER</span>

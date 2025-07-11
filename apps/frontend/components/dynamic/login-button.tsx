@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import CreateAgentButton from "../create-agent-button"
 
 const common = (
   [
@@ -31,14 +30,15 @@ function LoginButton({
   return (primaryWallet && user) ? (
     <>{children}</>
   ) : (
-    <div
+    <button
       className={cn(
         "hover:text-anakiwa transition-all duration-300 font-pixelcraft cursor-pointer hover:scale-105",
+        className,
       )}
       onClick={() => setShowAuthFlow(true)}
     >
       Register
-    </div>
+    </button>
   )
 }
 

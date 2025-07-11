@@ -1,7 +1,4 @@
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { UserSidebar } from "@/components/user-sidebar";
 import Header from "@/components/header";
-import { getEnlightened } from "@/lib/api/agent";
 import { auth } from "@/auth";
 import { getUser } from "@/lib/api/user";
 import { isErrorResult } from "@/lib/api/result";
@@ -28,9 +25,6 @@ export default async function UserLayout({
       <h2>{userResult.message}</h2>
     </div>
   )}
-
-  const user = userResult.data
-  const userAgents = await getEnlightened({userId: user.id})
 
   return (
     // TODO: figure out sidebar options
