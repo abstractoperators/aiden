@@ -16,7 +16,7 @@ const alexandria = Alexandria({
   variable: '--font-alexandria',
 });
 const pixelCraft = localFont({
-  src: './PixelCraft-7BWd4.ttf',
+  src: '../public/fonts/Pixelcraft-7BWd4.ttf',
   weight: '400',
   style: 'normal',
   display: 'swap',
