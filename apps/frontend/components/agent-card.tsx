@@ -10,7 +10,6 @@ export default function AgentCard({
   name,
   token,
   avatarSource,
-  
 }: {
   name: string,
   token?: TokenBase | null,
@@ -34,11 +33,11 @@ export default function AgentCard({
       <hgroup className="mt-4 text-center">
         <h1 className="text-2xl font-bold text-center text-foreground font-alexandria">{name}</h1>
         {token && (
-          <h2 className="text-xl font-bold text-center text-foreground transition duration-300 hover:text-carnation-light dark:hover:text-carnation-dark">
+          <h2 className="text-xl font-bold text-center text-muted-foreground transition duration-300 hover:text-anakiwa">
             <Link
               href={`https://seitrace.com/address/${token.evmContractAddress}?chain=atlantic-2`}
               target="_blank"
-              className="hover:text-anakiwa transition-colors duration-300 font-alexandria"
+              className="font-alexandria"
             >
               {token.name} ${token.ticker}
             </Link>
