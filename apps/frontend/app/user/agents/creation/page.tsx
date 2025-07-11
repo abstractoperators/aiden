@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { getUser } from "@/lib/api/user";
 import { isErrorResult, isSuccessResult } from "@/lib/api/result";
 
-export default async function AgentCreation() {  
+export default async function AgentCreation() {
   // TODO consider removing in favor of context/context provider
   const session = await auth()
   if (!session)
@@ -33,7 +33,7 @@ export default async function AgentCreation() {
   const userAgents = await getEnlightened({userId: user.id})
 
   return (
-    <div className="min-h-screen flex flex-col items-center pt-8">
+    <div className="flex flex-col items-center m-16">
       <div className="w-full max-w-5xl flex flex-col gap-6 items-center">
         <h1 className="text-2xl text-foreground font-alexandria sm:text-xl md:text-2xl lg:text-3xl mb-8">
           Create an Agent
