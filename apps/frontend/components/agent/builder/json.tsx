@@ -117,19 +117,19 @@ const JsonAgentBuilderSchema = z.intersection(
   }).merge(EnvSchema),
   TokenSchema,
 )
-type JsonAgentBuilderSchema = z.input<typeof JsonAgentBuilderSchema>
+type JsonAgentBuilderInputSchema = z.input<typeof JsonAgentBuilderSchema>
 type JsonAgentBuilderOutputSchema = z.output<typeof JsonAgentBuilderSchema>
 
 function JsonAgentBuilder({
   defaultValues,
   agentId,
 }: {
-  defaultValues?: JsonAgentBuilderSchema,
+  defaultValues?: JsonAgentBuilderInputSchema,
   agentId?: string,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
 
-  const form = useForm<JsonAgentBuilderSchema, object, JsonAgentBuilderOutputSchema>({
+  const form = useForm<JsonAgentBuilderInputSchema, object, JsonAgentBuilderOutputSchema>({
     resolver: zodResolver(JsonAgentBuilderSchema),
     defaultValues: defaultValues ?? {
       character: JSON.stringify(defaultCharacter, null, 4),
