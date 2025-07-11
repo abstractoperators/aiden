@@ -1,3 +1,4 @@
+// TODO: reuse header component and consider re-extracting main section into hero component, reusing footer component
 'use client';
 
 import Image from 'next/image';
