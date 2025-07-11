@@ -2,6 +2,17 @@
 
 This guide covers the complete deployment process from development to production.
 
+## Table of Contents
+[Prerequisites](#prerequisites)
+
+[Development & Testing](#development--testing)
+
+[Staging Deployment](#staging-deployment)
+
+[Production Deployment](#production-deployment)
+
+[Troubleshooting](#troubleshooting)
+
 ## Prerequisites
 
 - Access to [abstractoperators/eliza](https://github.com/abstractoperators/eliza) repository
@@ -16,7 +27,7 @@ This guide covers the complete deployment process from development to production
 git checkout -b feature/your-feature-name
 ```
 
-Create your feature branch on the [eliza repository](https://github.com/abstractoperators/eliza).
+Create your feature branch on the [eliza repository](https://github.com/abstractoperators/eliza). Replace `your-feature-name` with a short and concise description. (e.g. `sqlmodels`, `basic-auth`) 
 
 ### 2. Local Testing
 

@@ -49,6 +49,9 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --panel: 220 13% 94%;
+    --panel-foreground: 222.2 84% 4.9%;
   }
 
   .dark {
@@ -87,6 +90,9 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --panel: 220 38% 11%;
+    --panel-foreground: 210 40% 98%;
   }
 }
 
@@ -96,6 +102,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Specific elements that should use system font */
+  .font-sans, nav a, .register-button {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
   h1 {
     @apply font-serif;

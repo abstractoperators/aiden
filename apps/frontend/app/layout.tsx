@@ -1,22 +1,27 @@
 import "./globals.css"
 import type { Metadata } from "next"
-import { Aldrich, Inter } from "next/font/google"
+import { Alexandria } from "next/font/google"
+import localFont from "next/font/local"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import DynamicProvider from "@/components/dynamic/provider"
 import ScrollToTopButton from "@/components/ui/scroll-to-top-button"
+import { cn } from "@/lib/utils"
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: '--font-inter',
+const alexandria = Alexandria({
+  weight: 'variable',
+  style: 'normal',
   display: 'swap',
-})
-const aldrich = Aldrich({
-  weight: "400",
   subsets: ["latin"],
-  variable: '--font-aldrich',
-  display: 'swap',
+  variable: '--font-alexandria',
 });
+const pixelCraft = localFont({
+  src: '../public/fonts/Pixelcraft-7BWd4.ttf',
+  weight: '400',
+  style: 'normal',
+  display: 'swap',
+  variable: '--font-pixelcraft',
+})
 
 export const metadata: Metadata = {
   title: "AIDN - Web3 Agents",
@@ -31,25 +36,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={[
-        aldrich.variable,
-        inter.variable,
+      className={cn(
+        alexandria.variable,
+        pixelCraft.variable,
         "scroll-smooth",
-      ].join(" ")}
+      )}
     >
       <body
-        className={[
+        className={cn(
           // common
           "w-screen min-h-screen",
           "bg-cover bg-fixed bg-no-repeat",
-          // backup light background
-          "bg-right-top bg-anakiwa-lighter",
-          // backup dark background
-          "dark:bg-right dark:bg-anakiwa-darkest",
           // background images
-          "bg-[url(/brand_assets/background-sky.png)]",
-          "dark:bg-[url(/brand_assets/background-orbit.png)]",
-        ].join(" ")}
+          "bg-[url('/background-light.png')]",
+          "dark:bg-[url('/background.png')]",
+        )}
       >
         <DynamicProvider>
           <ThemeProvider

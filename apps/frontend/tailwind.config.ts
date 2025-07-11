@@ -60,14 +60,13 @@ export default {
   			]
   		},
   		fontFamily: {
-  			sans: [
-  				'var(--font-inter)'
-  			],
-  			serif: [
-  				'var(--font-aldrich)'
-  			]
+  			'pixelcraft': ['PixelCraft', 'serif'],
+  			'alexandria': ['Alexandria', 'sans-serif'],
+  			'sans': ['Alexandria', 'sans-serif'],
+  			'serif': ['PixelCraft', 'serif'],
   		},
   		colors: {
+  			// Primary color - Anakiwa (blue)
   			anakiwa: {
   				lightest: '#f5f8ff',
   				lighter: '#ebf1ff',
@@ -77,6 +76,7 @@ export default {
   				darker: '#3e4a66',
   				darkest: '#2e374c'
   			},
+  			// Secondary color - Carnation (pink)
   			carnation: {
   				lightest: '#fef5fa',
   				lighter: '#feecf5',
@@ -86,6 +86,40 @@ export default {
   				darker: '#654152',
   				darkest: '#4c303d'
   			},
+  			// Neutral colors
+  			neutral: {
+  				lightest: '#ffffff',
+  				lighter: '#f8f9fa',
+  				light: '#e9ecef',
+  				DEFAULT: '#6c757d',
+  				dark: '#495057',
+  				darker: '#343a40',
+  				darkest: '#212529'
+  			},
+  			// Success color
+  			success: {
+  				lightest: '#f0fdf4',
+  				lighter: '#dcfce7',
+  				light: '#bbf7d0',
+  				DEFAULT: '#22c55e',
+  				dark: '#16a34a',
+  				darker: '#15803d',
+  				darkest: '#166534'
+  			},
+  			// Error/Warning color
+  			error: {
+  				lightest: '#fef2f2',
+  				lighter: '#fee2e2',
+  				light: '#fecaca',
+  				DEFAULT: '#ef4444',
+  				dark: '#dc2626',
+  				darker: '#b91c1c',
+  				darkest: '#991b1b'
+  			},
+			panel: {
+				DEFAULT: 'hsl(var(--panel))',
+				foreground: 'hsl(var(--panel-foreground))'
+			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
