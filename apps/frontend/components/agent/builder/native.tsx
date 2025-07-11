@@ -152,7 +152,7 @@ function NativeAgentBuilder({
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Accordion type="multiple" className="flex flex-col gap-2">
-          <AccordionItem value="Name">
+          <AccordionItem value="Name" className="bg-panel rounded-xl">
             <AccordionTrigger>Name</AccordionTrigger>
             <AccordionContent>
               <FormField
@@ -361,7 +361,7 @@ function AccordionList({
   })
 
   return (
-    <AccordionItem value={title}>
+    <AccordionItem value={title} className="bg-panel rounded-xl">
       <AccordionTrigger>{title}</AccordionTrigger>
       <AccordionContent className="flex flex-col gap-8">
         <FieldArray name={name} title={title} fields={fields} remove={remove} />

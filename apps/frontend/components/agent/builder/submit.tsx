@@ -12,10 +12,12 @@ function AgentBuilderSubmit() {
   return (
     <Button
       className={cn(
-        "bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%",
-        "font-semibold text-black dark:text-white text-d5",
-        "transition duration-300 hover:hue-rotate-60",
-        "px-12 py-8 rounded-xl",
+        "px-5 w-full py-5 border-2 border-anakiwa rounded-xl",
+        "text-foreground dark:text-foreground text-base md:text-lg font-bold",
+        "transition-all duration-200 focus:outline-none focus:ring-2",
+        "focus:ring-anakiwa hover:border-anakiwa hover:bg-anakiwa",
+        "bg-panel hover:text-white dark:hover:border-white",
+        "dark:hover:text-white shadow-lg hover:shadow-xl transform",
       )}
       type="submit"
     >
