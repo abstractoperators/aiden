@@ -2,19 +2,16 @@ import { Wallet } from "@dynamic-labs/sdk-react-core";
 import BONDING_JSON from "./abis/bonding.json"
 import ERC20_JSON from "./abis/ferc20.json"
 import {
-  createPublicClient,
   getContract,
-  http,
   parseEther,
   parseEventLogs,
   PublicClient,
   WalletClient,
 } from "viem";
-import { isEthereumWallet } from "@dynamic-labs/ethereum";
-import { z } from "zod";
 import { saveToken, Token } from "../api/token";
 import { Result } from "../api/result";
-import { getSeiNet } from "../utils";
+import { getClientFromWallet, getPublicClient } from "./client";
+import { LaunchTokenSchema } from "../schemas/token";
 
 const BONDING_CONTRACT_ADDRESS: `0x${string}` = process.env.NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS as `0x${string}` ?? "0x"
 const BONDING_ABI = BONDING_JSON.abi
@@ -32,14 +29,12 @@ function getBondingContract( client: {
   })
 }
 
-async function getClientFromWallet(wallet: Wallet | null) {
-  if (!wallet || !isEthereumWallet(wallet))
-    throw new Error(`Wallet ${wallet} does not exist or is not an ethereum wallet!`)
-
-  return {
-    wallet: await wallet.getWalletClient(),
-    public: await wallet.getPublicClient(),
-  }
+function getPublicBondingContract() {
+  return getContract({
+    address: BONDING_CONTRACT_ADDRESS,
+    abi: BONDING_ABI,
+    client: getPublicClient(),
+  })
 }
 
 interface TokenInfoData {
@@ -70,14 +65,7 @@ async function getTokenInfo({
 }: {
   address: `0x${string}`,
 }): Promise<TokenInfo> {
-  const contract = getContract({
-    address: BONDING_CONTRACT_ADDRESS,
-    abi: BONDING_ABI,
-    client: createPublicClient({
-      chain: getSeiNet(),
-      transport: http(),
-    })
-  })
+  const contract = getPublicBondingContract()
 
   const tokenInfo = (await contract.read.tokenInfo([address])) as Array<`0x${string}` | boolean | TokenInfoData>
   return {
@@ -151,17 +139,11 @@ async function sellForSei({
   });
 }
 
-const launchSchema = z.object({
-  tokenName: z.string().min(1, "Name cannot be empty"),
-  ticker: z.string().min(1, "Ticker cannot be empty"),
-})
-type LaunchSchemaType = z.infer<typeof launchSchema>
-
 function launchTokenFactory(wallet: Wallet | null) {
   async function launchToken({
     tokenName: name,
     ticker,
-  }: LaunchSchemaType): Promise<Result<Token>> {
+  }: LaunchTokenSchema): Promise<Result<Token>> {
     const client = await getClientFromWallet(wallet)
     const contract = getBondingContract(client)
 
@@ -218,12 +200,10 @@ export {
   getBondingContract,
   getTokenInfo,
   buyWithSei,
-  launchSchema,
   launchTokenFactory,
   sellForSei,
 }
 
 export type {
-  LaunchSchemaType,
   TokenInfo,
 }

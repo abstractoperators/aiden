@@ -1,11 +1,12 @@
 from datetime import datetime
 
-# from sqlalchemy import func as sa_func, ScalarResult, select as sa_select
-from sqlmodel import func, Session, select, TIMESTAMP
+from sqlmodel import func, Session, or_, select, TIMESTAMP
 
 from .models import (
+    Base,
     TokenSymbol,
     TokenSymbolBase,
+    TokenSymbolUpdate,
     TokenTimeseries,
     TokenTimeseriesBase,
 )
@@ -17,6 +18,23 @@ def create_generic[M](session: Session, model: M) -> M:
     session.commit()
     session.refresh(model)
     return model
+
+
+def update_generic[M](session: Session, model: M, model_update: Base) -> M:
+    fields_payload = model_update.model_dump(exclude_unset=True)
+    model.sqlmodel_update(fields_payload)
+    session.add(model)
+    session.commit()
+    session.refresh(model)
+
+    return model
+
+
+# TODO: catch foreignkey error
+def delete_generic(session: Session, model: Base) -> None:
+    session.delete(model)
+    session.commit()
+    return None
 
 
 # endregion Generics
@@ -38,6 +56,31 @@ def get_token_symbol_by_name_or_ticker(session: Session, name: str) -> TokenSymb
         return by_ticker
     stmt = select(TokenSymbol).where(TokenSymbol.name == name)
     return session.exec(stmt).first()
+
+
+def search_token_symbols(
+    session: Session,
+    name: str,
+    type_: str,
+    exchange: str,
+    limit: int,
+):
+    stmt = (
+        select(TokenSymbol)
+        .where(or_(TokenSymbol.ticker.icontains(name), TokenSymbol.name.icontains(name)))
+        .where(TokenSymbol.type == type_)
+        .where(TokenSymbol.exchange == exchange)
+        .limit(limit)
+    )
+    return session.exec(stmt)
+
+
+def update_token_symbol(session: Session, symbol: TokenSymbol, update: TokenSymbolUpdate) -> TokenSymbol:
+    return update_generic(session, symbol, update)
+
+
+def delete_token_symbol(session: Session, token_symbol: TokenSymbol) -> None:
+    return delete_generic(session, token_symbol)
 
 
 # endregion Token Symbols

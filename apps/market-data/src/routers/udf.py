@@ -1,3 +1,4 @@
+# https://www.tradingview.com/charting-library-docs/latest/connecting_data/UDF
 from decimal import Decimal
 from time import time
 from typing import Sequence
@@ -5,7 +6,10 @@ from typing import Sequence
 from fastapi import APIRouter, HTTPException
 
 from src.db import crud, Session
-from src.db.models import TokenTimeseriesBase, TokenTimeseries, TokenSymbol, TokenSymbolBase
+from src.db.models import (
+    TokenSymbolType,
+    TokenSymbol,
+)
 from src.routers.utils import obj_or_404
 
 router = APIRouter()
@@ -13,9 +17,9 @@ router = APIRouter()
 supported_resolutions = {
     '1': 'minute',
     '60': 'hour',
-    'D': 'day',
-    'W': 'week',
-    'M': 'month',
+    '1D': 'day',
+    '1W': 'week',
+    '1M': 'month',
     '3M': 'quarter',
     '12M': 'year',
 }
@@ -44,10 +48,28 @@ async def resolve_symbol(symbol: str) -> TokenSymbol:
         )
 
 
-@router.post('/symbols')
-async def insert_token(token_info: TokenSymbolBase) -> TokenSymbol:
+@router.get('/search')
+async def search_symbol(
+    query: str,
+    limit: int,
+    exchange: str,
+    type_: str=TokenSymbolType.CRYPTO,
+) -> Sequence[dict[str, str]]:
+    def helper(symbol: TokenSymbol):
+        ret = symbol.model_dump(include={'description', 'exchange', 'name', 'ticker', 'type'})
+        ret['symbol'] = ret['name']
+        ret.pop('name')
+        return ret
+
     with Session() as session:
-        return crud.create_token_symbol(session, token_info)
+        symbols = crud.search_token_symbols(
+            session,
+            query,
+            type_ or TokenSymbolType.CRYPTO,
+            exchange or 'AIDN',
+            limit,
+        )
+        return [helper(symbol) for symbol in symbols]
 
 
 @router.get('/history')
@@ -96,9 +118,3 @@ async def get_history(
             'c': prices if len(prices) > 1 else prices[0],
             'v': volumes if len(volumes) > 1 else volumes[0],
         }
-
-
-@router.post('/history')
-async def insert_timeseries(timeseries: TokenTimeseriesBase) -> TokenTimeseries:
-    with Session() as session:
-        return crud.create_token_timeseries(session, timeseries)
