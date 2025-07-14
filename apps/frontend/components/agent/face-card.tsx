@@ -18,7 +18,8 @@ export default function FaceCard({
   return (
     <Card
       className={cn(
-        "justify-center items-center bg-panel border border-border shadow-lg hover:shadow-xl transition-all duration-300 p-6",
+        "justify-center items-center p-6",
+        "bg-panel border border-border shadow-lg",
       )}
     >
       <Avatar className="w-32 h-32 rounded-full border-2 border-anakiwa overflow-hidden relative shadow-md">

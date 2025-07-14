@@ -10,7 +10,7 @@ export default function TagCard({
 }) {
   const strippedTags = tags.filter(str => str.trim().length)
   return (
-    <Card className="bg-panel border border-border shadow-lg hover:shadow-xl transition-all duration-300">
+    <Card className="bg-panel border border-border shadow-lg">
       <CardHeader>
         <CardTitle className="text-d6 text-foreground">{title}</CardTitle>
       </CardHeader>
@@ -22,7 +22,7 @@ export default function TagCard({
           <Badge 
             variant="outline" 
             key={`${title}.${index}`}
-            className="border-anakiwa text-foreground hover:bg-anakiwa hover:text-white transition-colors duration-300"
+            className="border-anakiwa text-foreground"
           >
             {str}
           </Badge>

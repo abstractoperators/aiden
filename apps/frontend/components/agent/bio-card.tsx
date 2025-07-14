@@ -5,7 +5,7 @@ export default function BiographyCard({
   bio,
 }: Character) {
   return (
-    <Card className="bg-panel border border-border shadow-lg hover:shadow-xl transition-all duration-300">
+    <Card className="bg-panel border border-border shadow-lg">
       <CardHeader>
         <CardTitle className="text-d6 text-foreground">Biography</CardTitle>
       </CardHeader>
@@ -15,7 +15,7 @@ export default function BiographyCard({
           className={
             index % 2 == 0 ?
             "text-foreground" :
-            "text-anakiwa dark:text-anakiwa-light"
+            "text-anakiwa-darker dark:text-anakiwa-light"
           }
           key={`bio.${
             index}`}
