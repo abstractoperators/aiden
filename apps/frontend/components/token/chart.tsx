@@ -103,7 +103,7 @@ function TVChartContainer(props: Partial<ChartingLibraryWidgetOptions>) {
   }, [props]);
 
   return (
-    <Card>
+    <Card className="bg-panel">
       <CardContent
         ref={chartContainerRef}
         className="sm:min-h-[300px] md:min-h-[500px] lg:min-h-[700px]"
