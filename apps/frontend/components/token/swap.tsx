@@ -27,7 +27,7 @@ import { toast } from "@/hooks/use-toast";
 import TokenPrice, { updateTokenPriceState } from "./price";
 
 const amountStyle = [
-  "!text-d3 pl-0 py-2 font-serif h-fit place-content-center border-none",
+  "!text-d3 pl-0 py-2 h-fit place-content-center border-none",
   "shadow-none",
 ].join(" ")
 
@@ -123,7 +123,7 @@ export default function SwapCard({
   }
 
   return (
-    <Card className="items-center gap-2">
+    <Card className="items-center gap-2 bg-panel">
       <CardHeader className="flex flex-col items-start w-full">
         <TokenBalance
           address={token.evmContractAddress}
@@ -253,7 +253,7 @@ function BaseCard({
   children: ReactNode,
 }) {
   return (
-    <Card className="w-full justify-between self-stretch">
+    <Card className="w-full justify-between self-stretch bg-anakiwa-lightest dark:bg-anakiwa-darkest">
       <CardHeader>
         <CardTitle className="flex justify-between gap-2 flex-wrap">
           <p>{title}:</p>
@@ -262,7 +262,7 @@ function BaseCard({
       </CardHeader>
       <CardContent className="flex flex-col">
         {children}
-        <h3 className="text-neutral-700 dark:text-neutral-300">{token.ticker}</h3>
+        <h3 className="text-foreground">{token.ticker}</h3>
       </CardContent>
     </Card>
   )
