@@ -17,14 +17,15 @@ import { capitalize } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { isErrorResult } from "@/lib/api/result";
 import { toast } from "@/hooks/use-toast";
-import { launchSchema, LaunchSchemaType, launchTokenFactory } from "@/lib/contracts/bonding";
+import { launchTokenFactory } from "@/lib/contracts/bonding";
+import { LaunchTokenSchema } from "@/lib/schemas/token";
 
 export default function TokenForm() {
   const { primaryWallet: wallet } = useDynamicContext();
   const { push } = useRouter()
 
-  const form = useForm<LaunchSchemaType>({
-    resolver: zodResolver(launchSchema),
+  const form = useForm<LaunchTokenSchema>({
+    resolver: zodResolver(LaunchTokenSchema),
     defaultValues: {
       tokenName: "",
       ticker: "",
@@ -32,7 +33,7 @@ export default function TokenForm() {
   })
   const { handleSubmit } = form
 
-  const onSubmit = async (formData: LaunchSchemaType) => {
+  const onSubmit = async (formData: LaunchTokenSchema) => {
     const { tokenName: name, ticker } = formData
     try {
       const result = await launchTokenFactory(wallet)(formData)

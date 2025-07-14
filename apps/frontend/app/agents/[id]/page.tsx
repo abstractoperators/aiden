@@ -1,10 +1,11 @@
 // https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
 import { auth } from "@/auth"
-import BiographyCard from "@/components/agent-bio-card"
-import AgentCard from "@/components/agent-card"
-import TagCard from "@/components/agent-tag-card"
+import BiographyCard from "@/components/agent/bio-card"
+import FaceCard from "@/components/agent/face-card"
+import TagCard from "@/components/agent/tag-card"
 import Chat from "@/components/chat"
-// import SwapCard from "@/components/token/swap"
+import TokenChart from "@/components/token/chart"
+import SwapCard from "@/components/token/swap"
 import { buttonVariants } from "@/components/ui/button"
 import { getAgent } from "@/lib/api/agent"
 import { isErrorResult, isSuccessResult } from "@/lib/api/result"
@@ -66,15 +67,16 @@ export default async function AgentHome({
         </Link>
       }
       <div className="col-span-7 flex flex-col items-stretch gap-4">
-        <AgentCard name={name} token={token} />
+        <FaceCard name={name} token={token} />
         <BiographyCard {...character} />
         <div className="grid grid-cols-2 gap-4">
           <TagCard tags={character.topics} title="Topics" />
           <TagCard tags={character.adjectives} title="Adjectives" />
         </div>
+        {token && <TokenChart token={token} />}
       </div>
       <div className="col-span-5 flex flex-col justify-start items-stretch gap-4">
-        {/* <SwapCard token={token}/> */}
+        {token && <SwapCard token={token}/>}
         <Chat init={agent} />
       </div>
     </main>

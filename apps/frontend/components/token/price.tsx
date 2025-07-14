@@ -34,11 +34,11 @@ function TokenPrice({
     <div className="w-full flex items-center justify-between gap-2">
       <hgroup
         className={cn(
-          "flex items-center justify-between gap-2 text-d6 font-serif shrink truncate"
+          "flex items-center justify-between gap-2 text-d6 shrink truncate"
         )}
       >
         <h4>Price:</h4>
-        <h4 className="text-anakiwa-light shrink truncate">{price}</h4>
+        <h4 className="text-anakiwa-dark dark:text-anakiwa-light shrink truncate">{price}</h4>
       </hgroup>
       <RefreshButton
         onClick={async () => {

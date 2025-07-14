@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
+import AgentBuilder from "@/components/agent/builder";
 import { Button } from "@/components/ui/button";
 import { getAgent } from "@/lib/api/agent";
 import { isErrorResult, isSuccessResult } from "@/lib/api/result";
 import { getUser, User } from "@/lib/api/user";
 import Link from "next/link";
-import FormTabs from "./tabs";
 
 export default async function AgentEdit({
   params,
@@ -33,9 +33,7 @@ export default async function AgentEdit({
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
         Edit Agent {characterJson.name}
       </h1>
-      <FormTabs
-        {...agentResult.data}
-      />
+      <AgentBuilder {...agentResult.data} />
       <Button
         variant="destructive"
         size="lg"
