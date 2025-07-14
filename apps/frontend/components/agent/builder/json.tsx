@@ -139,7 +139,7 @@ function JsonAgentBuilder({
       ticker: "HOLDER",
     },
   })
-  const { handleSubmit, setValue, getValues } = form
+  const { handleSubmit, setValue, getValues, formState } = form
 
   const { toast } = useToast()
   const { push } = useRouter()
@@ -279,7 +279,11 @@ function JsonAgentBuilder({
           </AccordionItem>
           <EnvironmentVariables />
         </Accordion>
-        <AgentBuilderSubmit />
+        <AgentBuilderSubmit
+          // not sure why we can't unpack formState here, so we have to pass each individual property
+          isSubmitting={formState.isSubmitting}
+          isSubmitSuccessful={formState.isSubmitSuccessful}
+        />
       </form>
     </Form>
   )

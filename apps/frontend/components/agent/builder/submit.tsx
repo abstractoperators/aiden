@@ -7,8 +7,15 @@ import { Character } from "@/lib/schemas/character"
 import { LaunchTokenSchema } from "@/lib/schemas/token"
 import { cn } from "@/lib/utils"
 import { Wallet } from "@dynamic-labs/sdk-react-core"
+import { LoaderCircle } from "lucide-react"
 
-function AgentBuilderSubmit() {
+function AgentBuilderSubmit({
+  isSubmitting,
+  isSubmitSuccessful,
+}: {
+  isSubmitting: boolean,
+  isSubmitSuccessful: boolean,
+}) {
   return (
     <Button
       className={cn(
@@ -20,8 +27,15 @@ function AgentBuilderSubmit() {
         "dark:hover:text-white shadow-lg hover:shadow-xl transform",
       )}
       type="submit"
+      disabled={isSubmitting || isSubmitSuccessful}
     >
-      Submit
+    {
+      isSubmitting
+      ? <LoaderCircle className="animate-spin" />
+      : isSubmitSuccessful
+      ? <span>Submit Successful!</span>
+      : <span>Submit</span>
+    }
     </Button>
   )
 }

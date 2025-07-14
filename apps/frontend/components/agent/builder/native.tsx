@@ -104,7 +104,7 @@ function NativeAgentBuilder({
       ticker: "HOLDER",
     }
   })
-  const { control, handleSubmit } = form
+  const { control, handleSubmit, formState } = form
   const {
     fields: messageExamplesFields,
     append: messageExamplesAppend,
@@ -239,7 +239,11 @@ function NativeAgentBuilder({
 
         </Accordion>
 
-        <AgentBuilderSubmit />
+        <AgentBuilderSubmit
+          // not sure why we can't unpack formState here, so we have to pass each individual property
+          isSubmitting={formState.isSubmitting}
+          isSubmitSuccessful={formState.isSubmitSuccessful}
+        />
       </form>
     </Form> : 
     <h1>
