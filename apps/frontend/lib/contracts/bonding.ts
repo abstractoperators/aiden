@@ -184,7 +184,7 @@ function launchTokenFactory(wallet: Wallet | null) {
     console.debug("Token launched at:", tokenAddress);
 
     const marketDataResult = await createMarketDataToken({
-      description: `Token launched by ${wallet?.address}`,
+      description: `${name}/${ticker} on AIDN`,
       name,
       ticker,
     })
