@@ -7,7 +7,11 @@ from sqlmodel import Column, Enum as SQLEnum, Field, SQLModel, TIMESTAMP
 # region Base
 class Base(SQLModel):
     def __repr__(self) -> str:
-        return self.model_dump_json(indent=4, exclude_unset=True, exclude_none=True)
+        return self.model_dump_json(
+            indent=4,
+            exclude_unset=True,
+            exclude_none=True,
+        )
 
 
 # endregion Base
@@ -55,7 +59,7 @@ class TokenSymbolBase(Base):
     )
     exchange: str = Field(
         description="Exchange on which the token is traded.  The name will be displayed in the chart legend for this token.",
-        default="AIDN",
+        default="DragonSwap",
     )
     has_intraday: bool = Field(
         description="Flag indicating intraday (minutes) data for this symbol.",
@@ -68,7 +72,7 @@ class TokenSymbolBase(Base):
     )
     listed_exchange: str = Field(
         description="Short name for the exchange on which the token is traded. The name will be displayed in the chart legend for this token.",
-        default="AIDN",
+        default="DragonSwap",
         max_length=32,
     )
     minmov: int = Field(
