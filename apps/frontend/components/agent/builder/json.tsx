@@ -31,6 +31,7 @@ import { TokenSchema } from "@/lib/schemas/token";
 import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit";
 import EnvironmentVariables from "./environment-variables";
 import { Character, CharacterSchema, ModelProviderName } from "@/lib/schemas/character";
+import { TokenAccordion } from "./token";
 
 const MAX_FILE_SIZE = 5000000;
 
@@ -135,8 +136,8 @@ function JsonAgentBuilder({
       character: JSON.stringify(defaultCharacter, null, 4),
       env: [{ key: "", value: "", }],
       isNewToken: true,
-      tokenName: "TEMPORARY",
-      ticker: "HOLDER",
+      tokenName: "",
+      ticker: "",
     },
   })
   const { handleSubmit, setValue, getValues, formState } = form
@@ -278,6 +279,7 @@ function JsonAgentBuilder({
             </AccordionContent>
           </AccordionItem>
           <EnvironmentVariables />
+          { !agentId && <TokenAccordion />}
         </Accordion>
         <AgentBuilderSubmit
           // not sure why we can't unpack formState here, so we have to pass each individual property
