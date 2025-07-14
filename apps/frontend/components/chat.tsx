@@ -255,7 +255,7 @@ export default function Chat({
                     minRows={2}
                     className={cn(
                       "flex w-full rounded-xl",
-                      "border border-forgeground border-input bg-transparent px-3 py-2",
+                      "border border-foreground border-input bg-transparent px-3 py-2",
                       "text-foreground shadow-sm placeholder:text-muted-foreground",
                       "focus-visible:outline-none focus-visible:ring-1",
                       "focus-visible:ring-ring disabled:cursor-not-allowed",
