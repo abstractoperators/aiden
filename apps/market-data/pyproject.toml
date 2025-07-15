@@ -7,8 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.15.2,<1.16.0",
     "alembic-postgresql-enum>=1.7.0,<1.8.0",
-    "apscheduler>=3.11.0",
+    "apscheduler>=3.11.0,<3.12.0",
     "fastapi[standard]>=0.115.12,<0.116.0",
     "psycopg[binary]>=3.2.9,<3.3.0",
     "sqlmodel==0.0.24",
+    "web3>=7.12.1,<7.13.0",
 ]
