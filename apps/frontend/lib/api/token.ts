@@ -16,6 +16,7 @@ interface TokenBase {
   abi: object[]
 }
 interface TokenMarketDataBase {
+  address: `0x${string}`
   name: string
   ticker: string
   description: string
