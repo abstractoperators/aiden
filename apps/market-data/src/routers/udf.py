@@ -66,7 +66,7 @@ async def search_symbol(
             session,
             query,
             type_ or TokenSymbolType.CRYPTO,
-            exchange or 'AIDN',
+            exchange or 'DragonSwap',
             limit,
         )
         return [helper(symbol) for symbol in symbols]
