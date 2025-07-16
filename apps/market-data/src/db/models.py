@@ -53,6 +53,10 @@ class TokenSymbolType(str, Enum):
 
 
 class TokenSymbolBase(Base):
+    address: str = Field(
+        description="Address of the token",
+        regex=r"^0x[a-fA-F0-9]{40}$",
+    )
     description: str = Field(
         description="Description of the token",
         default="",
@@ -109,6 +113,11 @@ class TokenSymbolBase(Base):
 
 
 class TokenSymbolUpdate(Base):
+    address: str | None = Field(
+        description="Address of the token",
+        regex=r"^0x[a-fA-F0-9]{40}$",
+        default=None,
+    )
     description: str | None = Field(
         description="Description of the token",
         default=None,
@@ -162,7 +171,8 @@ class TokenSymbol(TokenSymbolBase, table=True):
 class TokenTimeseriesBase(Base):
     time: datetime = Field(
         sa_column=Column(
-            TIMESTAMP(timezone=True), primary_key=True
+            TIMESTAMP(timezone=True),
+            primary_key=True,
         ),
     )
     ticker: str = Field(
