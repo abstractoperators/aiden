@@ -7,7 +7,11 @@ from sqlmodel import Column, Enum as SQLEnum, Field, SQLModel, TIMESTAMP
 # region Base
 class Base(SQLModel):
     def __repr__(self) -> str:
-        return self.model_dump_json(indent=4, exclude_unset=True, exclude_none=True)
+        return self.model_dump_json(
+            indent=4,
+            exclude_unset=True,
+            exclude_none=True,
+        )
 
 
 # endregion Base
@@ -49,13 +53,17 @@ class TokenSymbolType(str, Enum):
 
 
 class TokenSymbolBase(Base):
+    address: str = Field(
+        description="Address of the token",
+        regex=r"^0x[a-fA-F0-9]{40}$",
+    )
     description: str = Field(
         description="Description of the token",
         default="",
     )
     exchange: str = Field(
         description="Exchange on which the token is traded.  The name will be displayed in the chart legend for this token.",
-        default="AIDN",
+        default="DragonSwap",
     )
     has_intraday: bool = Field(
         description="Flag indicating intraday (minutes) data for this symbol.",
@@ -68,7 +76,7 @@ class TokenSymbolBase(Base):
     )
     listed_exchange: str = Field(
         description="Short name for the exchange on which the token is traded. The name will be displayed in the chart legend for this token.",
-        default="AIDN",
+        default="DragonSwap",
         max_length=32,
     )
     minmov: int = Field(
@@ -105,6 +113,11 @@ class TokenSymbolBase(Base):
 
 
 class TokenSymbolUpdate(Base):
+    address: str | None = Field(
+        description="Address of the token",
+        regex=r"^0x[a-fA-F0-9]{40}$",
+        default=None,
+    )
     description: str | None = Field(
         description="Description of the token",
         default=None,
@@ -158,7 +171,8 @@ class TokenSymbol(TokenSymbolBase, table=True):
 class TokenTimeseriesBase(Base):
     time: datetime = Field(
         sa_column=Column(
-            TIMESTAMP(timezone=True), primary_key=True
+            TIMESTAMP(timezone=True),
+            primary_key=True,
         ),
     )
     ticker: str = Field(

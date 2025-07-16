@@ -32,7 +32,7 @@ jobs:
                 echo NEXT_SEI_NET=test >> apps/frontend/.env.local
                 echo NEXT_PUBLIC_BONDING_CONTRACT_ADDRESS=0xDdFF841E7bb9c2180D160eE5E11663ca127Fd21e >> apps/frontend/.env.local
                 echo NEXT_PUBLIC_MARKET_DATA_URL=https://data.staigen.space >> apps/frontend/.env.local
-                echo NEXT_PUBLIC_MARKET_DATA_UPDATE_FREQUENCY=3000 >> apps/frontend/.env.local
+                echo NEXT_PUBLIC_MARKET_DATA_UPDATE_FREQUENCY=60000 >> apps/frontend/.env.local
                 echo NEXT_PUBLIC_MARKET_DATA_MAX_RESPONSE_LENGTH=1000 >> apps/frontend/.env.local
 
             - name: Build and tag frontend

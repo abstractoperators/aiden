@@ -1,8 +1,8 @@
-"""add has_intraday for minutes data support
+"""add address field to token symbol table
 
-Revision ID: c860b562f523
-Revises: b7e23ef12b4c
-Create Date: 2025-07-07 20:22:43.742686
+Revision ID: 6d6fe1c9f059
+Revises: c860b562f523
+Create Date: 2025-07-15 14:48:21.697067
 
 """
 from typing import Sequence, Union
@@ -13,8 +13,8 @@ import sqlmodel.sql.sqltypes
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c860b562f523'
-down_revision: Union[str, None] = 'b7e23ef12b4c'
+revision: str = '6d6fe1c9f059'
+down_revision: Union[str, None] = 'c860b562f523'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -24,14 +24,14 @@ def upgrade() -> None:
     op.add_column(
         'tokensymbol',
         sa.Column(
-            'has_intraday',
-            sa.Boolean(),
-            server_default=sa.sql.expression.true(),
-            nullable=False,
+            'address',
+            sqlmodel.sql.sqltypes.AutoString(),
+            nullable=True,
+            server_default="0x0000000000000000000000000000000000000000",
         ),
     )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_column('tokensymbol', 'has_intraday')
+    op.drop_column('tokensymbol', 'address')

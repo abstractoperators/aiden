@@ -60,8 +60,14 @@ const CharacterSchema = z.object({
     secrets: z.object({}).catchall(z.string().trim()).optional(),
   }).optional(),
   plugins: FilteredStringArraySchema.refine(
-    arr => arr.every(str => str.startsWith("@elizaos/plugin-"),
-    "Any valid plugin must start with \"@elizaos/plugin-\""),
+    arr => {
+      const pluginPrefix = "@elizaos/plugin-"
+      return arr.every(str => (
+        str.startsWith(pluginPrefix) &&
+        str.length > pluginPrefix.length
+      ))
+    },
+    "Any valid plugin must start with \"@elizaos/plugin-\"",
   ),
   bio: FilteredStringArraySchema.refine(
     arr => arr.length > 0,

@@ -15,9 +15,24 @@ interface TokenBase {
   evmContractAddress: `0x${string}`
   abi: object[]
 }
-interface TokenCreationRequest {
+interface TokenMarketDataBase {
+  address: `0x${string}`
   name: string
   ticker: string
+  description: string
+}
+
+interface TokenMarketData extends TokenMarketDataBase {
+  exchange: string
+  hasIntraday: boolean
+  format: string
+  listedExchange: string
+  minmov: number
+  pricescale: number
+  session: string
+  ticker: string
+  timezone: string
+  type: string
 }
 
 interface Token extends TokenBase {
@@ -35,8 +50,13 @@ async function saveToken(tokenPayload: TokenBase): Promise<Result<Token>> {
   return createResource<Token, TokenBase>(new URL(`${baseUrlPath.href}/save`), tokenPayload)
 }
 
-async function createToken(tokenPayload: TokenCreationRequest): Promise<Result<Token>> {
-  return createResource<Token, TokenCreationRequest>(baseUrlPath, tokenPayload)
+async function createMarketDataToken(
+  tokenPayload: TokenMarketDataBase
+): Promise<Result<TokenMarketData>> {
+  return createResource<TokenMarketData, TokenMarketDataBase>(
+    new URL('/symbols', process.env.NEXT_PUBLIC_MARKET_DATA_URL),
+    tokenPayload,
+  )
 }
 
 async function getTokens(): Promise<Result<Token[]>> {
@@ -46,10 +66,10 @@ async function getTokens(): Promise<Result<Token[]>> {
 };
 
 export {
+  createMarketDataToken,
   getToken,
+  getTokens,
   saveToken,
-  createToken,
-  getTokens
 }
 
 export type {
