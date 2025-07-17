@@ -143,15 +143,16 @@ export default function MultiStepAgentBuilder() {
               "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
               step <= currentStep
                 ? "bg-anakiwa text-white"
-                : "bg-gray-300 text-gray-600"
+                : "bg-muted text-muted-foreground"
             )}
           >
+            {step}
           </div>
           {step < 4 && (
             <div
               className={cn(
                 "w-16 h-1 mx-2",
-                step < currentStep ? "bg-anakiwa" : "bg-gray-300"
+                step < currentStep ? "bg-anakiwa" : "bg-muted"
               )}
             />
           )}
