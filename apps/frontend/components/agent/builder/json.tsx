@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { useEffect } from "react";
 import { EnvSchema } from "@/lib/schemas/environment-variables";
 import { TokenSchema } from "@/lib/schemas/token";
 import AgentBuilderSubmit, { agentBuilderOnSubmit } from "./submit";
@@ -123,9 +124,11 @@ type JsonAgentBuilderOutputSchema = z.output<typeof JsonAgentBuilderSchema>
 function JsonAgentBuilder({
   defaultValues,
   agentId,
+  onDataUpdate,
 }: {
   defaultValues?: JsonAgentBuilderInputSchema,
   agentId?: string,
+  onDataUpdate?: (data: any) => void,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
 
@@ -139,10 +142,18 @@ function JsonAgentBuilder({
       ticker: "HOLDER",
     },
   })
-  const { handleSubmit, setValue, getValues, formState } = form
+  const { handleSubmit, setValue, getValues, formState, watch } = form
 
   const { toast } = useToast()
   const { push } = useRouter()
+
+  // // Watch form changes and update parent component
+  // const watchedValues = watch();
+  // useEffect(() => {
+  //   if (onDataUpdate && watchedValues) {
+  //     onDataUpdate(watchedValues);
+  //   }
+  // }, [watchedValues, onDataUpdate]);
 
   // Add loading state and proper error handling
   if (!user) {

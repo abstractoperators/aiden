@@ -2,7 +2,7 @@ import { getEnlightened } from "@/lib/api/agent";
 import { auth } from "@/auth";
 import { getUser } from "@/lib/api/user";
 import { isErrorResult, isSuccessResult } from "@/lib/api/result";
-import AgentBuilder from "@/components/agent/builder";
+import MultiStepAgentBuilder from "@/components/agent/builder/multi-step";
 
 export default async function AgentCreation() {
   // TODO consider removing in favor of context/context provider
@@ -43,7 +43,7 @@ export default async function AgentCreation() {
           (
             userAgents.data.length > 0 && !session.user.scopes.includes('admin') ?
             <h2 className="text-foreground font-sans">You may only have one agent at a time!</h2> :
-            <AgentBuilder />
+            <MultiStepAgentBuilder />
           ) :
           <h2 className="text-foreground font-sans">Unable to prepare agent creation form!</h2>
         }
