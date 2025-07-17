@@ -12,7 +12,6 @@ import { Character, ModelProviderName } from "@/lib/schemas/character";
 interface Step1Data {
   logoImage: File | null;
   agentName: string;
-  tokenTicker: string;
 }
 
 interface Step2Data {
@@ -25,7 +24,9 @@ interface Step2Data {
 
 interface Step3Data {
   coinType: string;
+  tokenTicker: string;
   initialPurchaseAmount: string;
+
 }
 
 interface AgentCreationData {
@@ -42,7 +43,6 @@ export default function MultiStepAgentBuilder() {
     step1: {
       logoImage: null,
       agentName: "",
-      tokenTicker: "",
     },
     step2: {
       character: JSON.stringify({
@@ -69,6 +69,7 @@ export default function MultiStepAgentBuilder() {
     },
     step3: {
       coinType: "SEI",
+      tokenTicker: "",
       initialPurchaseAmount: "",
     },
   });
@@ -93,7 +94,6 @@ export default function MultiStepAgentBuilder() {
         updateFormData("step2", {
           character: JSON.stringify(characterObj, null, 4),
           tokenName: formData.step1.agentName,
-          ticker: formData.step1.tokenTicker,
         });
       }
       setCurrentStep(currentStep + 1);
@@ -214,24 +214,12 @@ export default function MultiStepAgentBuilder() {
           />
         </div>
 
-        <div>
-          <Label htmlFor="tokenTicker" className="text-foreground font-medium">
-            Token Ticker
-          </Label>
-          <Input
-            id="tokenTicker"
-            value={formData.step1.tokenTicker}
-            onChange={(e) => updateFormData("step1", { tokenTicker: e.target.value })}
-            placeholder="e.g., AGENT"
-            className="mt-2"
-          />
-        </div>
       </div>
 
       <div className="flex justify-end">
         <Button
           onClick={handleNext}
-          disabled={!formData.step1.agentName || !formData.step1.tokenTicker}
+          disabled={!formData.step1.agentName}
           className={cn(
             "px-5 py-2 border-2 border-anakiwa rounded-xl",
             "text-foreground dark:text-foreground text-base font-bold",
@@ -318,7 +306,18 @@ export default function MultiStepAgentBuilder() {
             ))}
           </select>
         </div>
-
+        <div> 
+          <Label htmlFor="tokenTicker" className="text-foreground font-medium">
+            Token Ticker
+          </Label>
+          <Input
+            id="tokenTicker"
+            value={formData.step3.tokenTicker}
+            onChange={(e) => updateFormData("step3", { tokenTicker: e.target.value })}
+            placeholder="Enter token ticker"
+            className="mt-2"
+          />
+        </div>
         <div>
           <Label htmlFor="initialAmount" className="text-foreground font-medium">
             Initial Purchase Amount
