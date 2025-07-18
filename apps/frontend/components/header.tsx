@@ -1,84 +1,60 @@
 'use client'
 
 import Link from 'next/link'
-import LightGhost from '@/public/brand_assets/light-ghost.svg'
-import DarkGhost from '@/public/brand_assets/dark-ghost.svg'
-import ThemeImage from '@/components/ui/theme-image'
-import { LoginButtonHeader } from './dynamic/login-button'
-import { ReactElement } from 'react'
-import VisitorMenu from './visitor-menu'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import { LoginButtonHeader } from '@/components/dynamic/login-button';
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core'
+import VisitorMenu from '@/components/visitor-menu'
 
-const baseHeaderStyle = "sticky flex items-center justify-center top-0 z-50 w-full"
-enum headerStyles {
-  landing = baseHeaderStyle,
-  main = `${baseHeaderStyle} bg-background/10 backdrop-blur`,
-}
+const menus = [
+  { name: 'CREATE AGENT', href: '/user/agents/creation', isLoggedIn: true },
+  { name: 'AGENTS', href: '/agents', isLoggedIn: false },
+]
 
-interface variantOutputs {
-  headerStyle: headerStyles,
-  aidnImage?: ReactElement,
-}
-interface variantProp {
-  variant?: "landing" | "main",
-}
-function getVariantOutputs(variant: variantProp["variant"]): variantOutputs {
-  switch (variant) {
-    case "landing":
-      return {
-        headerStyle: headerStyles.landing,
-      }
-    case "main":
-    default:
-      return {
-        headerStyle: headerStyles.main,
-        aidnImage: <ThemeImage
-          className="w-6 transition duration-300 hover:invert-[.7]"
-          lightSrc={LightGhost}
-          darkSrc={DarkGhost}
-          alt="AIDN"
-        />,
-      }
-  }
-}
-
-export default function Header({ variant }: variantProp) {
-  const { headerStyle, aidnImage, } = getVariantOutputs(variant)
+export default function Header() {
   const isLoggedIn = useIsLoggedIn();
+  const pathname = usePathname();
 
   return (
-    <header
-      className={headerStyle}
-    >
-      <div className="container flex h-16 items-center justify-between">
-        <Link
-          href="/"
-          className="mr-6 flex items-center space-x-2"
-        >
-          {aidnImage}
-        </Link>
-        <nav className="flex items-center justify-between space-x-4 font-medium">
-          <Link
-            className="transition duration-300 hover:invert-[.5]"
-            href='/agents'
-          >
-            Agents
-          </Link>
-          {/* <Link
-            className="transition duration-300 hover:invert-[.5]"
-            href='/tokens'
-          >
-            Tokens
-          </Link> */}
-          <div className="flex items-center justify-between space-x-2">
-            <LoginButtonHeader className="px-4 py-2" />
-            {
-              !isLoggedIn &&
-              <VisitorMenu />
-            }
-          </div>
-        </nav>
-      </div>
+    <header className="w-full bg-panel h-16 flex items-center justify-between px-8">
+      {/* Left: Logo */}
+      <Link href="/" className="flex items-center gap-3 select-none">
+        <Image 
+          src="/brand_assets/blue-ghost.svg" 
+          alt="AIDN Logo" 
+          width={32} 
+          height={32} 
+          className="filter brightness-0 dark:invert transition-all duration-300" 
+        />
+        <span className="font-pixelcraft text-foreground text-2xl tracking-widest">AIDN</span>
+      </Link>
+      {/* Right: Menus */}
+      <nav className="flex items-center gap-6">
+        {menus.map(menu => {
+          // Skip rendering if menu requires login but user is not logged in
+          if (menu.isLoggedIn && !isLoggedIn) {
+            return null;
+          }
+          
+          const isActive = pathname === menu.href || (menu.href === '/agents' && pathname.startsWith('/agents'));
+          return (
+            <Link
+              key={menu.href}
+              href={menu.href}
+              className={
+                isActive
+                  ? "font-pixelcraft uppercase hover:text-anakiwa text-foreground dark:text-panel-foreground bg-panel rounded-lg px-4 py-1 text-base tracking-widest font-bold transition-all duration-300 hover:scale-105"
+                  : "border-2 border-anakiwa rounded-lg bg-panel px-4 py-1 font-pixelcraft uppercase hover:text-anakiwa text-muted-foreground px-4 py-1 text-base tracking-widest hover:text-foreground transition-all duration-300 hover:scale-105"
+              }
+            >
+              {menu.name}
+            </Link>
+          )
+        })}
+        <LoginButtonHeader className="px-4 py-2 border-2 border-anakiwa rounded-lg" />
+        {!isLoggedIn && <VisitorMenu />}
+      </nav>
     </header>
   )
 }

@@ -57,6 +57,10 @@ class TokenSymbolBase(Base):
         description="Exchange on which the token is traded.  The name will be displayed in the chart legend for this token.",
         default="AIDN",
     )
+    has_intraday: bool = Field(
+        description="Flag indicating intraday (minutes) data for this symbol.",
+        default=True,
+    )
     format: TokenSymbolFormat = Field(
         description="Format of displaying labels on the price scale. Can be 'price' or 'volume'.",
         default=TokenSymbolFormat.PRICE,
@@ -97,6 +101,51 @@ class TokenSymbolBase(Base):
         description="Type of the instrument.",
         default=TokenSymbolType.CRYPTO,
         sa_column=Column(SQLEnum(TokenSymbolType, values_callable=get_enum_values)),
+    )
+
+
+class TokenSymbolUpdate(Base):
+    description: str | None = Field(
+        description="Description of the token",
+        default=None,
+    )
+    exchange: str | None = Field(
+        description="Exchange on which the token is traded.  The name will be displayed in the chart legend for this token.",
+        default=None,
+    )
+    has_intraday: bool | None = Field(
+        description="Flag indicating intraday (minutes) data for this symbol.",
+        default=None,
+    )
+    format: TokenSymbolFormat | None = Field(
+        description="Format of displaying labels on the price scale. Can be 'price' or 'volume'.",
+        default=None,
+    )
+    listed_exchange: str | None = Field(
+        description="Short name for the exchange on which the token is traded. The name will be displayed in the chart legend for this token.",
+        default=None,
+        max_length=32,
+    )
+    minmov: int | None = Field(
+        description="Number of units that make up one tick.",
+        default=None,
+    )
+    pricescale: int | None = Field(
+        description="A number of decimal places or fractions that the price has. Must be a power of ten (for decimal places) or two (for fractions).",
+        default=None,
+    )
+    session: str | None = Field(
+        description="Trading hours for the token.",
+        default=None,
+    )
+    timezone: str | None = Field(
+        description="The timezone of the exchange where the token is listed. Should be in OlsonDB Format.",
+        default=None,
+        max_length=50,
+    )
+    type: TokenSymbolType | None = Field(
+        description="Type of the instrument.",
+        default=None,
     )
 
 

@@ -27,14 +27,14 @@ import { toast } from "@/hooks/use-toast";
 import TokenPrice, { updateTokenPriceState } from "./price";
 
 const amountStyle = [
-  "!text-d3 pl-0 py-2 font-serif h-fit place-content-center border-none",
+  "!text-d3 pl-0 py-2 h-fit place-content-center border-none",
   "shadow-none",
 ].join(" ")
 
 export default function SwapCard({
   token,
 }: {
-  token?: TokenBase | null,
+  token: TokenBase,
 }) {
   const [ isBuying, setIsBuying ] = useState(true)
   const [ tokenAmount, setTokenAmount ] = useState<number | "">("")
@@ -46,7 +46,7 @@ export default function SwapCard({
   const { primaryWallet } = useDynamicContext()
 
   const onClick = async () => {
-    if (!token || !seiAmount || !tokenAmount)
+    if (!seiAmount || !tokenAmount)
       return
 
     const tokenAddress = token.evmContractAddress
@@ -93,82 +93,78 @@ export default function SwapCard({
     }
   }
 
-  if (token) {
-    const inProps = isBuying ? {
-      token: seiTokenDisplay,
-      inAmount: seiAmount,
-      setInAmount: setSeiAmount,
-      setOutAmount: setTokenAmount,
-      convert: async (x: number) => {
-        const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
-        // TODO: improved accuracy
-        return x * Number(price)
-      },
-    } : {
-      token,
-      inAmount: tokenAmount,
-      setInAmount: setTokenAmount,
-      setOutAmount: setSeiAmount,
-      convert: async (x: number) => {
-        const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
-        // TODO: improved accuracy
-        return x / Number(price)
-      },
-    }
-    const outProps = isBuying ? {
-      token,
-      amount: tokenAmount,
-    } : {
-      token: seiTokenDisplay,
-      amount: seiAmount,
-    }
-
-    return (
-      <Card className="items-center gap-2">
-        <CardHeader className="flex flex-col items-start w-full">
-          <TokenBalance
-            address={token.evmContractAddress}
-            balanceState={balanceState}
-            isDisabledState={isBalanceDisabledState}
-          />
-          <TokenPrice
-            address={token.evmContractAddress}
-            priceState={priceState}
-            isDisabledState={isPriceDisabledState}
-          />
-        </CardHeader>
-        <CardContent
-          className={cn(
-            "w-full flex flex-col gap-2 items-center",
-          )}
-        >
-          <InCard {...inProps} />
-          <Button
-            variant="ghost"
-            className="w-4 h-8"
-            onClick={() => setIsBuying(!isBuying)}
-          >
-            <ArrowUpDown
-              className={cn(
-                "transition duration-300",
-                isBuying ? "" : "rotate-180",
-              )}
-            />
-          </Button>
-          <OutCard {...outProps} />
-        </CardContent>
-        <CardFooter>
-          <LoginButton className="w-full">
-            <Button disabled={!seiAmount || !tokenAmount} className="w-full" onClick={onClick}>
-              Swap
-            </Button>
-          </LoginButton>
-        </CardFooter>
-      </Card>
-    )
+  const inProps = isBuying ? {
+    token: seiTokenDisplay,
+    inAmount: seiAmount,
+    setInAmount: setSeiAmount,
+    setOutAmount: setTokenAmount,
+    convert: async (x: number) => {
+      const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
+      // TODO: improved accuracy
+      return x * Number(price)
+    },
+  } : {
+    token,
+    inAmount: tokenAmount,
+    setInAmount: setTokenAmount,
+    setOutAmount: setSeiAmount,
+    convert: async (x: number) => {
+      const { price } = (await getTokenInfo({address: token.evmContractAddress})).data
+      // TODO: improved accuracy
+      return x / Number(price)
+    },
+  }
+  const outProps = isBuying ? {
+    token,
+    amount: tokenAmount,
+  } : {
+    token: seiTokenDisplay,
+    amount: seiAmount,
   }
 
-  return <></>
+  return (
+    <Card className="items-center gap-2 bg-panel">
+      <CardHeader className="flex flex-col items-start w-full">
+        <TokenBalance
+          address={token.evmContractAddress}
+          balanceState={balanceState}
+          isDisabledState={isBalanceDisabledState}
+        />
+        <TokenPrice
+          address={token.evmContractAddress}
+          priceState={priceState}
+          isDisabledState={isPriceDisabledState}
+        />
+      </CardHeader>
+      <CardContent
+        className={cn(
+          "w-full flex flex-col gap-2 items-center",
+        )}
+      >
+        <InCard {...inProps} />
+        <Button
+          variant="ghost"
+          className="w-4 h-8"
+          onClick={() => setIsBuying(!isBuying)}
+        >
+          <ArrowUpDown
+            className={cn(
+              "transition duration-300",
+              isBuying ? "" : "rotate-180",
+            )}
+          />
+        </Button>
+        <OutCard {...outProps} />
+      </CardContent>
+      <CardFooter>
+        <LoginButton className="w-full">
+          <Button disabled={!seiAmount || !tokenAmount} className="w-full" onClick={onClick}>
+            Swap
+          </Button>
+        </LoginButton>
+      </CardFooter>
+    </Card>
+  )
 }
 
 type TokenDisplayType = Pick<TokenBase, "name" | "ticker">
@@ -257,7 +253,7 @@ function BaseCard({
   children: ReactNode,
 }) {
   return (
-    <Card className="w-full justify-between self-stretch">
+    <Card className="w-full justify-between self-stretch bg-anakiwa-lightest dark:bg-anakiwa-darkest">
       <CardHeader>
         <CardTitle className="flex justify-between gap-2 flex-wrap">
           <p>{title}:</p>
@@ -266,7 +262,7 @@ function BaseCard({
       </CardHeader>
       <CardContent className="flex flex-col">
         {children}
-        <h3 className="text-neutral-700 dark:text-neutral-300">{token.ticker}</h3>
+        <h3 className="text-foreground">{token.ticker}</h3>
       </CardContent>
     </Card>
   )

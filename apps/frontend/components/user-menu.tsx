@@ -7,6 +7,7 @@ import {
   UserProfile,
   Wallet,
 } from "@dynamic-labs/sdk-react-core";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,8 +39,8 @@ export default function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="cursor-pointer focus:outline-solid hover:outline-solid hover:hue-rotate-60 transition duration-300">
-          <AvatarFallback className="bg-gradient-to-br from-anakiwa dark:from-anakiwa-dark from-20% to-carnation dark:to-carnation-dark to-80%">
+        <Avatar className="cursor-pointer">
+          <AvatarFallback className="bg-panel border-2 border-anakiwa hover:border-anakiwa transition">
             {
               (displayName === wallet.address) ?
               displayName.substring(0, 2) :

@@ -5,16 +5,17 @@ import { Button } from "@/components/ui/button"
 import UserMenu from "@/components/user-menu"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import CreateAgentButton from "../create-agent-button"
 
 const common = (
   [
     "font-semibold",
-    "text-black",
+    "text-white",
     "dark:text-white",
     "rounded-xl",
-    "transition",
+    "transition-all",
     "duration-300",
+    "hover:scale-105",
+    "hover:shadow-lg",
   ]
   .join(" ")
 )
@@ -23,32 +24,21 @@ function LoginButton({
   children,
   className,
 }: React.PropsWithChildren<{className?: string}>) {
-  const bg = (
-    [
-      "bg-gradient-to-br",
-      "from-anakiwa",
-      "from-20%",
-      "to-carnation",
-      "to-80%",
-      "hover:hue-rotate-60",
-    ]
-    .join(" ")
-  )
+  
   const { primaryWallet, user, setShowAuthFlow } = useDynamicContext()
 
   return (primaryWallet && user) ? (
     <>{children}</>
   ) : (
-    <Button
+    <button
       className={cn(
-        common,
-        bg,
+        "hover:text-anakiwa transition-all duration-300 font-pixelcraft cursor-pointer hover:scale-105",
         className,
       )}
       onClick={() => setShowAuthFlow(true)}
     >
-      Register Now
-    </Button>
+      Register
+    </button>
   )
 }
 
@@ -60,7 +50,9 @@ function LoginButtonHero({className}: {className?: string}) {
       "from-20%",
       "to-carnation-dark",
       "to-80%",
-      "hover:hue-rotate-60",
+      "hover:from-anakiwa",
+      "hover:to-carnation",
+      "shadow-md",
     ]
     .join(" ")
   )
@@ -72,7 +64,6 @@ function LoginButtonHero({className}: {className?: string}) {
         common,
         bg,
       )}
-      asChild
     >
       <Link href="/user/agents/creation">
         Create an Agent
@@ -88,7 +79,6 @@ function LoginButtonHeader({className}: {className?: string}) {
       user &&
       primaryWallet &&
       <div className="flex items-center justify-between gap-2">
-        <CreateAgentButton />
         <UserMenu
           logout={handleLogOut}
           user={user}
