@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import DeleteAgentButton from "@/components/delete-agent-button";
+import DeleteAgentButton from "@/components/agent/delete-button";
 import AgentBuilder from "@/components/agent/builder";
 import { Button } from "@/components/ui/button";
 import { getAgent } from "@/lib/api/agent";
@@ -35,7 +35,7 @@ export default async function AgentEdit({
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
         Edit Agent {name}
       </h1>
-      <AgentBuilder {...agentResult.data} />
+      <AgentBuilder {...agent} />
       <Button
         variant="destructive"
         size="lg"

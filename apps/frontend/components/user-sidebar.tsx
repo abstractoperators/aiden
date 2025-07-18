@@ -26,7 +26,7 @@ import {
 import Link from "next/link"
 import { ClientAgent } from "@/lib/api/agent"
 import { Result, isSuccessResult } from "@/lib/api/result"
-import CreateAgentButton from "./create-agent-button"
+import CreateAgentButton from "./agent/create-button"
 
 interface NavigationGroup {
   title: string,
