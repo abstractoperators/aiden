@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import {
   createResource,
+  deleteResource,
   fromApiEndpoint,
   getResource,
   updateResource,
@@ -17,6 +18,7 @@ import {
   createSuccessResult,
   isBadRequest,
   isErrorResult,
+  isSuccessResult,
   Result,
 } from "./result"
 
@@ -183,8 +185,20 @@ async function updateAgent(agentId: string, agentUpdate: AgentUpdate): Promise<R
   return ret
 }
 
+async function deleteAgent(agentId: string) {
+  const deleteResult = await deleteResource(
+    baseUrlSegment,
+    agentId,
+  )
+
+  if (isSuccessResult(deleteResult))
+    revalidatePath(AGENT_PATH)
+  return deleteResult
+}
+
 export {
   createAgent,
+  deleteAgent,
   getAgent,
   getEnlightened,
   getIncubating,
