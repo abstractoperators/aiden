@@ -58,6 +58,13 @@ def get_token_symbol_by_name_or_ticker(session: Session, name: str) -> TokenSymb
     return session.exec(stmt).first()
 
 
+def get_token_symbols(session: Session, limit: int | None = None):
+    stmt = select(TokenSymbol)
+    if limit:
+        stmt = stmt.limit(limit)
+    return session.exec(stmt)
+
+
 def search_token_symbols(
     session: Session,
     name: str,

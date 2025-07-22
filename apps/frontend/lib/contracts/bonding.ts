@@ -8,8 +8,8 @@ import {
   PublicClient,
   WalletClient,
 } from "viem";
-import { saveToken, Token } from "../api/token";
-import { Result } from "../api/result";
+import { createMarketDataToken, saveToken, Token } from "../api/token";
+import { isErrorResult, Result } from "../api/result";
 import { getClientFromWallet, getPublicClient } from "./client";
 import { LaunchTokenSchema } from "../schemas/token";
 
@@ -183,14 +183,26 @@ function launchTokenFactory(wallet: Wallet | null) {
     const tokenAddress = events[0].args[0] as `0x${string}`;
     console.debug("Token launched at:", tokenAddress);
 
-    const tokenPayload = {
-        name,
-        ticker,
-        evmContractAddress: tokenAddress,
-        abi: ERC20_ABI, // maybe we stop saving an abi for each token - dunno.
+    const marketDataResult = await createMarketDataToken({
+      address: tokenAddress,
+      description: `${name}/${ticker} on AIDN`,
+      name,
+      ticker,
+    })
+
+    if (isErrorResult(marketDataResult)) {
+      console.error("Failed to create market data token:", marketDataResult.message);
+      return marketDataResult;
+    }
+
+    const apiTokenPayload = {
+      name,
+      ticker,
+      evmContractAddress: tokenAddress,
+      abi: ERC20_ABI, // maybe we stop saving an abi for each token - dunno.
     };
 
-    return saveToken(tokenPayload)
+    return saveToken(apiTokenPayload)
   }
 
   return launchToken

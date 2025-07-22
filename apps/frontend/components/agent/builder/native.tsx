@@ -40,6 +40,7 @@ import {
   Clients,
   ModelProviderName,
 } from "@/lib/schemas/character"
+import { TokenAccordion } from "./token"
 
 const borderStyle = "rounded-xl border border-black dark:border-white"
 
@@ -100,8 +101,8 @@ function NativeAgentBuilder({
       topics: [""],
       style: { all: [""], chat: [""], post: [""], },
       isNewToken: true,
-      tokenName: "TEMPORARY",
-      ticker: "HOLDER",
+      tokenName: "",
+      ticker: "",
     }
   })
   const { control, handleSubmit, formState } = form
@@ -235,7 +236,7 @@ function NativeAgentBuilder({
             </AccordionContent>
           </AccordionItem>
 
-          {/* { !agentId && <TokenAccordion /> } */}
+          { !agentId && <TokenAccordion /> }
 
         </Accordion>
 

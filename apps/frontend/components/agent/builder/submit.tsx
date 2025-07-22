@@ -3,6 +3,7 @@ import { toast } from "@/hooks/use-toast"
 import { createAgent, updateAgent, stopAgent } from "@/lib/api/agent"
 import { isErrorResult, isNotFound } from "@/lib/api/result"
 import { getUser } from "@/lib/api/user"
+import { launchTokenFactory } from "@/lib/contracts/bonding"
 import { Character } from "@/lib/schemas/character"
 import { LaunchTokenSchema } from "@/lib/schemas/token"
 import { cn } from "@/lib/utils"
@@ -53,9 +54,9 @@ async function onCreate({
   dynamicId,
   character,
   envFile,
-  // token,
+  token,
   push,
-  // wallet,
+  wallet,
 }: AgentBuilderOnSubmitProps) {
   console.debug("Character", character)
   const userResult = await getUser({ dynamicId })
@@ -69,30 +70,30 @@ async function onCreate({
     return
   }
 
-  // const tokenId = (
-  //   (typeof token === "string") ?
-  //   token :
-  //   await (async () => {
-  //     const tokenResult = await launchTokenFactory(wallet)(token)
-  //     if (isErrorResult(tokenResult)) {
-  //       toast({
-  //         title: `Unable to save token ${token.tokenName} ($${token.ticker})`,
-  //         description: tokenResult.message,
-  //       })
-  //     } else {
-  //       toast({
-  //         title: `Token ${token.tokenName} ($${token.ticker}) created!`,
-  //       })
-  //       return tokenResult.data.id
-  //     }
-  //   })()
-  // )
+  const tokenId = (
+    (typeof token === "string") ?
+    token :
+    await (async () => {
+      const tokenResult = await launchTokenFactory(wallet)(token)
+      if (isErrorResult(tokenResult)) {
+        toast({
+          title: `Unable to save token ${token.tokenName} ($${token.ticker})`,
+          description: tokenResult.message,
+        })
+      } else {
+        toast({
+          title: `Token ${token.tokenName} ($${token.ticker}) created!`,
+        })
+        return tokenResult.data.id
+      }
+    })()
+  )
 
   const agentPayload = {
     ownerId: userResult.data.id,
     characterJson: character,
     envFile,
-    // tokenId,
+    tokenId,
   }
   const agentResult = await createAgent(agentPayload)
   if (isErrorResult(agentResult)) {
