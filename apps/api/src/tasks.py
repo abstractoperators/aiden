@@ -371,7 +371,8 @@ def delete_runtime(
                     cluster=aws_config.cluster,
                     services=[aws_config.service_name],
                 )
-            except botocore.errorfactory.ServiceNotFoundException:
+            except ecs_client.exceptions.ClientError as error:
+                logger.error(error)
                 logger.warning(f"AWS resource not found for {runtime_id}. Maybe it was already deleted?")
 
         # Delete the listener rules
