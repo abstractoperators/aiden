@@ -4,6 +4,7 @@ from time import sleep
 from typing import Sequence
 from uuid import UUID
 
+import botocore
 import requests
 from boto3 import Session as Boto3Session
 from celery import Celery
@@ -359,16 +360,19 @@ def delete_runtime(
             aws_config = get_aws_config(runtime.service_no)
 
         if runtime.service_arn:
-            ecs_client.delete_service(
-                cluster=aws_config.cluster,
-                service=aws_config.service_name,
-                force=True,
-            )
-            waiter = ecs_client.get_waiter("services_inactive")
-            waiter.wait(
-                cluster=aws_config.cluster,
-                services=[aws_config.service_name],
-            )
+            try:
+                ecs_client.delete_service(
+                    cluster=aws_config.cluster,
+                    service=aws_config.service_name,
+                    force=True,
+                )
+                waiter = ecs_client.get_waiter("services_inactive")
+                waiter.wait(
+                    cluster=aws_config.cluster,
+                    services=[aws_config.service_name],
+                )
+            except botocore.errorfactory.ServiceNotFoundException:
+                logger.warning(f"AWS resource not found for {runtime_id}. Maybe it was already deleted?")
 
         # Delete the listener rules
         if runtime.http_listener_rule_arn:
