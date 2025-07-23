@@ -14,7 +14,8 @@ This guide covers running the application locally for development purposes.
 **Setup Steps (~10-15 minutes):**
 
 - □ Clone aiden repository
-- □ Copy `.env.api.example` → `.env.api`
+- □ Go to `aiden/apps/api/src/`
+   - □ Copy `.env.api.example` → `.env.api`
 - □ Copy `.env.local.example` → `.env.local`
 - □ Get `POSTGRES_DB_PASSWORD` from 1Password/AWSSM
 - □ Get `DYNAMIC_ENVIRONMENT_ID` from dynamic.xyz dashboard
