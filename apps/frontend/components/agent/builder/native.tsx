@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import EnvironmentVariables from "./environment-variables"
 import { EnvSchema } from "@/lib/schemas/environment-variables"
 import { TokenSchema } from "@/lib/schemas/token"
@@ -77,9 +78,11 @@ type NativeAgentBuilderSchema = z.infer<typeof NativeAgentBuilderSchema>
 function NativeAgentBuilder({
   defaultValues,
   agentId,
+  onDataUpdate,
 } : {
   defaultValues?: NativeAgentBuilderSchema,
   agentId?: string,
+  onDataUpdate?: (data: any) => void,
 }) {
   const { user, primaryWallet: wallet } = useDynamicContext()
 
@@ -105,7 +108,7 @@ function NativeAgentBuilder({
       ticker: "",
     }
   })
-  const { control, handleSubmit, formState } = form
+  const { control, handleSubmit, formState, watch } = form
   const {
     fields: messageExamplesFields,
     append: messageExamplesAppend,
@@ -116,6 +119,14 @@ function NativeAgentBuilder({
   })
 
   const { push } = useRouter()
+
+  // Watch form changes and update parent component
+  const watchedValues = watch();
+  useEffect(() => {
+    if (onDataUpdate && watchedValues) {
+      onDataUpdate(watchedValues);
+    }
+  }, [watchedValues, onDataUpdate]);
 
   async function onSubmit(formData: NativeAgentBuilderSchema) {
     console.debug("AgentForm", formData)
